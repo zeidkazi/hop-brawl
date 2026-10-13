@@ -720,6 +720,7 @@ README.md  DECISIONS.md  CREDITS.md
 | 13 | Edge cases (§17), reconnect, versioning, accessibility, adaptive quality tuning | P1 |
 | 14 | OG/meta, cover mode, gamepad, share result | P2 |
 After every milestone: run tests, play-test with Playwright in phone + desktop viewports, screenshot each screen, check the FPS overlay, fix issues, redeploy.
+**Deployment deferred (owner decision):** focus on development first. Milestone 7 (deploy) is executed **after milestone 13 and before milestone 14**, and **no later than 2026-10-26** (leaves 4 days before the Oct 30 deadline for fixing hosting issues). Until then everything runs locally with `npm run dev` + `wrangler dev` (which runs Durable Objects locally exactly like production). Keep the code deploy-ready throughout: server URL from `VITE_SERVER_URL`, CORS/Origin allow-list, hibernation — so M7 is only configuration and commands.
 **Placeholder rule:** until milestone 10, use simple colored boxes with the correct sizes so gameplay and feel can be tuned early; models drop in without code changes (same origins/sizes).
 
 ### Tests (required)
