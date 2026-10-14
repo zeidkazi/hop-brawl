@@ -188,7 +188,8 @@ export class Screens {
     this.applyPreferences(); this.game.setGraphics(this.preferences.graphics);
     this.game.world.animal = this.preferences.animal;
     this.updateAnimal(); this.updateName(); this.game.home.select(this.preferences.animal); this.changeCard(0);
-    const initial = new URL(location.href).searchParams.has('room') ? 'friends' : this.route();
+    let initial: Screen = new URL(location.href).searchParams.has('room') ? 'friends' : this.route();
+    if (initial === 'friends' && !this.preferences.name.trim()) { this.afterName = 'friends'; initial = 'name'; }
     history.replaceState({ screen: initial }, '', location.href);
     this.show(initial);
   }

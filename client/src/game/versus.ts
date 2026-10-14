@@ -188,7 +188,8 @@ export class Versus {
       : state.phase === 'playing' && now - state.startAt < SOLO.HOP_BANNER_MS ? 'HOP!' : '';
     const status = this.element('match-status');
     status.textContent = !this.client.ready ? 'Resyncing…' : me?.waiting ? 'Watching — you join next match' : me?.respawnAt ? `Back in ${Math.max(1, Math.ceil((me.respawnAt - now) / 1000))}…` : me?.hearts === 0 ? 'OUT — watching the brawl' : '';
-    this.element('round-next').textContent = `Next round in ${Math.max(1, Math.ceil((state.nextAt - now) / 1000))}`;
+    const last = state.players.some(p => p.wins >= CONFIG.ROUNDS_TO_WIN) || state.round >= ROOM.MAX_ROUNDS && !!state.winner;
+    this.element('round-next').textContent = `${last ? 'Match results' : 'Next round'} in ${Math.max(1, Math.ceil((state.nextAt - now) / 1000))}`;
     const pair = this.client.pair();
     for (const p of state.players) {
       const actor = this.actors.get(p.id); if (!actor) continue;
