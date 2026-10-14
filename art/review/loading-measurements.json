@@ -1,0 +1,40 @@
+{
+  "production": true,
+  "viewport": "1440x900",
+  "coldCache": true,
+  "runs": [
+    {
+      "milliseconds": 2532,
+      "firstPaint": 140,
+      "bytes": "614572",
+      "total": "614572"
+    },
+    {
+      "milliseconds": 1596.8999999985099,
+      "firstPaint": 48,
+      "bytes": "614572",
+      "total": "614572"
+    },
+    {
+      "milliseconds": 1705.5,
+      "firstPaint": 48,
+      "bytes": "614572",
+      "total": "614572"
+    },
+    {
+      "milliseconds": 1496.1000000014901,
+      "firstPaint": 48,
+      "bytes": "614572",
+      "total": "614572"
+    },
+    {
+      "milliseconds": 1485.2999999970198,
+      "firstPaint": 48,
+      "bytes": "614572",
+      "total": "614572"
+    }
+  ],
+  "htmlBytes": 12225,
+  "maxMs": 2532,
+  "medianMs": 1596.8999999985099
+}
