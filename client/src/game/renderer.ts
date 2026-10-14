@@ -95,10 +95,10 @@ export class GameRenderer {
       this.sun.shadow = tier === 'high' ? this.highShadow : this.mediumShadow;
       this.appliedTier = tier;
     }
-    const ratio = this.quality.pixelRatio(window.devicePixelRatio);
-    this.renderer.setPixelRatio(ratio);
-    this.renderer.setSize(this.width, this.height, false);
-    this.target.setSize(Math.max(1, Math.floor(this.width * ratio)), Math.max(1, Math.floor(this.height * ratio)));
+    const ratio = this.quality.pixelRatio(window.devicePixelRatio, this.playing);
+    const width = Math.ceil(this.width * ratio), height = Math.ceil(this.height * ratio);
+    this.renderer.setDrawingBufferSize(width / ratio, height / ratio, ratio);
+    this.target.setSize(width, height);
   }
 
   setGraphics(choice: GraphicsChoice): void { this.quality.setChoice(choice); this.applyQuality(); }

@@ -58,16 +58,17 @@ export class QualityController {
   reset(): void { this.frames.reset(); this.slowSince = this.fastSince = -1; this.nextCheck = 0; }
 
   sample(now: number, deltaMs: number, playing: boolean): boolean {
+    const beforeResolution = this.resolution;
+    if (!playing) this.resolution = 1;
     this.frames.add(now, deltaMs);
-    if (now < this.nextCheck) return false;
+    if (now < this.nextCheck) return beforeResolution !== this.resolution;
     this.nextCheck = now + VIEW.QUALITY_CHECK_MS;
     this.frames.measure(now);
     const beforeTier = this.tier;
-    const beforeResolution = this.resolution;
     if (this.frames.p90 > VIEW.DOWNGRADE_P90_MS) {
       this.fastSince = -1;
       if (this.slowSince < 0) this.slowSince = now;
-      this.resolution = Math.max(VIEW.RESOLUTION_MIN, this.resolution - VIEW.RESOLUTION_STEP);
+      if (playing) this.resolution = Math.max(VIEW.RESOLUTION_MIN, this.resolution - VIEW.RESOLUTION_STEP);
       if (this.choice === 'auto' && now - this.slowSince >= VIEW.DOWNGRADE_HOLD_MS) {
         this.tier = TIERS[Math.max(0, TIERS.indexOf(this.tier) - 1)]!;
         this.slowSince = now;
@@ -86,7 +87,7 @@ export class QualityController {
     return beforeTier !== this.tier || beforeResolution !== this.resolution;
   }
 
-  pixelRatio(deviceRatio: number): number {
-    return Math.min(deviceRatio, QUALITY[this.tier].pixelRatio) * this.resolution;
+  pixelRatio(deviceRatio: number, playing = true): number {
+    return Math.min(deviceRatio, QUALITY[this.tier].pixelRatio) * (playing ? this.resolution : 1);
   }
 }

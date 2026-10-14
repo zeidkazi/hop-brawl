@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { FrameWindow, QualityController } from '../../client/src/game/quality';
 
 describe('frame pacing and quality', () => {
+  it('restores full menu resolution immediately and never lowers it in menus', () => {
+    const quality = new QualityController(true);
+    quality.resolution = 0.75;
+    expect(quality.pixelRatio(2, false)).toBe(1.5);
+    expect(quality.sample(0, 30, false)).toBe(true);
+    for (let t = 30; t < 5000; t += 30) quality.sample(t, 30, false);
+    expect(quality.resolution).toBe(1);
+    expect(quality.tier).toBe('low');
+  });
   it('measures a rolling window and removes old stalls', () => {
     const frames = new FrameWindow();
     for (let i = 0; i < 100; i++) frames.add(i * 10, i < 90 ? 10 : 30);
