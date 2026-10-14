@@ -74,9 +74,15 @@ def mesh_parts(name, source, config):
             center = Vector(((x - size[0] / 2) * unit, (d - size[2] / 2) * unit, h * unit))
             angle = math.radians(transform['tilt_deg'])
             for vertex in mesh.vertices:
+                vertex.co.x += transform.get('shear_x', 0) * (vertex.co.z - transform.get('shear_origin_h', 0) * unit)
                 relative = vertex.co - center
                 vertex.co.x = center.x + relative.x * math.cos(angle) - relative.z * math.sin(angle)
                 vertex.co.z = center.z + relative.x * math.sin(angle) + relative.z * math.cos(angle)
+                if transform.get('pitch_deg'):
+                    relative = vertex.co - center
+                    pitch = math.radians(transform['pitch_deg'])
+                    vertex.co.y = center.y + relative.y * math.cos(pitch) - relative.z * math.sin(pitch)
+                    vertex.co.z = center.z + relative.y * math.sin(pitch) + relative.z * math.cos(pitch)
             mesh.update()
         # The body origin is bottom-center; tails pivot at their attachment.
         if part in source.get('pivots', {}):
@@ -95,11 +101,28 @@ def mesh_parts(name, source, config):
         objects.append(obj)
     if source.get('transforms'):
         # Keep the whole word's bottom-center origin after individual letter tilts.
-        bottom = min(vertex.co.z for obj in objects for vertex in obj.data.vertices)
+        bottom = min(vertex.co.z + obj.location.z for obj in objects for vertex in obj.data.vertices)
         for obj in objects:
-            for vertex in obj.data.vertices:
-                vertex.co.z -= bottom
+            obj.location.z -= bottom
     return objects
+
+
+def group_parts(objects, name, source, config):
+    """Named animation handles keep component meshes and eye toggles independent."""
+    by_part = {obj['part']: obj for obj in objects}
+    parents = []
+    unit = 1 / config['VOXELS_PER_TILE']
+    for group, parts in source.get('groups', {}).items():
+        parent = bpy.data.objects.new(f'{name}_{group}', None)
+        bpy.context.collection.objects.link(parent)
+        x, h, d = source['group_pivots'][group]
+        parent.location = ((x - source['size'][0] / 2) * unit, (d - source['size'][2] / 2) * unit, h * unit)
+        for part in parts:
+            obj = by_part[part]
+            obj.parent = parent
+            obj.location -= parent.location
+        parents.append(parent)
+    return parents
 
 
 def material():
@@ -253,9 +276,10 @@ def build(name, config, author=False):
     bpy.context.scene.world = bpy.data.worlds.new('PreviewWorld')
     objects = mesh_parts(name, source, config)
     bake(objects, config)
+    parents = group_parts(objects, name, source, config)
     bpy.context.view_layer.update()
     bpy.ops.object.select_all(action='DESELECT')
-    for obj in objects:
+    for obj in [*objects, *parents]:
         obj.select_set(True)
     output = ROOT / 'client' / 'public' / 'models' / f'{name}.glb'
     bpy.ops.export_scene.gltf(filepath=str(output), export_format='GLB', use_selection=True,

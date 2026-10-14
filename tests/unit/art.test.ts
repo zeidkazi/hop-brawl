@@ -9,14 +9,14 @@ interface Gltf {
   bufferViews: { byteOffset?: number; byteStride?: number }[];
   accessors: { count: number; min?: number[]; max?: number[]; bufferView: number; byteOffset?: number; componentType: number }[];
   meshes: { primitives: { attributes: Record<string, number>; indices: number }[] }[];
-  nodes: { name: string; mesh?: number; translation?: number[]; extras?: { part: string; ao_samples: number; ao_min: number; ao_max: number; surface_mesher: string } }[];
+  nodes: { name: string; mesh?: number; translation?: number[]; children?: number[]; extras?: { part: string; ao_samples: number; ao_min: number; ao_max: number; surface_mesher: string } }[];
   materials: { doubleSided?: boolean }[];
 }
 const modelDir = join(process.cwd(), 'client/public/models');
 const models = existsSync(modelDir) ? readdirSync(modelDir).filter(file => file.endsWith('.glb')) : [];
 
 describe('Blender deliverables', () => {
-  it('keeps the logo below 150 KB', () => {
+  it('keeps the logo below the owner-approved byte budget', () => {
     expect(statSync(join(modelDir, 'logo.glb')).size).toBeLessThan(ART.LOGO_GLB_BUDGET);
   });
   it('keeps the complete model library below the shared byte budget', () => {
@@ -47,6 +47,10 @@ describe('Blender deliverables', () => {
         : size === 2 ? bytes.readUInt16LE(offset) : bytes.readUInt32LE(offset);
     };
     const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+    const worldOffset = (nodeIndex: number, axis: number): number => {
+      const parent = doc.nodes.findIndex(node => node.children?.includes(nodeIndex));
+      return (doc.nodes[nodeIndex]!.translation?.[axis] ?? 0) + (parent < 0 ? 0 : worldOffset(parent, axis));
+    };
     for (const node of doc.nodes) {
       if (node.mesh === undefined) continue;
       expect(node.extras!.surface_mesher).toBe('closed-part-greedy-v1');
@@ -72,7 +76,7 @@ describe('Blender deliverables', () => {
         }
         for (let axis = 0; axis < 3; axis++) {
           expect(position.max![axis]! - position.min![axis]!).toBeGreaterThan(0);
-          const offset = node.translation?.[axis] ?? 0;
+          const offset = worldOffset(doc.nodes.indexOf(node), axis);
           lo[axis] = Math.min(lo[axis]!, position.min![axis]! + offset);
           hi[axis] = Math.max(hi[axis]!, position.max![axis]! + offset);
         }

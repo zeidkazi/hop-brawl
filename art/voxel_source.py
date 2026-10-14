@@ -5,6 +5,8 @@ class VoxelSource:
         self.cells = {}
         self.pivots = {}
         self.transforms = {}
+        self.groups = {}
+        self.group_pivots = {}
 
     def box(self, x0, x1, h0, h1, d0, d1, color, part='body'):
         for x in range(x0, x1 + 1):
@@ -38,4 +40,7 @@ class VoxelSource:
         data = {'size': self.size, 'palette': palette, 'voxels': voxels, 'parts': parts, 'pivots': self.pivots}
         if self.transforms:
             data['transforms'] = self.transforms
+        if self.groups:
+            data['groups'] = self.groups
+            data['group_pivots'] = self.group_pivots
         return data
