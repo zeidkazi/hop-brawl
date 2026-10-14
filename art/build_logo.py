@@ -122,8 +122,10 @@ def render(root, objects, name, config):
     bpy.ops.render.render(write_still=True)
 
 
-def build_variant(root, config, blocks):
-    name = 'logo_blocks' if blocks else 'logo_smooth'
+def build_variant(root, config, blocks, street=False):
+    name = 'logo_street' if street else 'logo_blocks' if blocks else 'logo_smooth'
+    if street:
+        config = {**config, 'LOGO_OUTLINE_RATIO': config['LOGO_STREET_OUTLINE'], 'LOGO_CURVE_RESOLUTION': config['LOGO_STREET_RESOLUTION']}
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.context.scene.world = bpy.data.worlds.new('LogoSky')
     font = bpy.data.fonts.load(str(root / 'art/fonts/LilitaOne-Regular.ttf'))
@@ -177,9 +179,12 @@ def build_variant(root, config, blocks):
                 bpy.context.view_layer.update()
                 top = max((face.matrix_world @ v.co).z for v in face.data.vertices)
                 perch = (handle.location.x, 0, top)
-    source = json.loads((root / 'art/voxels/chicken.json').read_text())
-    chicken_parts = mesh_parts('logo_chicken', source, config)
-    chicken = bpy.data.objects.new('logo_chicken', None)
+    mascot = 'fox' if street else 'chicken'
+    source = json.loads((root / f'art/voxels/{mascot}.json').read_text(encoding='utf-8'))
+    chicken_parts = mesh_parts('logo_' + mascot, source, config)
+    for obj in chicken_parts:
+        if obj.get('part') in ('glove_left', 'glove_right', 'headband_stripe'): obj['player_color'] = True
+    chicken = bpy.data.objects.new('logo_' + mascot, None)
     bpy.context.collection.objects.link(chicken)
     chicken.location = perch
     chicken.rotation_euler.z = math.pi
@@ -209,6 +214,8 @@ def build_variant(root, config, blocks):
         export_all_vertex_colors=False, export_vertex_color='NAME', export_vertex_color_name='COLOR_0')
     compact(output)
     print(f'LOGO_SIZE {name}: {output.stat().st_size}', flush=True)
+    from brawler_gear import tint_preview
+    tint_preview(chicken_parts, config['PLAYER_COLORS'][0])
     render(root, objects, name, config)
     bpy.ops.file.pack_all()
     bpy.context.preferences.filepaths.save_version = 0

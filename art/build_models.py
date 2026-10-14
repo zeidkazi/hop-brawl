@@ -318,8 +318,13 @@ def main():
     parser.add_argument('--logo-variants', action='store_true')
     parser.add_argument('--menu-props', action='store_true')
     parser.add_argument('--arena', action='store_true')
+    parser.add_argument('--street-logo', action='store_true')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     config = json.loads(Path(args.config).read_text(encoding='utf-8'))
+    if args.street_logo:
+        from build_logo import build_variant
+        build_variant(ROOT, config, False, street=True)
+        return
     if args.arena:
         from build_arena import build as build_arena
         build_arena(ROOT, config)

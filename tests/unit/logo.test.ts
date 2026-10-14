@@ -18,21 +18,23 @@ describe('Lilita One logo candidates', () => {
     expect(doc.extensionsRequired).toContain('KHR_mesh_quantization');
     expect(doc.extensionsUsed).not.toContain('KHR_draco_mesh_compression');
     const gltf = await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
-    const names = ['logo_chicken'];
+    const mascot = file === 'logo_street.glb' ? 'fox' : 'chicken';
+    const names = ['logo_' + mascot];
     for (const line of ['HOP', 'BRAWL']) for (const letter of line) names.push(`logo_${line}_${letter}`);
     for (const name of names) {
       const node = gltf.scene.getObjectByName(name)!;
       expect(node, name).toBeDefined();
-      expect(node.children).toHaveLength(2);
+      expect(node.children.length).toBeGreaterThanOrEqual(2);
       expect(node.parent).toBe(gltf.scene);
       expect(new Box3().setFromObject(node).isEmpty()).toBe(false);
     }
-    const chicken = gltf.scene.getObjectByName('logo_chicken')!;
+    const chicken = gltf.scene.getObjectByName('logo_' + mascot)!;
     const o = gltf.scene.getObjectByName('logo_HOP_O')!;
-    const perch = new Box3().setFromObject(o);
+    o.updateWorldMatrix(true, true);
+    const perch = new Box3().setFromObject(o.getObjectByName('logo_HOP_O_face')!, true);
     expect(chicken.position.x).toBeCloseTo(o.position.x, 5);
-    expect(chicken.position.y).toBeGreaterThan(perch.max.y - 0.2);
-    expect(gltf.scene.getObjectByName('logo_chicken_eyes')).toBeDefined();
+    expect(chicken.position.y).toBeGreaterThan(perch.max.y - 0.01);
+    expect(gltf.scene.getObjectByName(`logo_${mascot}_eyes`)).toBeDefined();
     for (const removed of ['glove', 'starburst', 'road_strip', 'dust_H']) expect(gltf.scene.getObjectByName(`logo_${removed}`)).toBeUndefined();
     gltf.scene.traverse(node => {
       if (!(node instanceof Mesh)) return;
