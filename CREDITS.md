@@ -58,6 +58,10 @@ The following silhouette previews are original Blender renders of the same anima
 
 ## Street Brawl revisions
 
+| Arena files | Source / license |
+|---|---|
+| `art/arena.blend`, `client/public/models/arena.glb`, `art/previews/arena.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_arena.py ; original CC0 1.0 closed voxel bleachers, spectator, bunting, cone, barrier, spotlight, tuft, flower, foam, hay, pumpkin, snowy bleachers, scarf and neon sign |
+
 All six animal model/source/preview entries above now include original CC0 boxing gloves and white headbands with recolorable stripes authored by https://github.com/zeidkazi/hop-brawl/blob/main/art/brawler_gear.py . One neutral-color GLB per animal supports all player colors at runtime.
 
 | Preview file | Source / license |
