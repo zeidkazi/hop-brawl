@@ -16,13 +16,13 @@ Every imported asset must have an individual file path, source URL and verified 
 
 Font license text verified from the pinned packages. Lilita One and Nunito are bundled locally; no external font requests. Pixelify Sans is retired under §28.
 
-## M2.5 Blender assets — logo A selected; Home review pending
+## M2.5 Blender assets — final boxer/model sign-off pending
 
 The animals, vehicles and props below are original voxel creations built in Blender 5.2.2 LTS. The two logo candidates use the licensed Lilita One font listed above, converted from Blender Text objects; they are rendered artwork, not redistributed font software. Original artwork and arrangements: **CC0 1.0 Universal**, no attribution required; see `art/LICENSE.md` and https://creativecommons.org/publicdomain/zero/1.0/legalcode . The font itself retains OFL 1.1. Preview files are transparent except the logo review on the owner-requested sky-blue background.
 
 | Files | Source URL / original recipe |
 |---|---|
-| `art/home_controls.blend`, `client/public/models/home_controls.glb`, `art/previews/home_controls.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_menu.py ; original CC0 wooden sign and voxel arrows, Lilita One outline labels using the font and OFL notice above |
+| `art/home_controls.blend`, `client/public/models/home_controls.glb`, `art/previews/home_controls.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_menu.py ; original CC0 closed voxel arrows. Section 29.8 removes the old sign/text meshes; name labels now use the UI font above |
 | `client/public/models/logo.glb` | Street Brawl revision; identical to `art/variants/logo_street.glb`, built from https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py using Lilita One (OFL notice above) |
 | `art/logo_smooth.blend`, `art/variants/logo_smooth.glb`, `art/variants/logo_smooth.json`, `art/previews/logo_smooth.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; Lilita One font source above |
 | `art/logo_blocks.blend`, `art/variants/logo_blocks.glb`, `art/variants/logo_blocks.json`, `art/previews/logo_blocks.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; actual Blender Blocks remesh of the same Lilita One text |
@@ -66,7 +66,7 @@ The following silhouette previews are original Blender renders of the same anima
 |---|---|
 | `art/arena.blend`, `client/public/models/arena.glb`, `art/previews/arena.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_arena.py ; original CC0 1.0 closed voxel bleachers, spectator, bunting, cone, barrier, spotlight, tuft, flower, foam, hay, pumpkin, snowy bleachers, scarf and neon sign |
 
-All six animal model/source/preview entries above now include original CC0 boxing gloves and white headbands with recolorable stripes authored by https://github.com/zeidkazi/hop-brawl/blob/main/art/brawler_gear.py . One neutral-color GLB per animal supports all player colors at runtime.
+All six animal model/source/preview entries above now include original CC0 floating boxing gloves and white cuffs authored by https://github.com/zeidkazi/hop-brawl/blob/main/art/brawler_gear.py . Section 29.7 removes the headbands. One neutral-color GLB per animal supports all player colors at runtime.
 
 | Preview file | Source / license |
 |---|---|
@@ -76,6 +76,25 @@ All six animal model/source/preview entries above now include original CC0 boxin
 | `art/previews/fox-player-4.png` | Same fox geometry with purple gear; brawler_gear.py above, CC0 1.0 |
 | `art/previews/boxing-lineup.png` | Contact sheet of the six Blender renders above; original CC0 1.0 artwork |
 | `art/previews/fox-team-colors.png` | Contact sheet of the four fox player-color renders above; original CC0 1.0 artwork |
+
+## Final boxer review and generated feedback
+
+| File / generated asset | Source URL | License |
+|---|---|---|
+| `client/src/game/boxing-feedback.ts`: synthesized tock, whoosh and punch-hit one-shots; contact and dizzy-star geometry | https://github.com/zeidkazi/hop-brawl/blob/main/client/src/game/boxing-feedback.ts | Original CC0 1.0; no recordings, downloads or third-party audio |
+| `art/previews/signoff/lineup.png` | https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-models.mjs | CC0 1.0 contact sheet of original Blender renders |
+| `art/previews/signoff/grass-lineup.png` | Same review script URL above | CC0 1.0 native runtime captures |
+| `art/previews/signoff/silhouettes.png` | Same review script URL above | CC0 1.0 final Blender silhouettes |
+| `art/previews/signoff/fox-colors.png` | Same review script URL above | CC0 1.0 Blender player-color renders |
+| `art/previews/signoff/tap.png` | Same review script URL above | CC0 1.0 runtime pose strip |
+| `art/previews/signoff/combo.png` | Same review script URL above | CC0 1.0 runtime pose strip |
+| `art/previews/signoff/victory.png` | Same review script URL above | CC0 1.0 runtime pose strip |
+| `art/previews/signoff/event-moves.png` | Same review script URL above | CC0 1.0 runtime guard/hop/punch/stun/shake captures |
+| `art/previews/signoff/crowd.png` | Same review script URL above | CC0 1.0 runtime idle/cheer captures |
+| `art/previews/signoff/logo-match.png` | Same review script URL above | CC0 1.0 original artwork; Lilita One font provenance above |
+| `art/previews/signoff/home-desktop.png` | Same review script URL above | CC0 1.0 runtime capture; font provenance above |
+| `art/previews/signoff/home-mobile.png` | Same review script URL above | CC0 1.0 runtime capture; font provenance above |
+| `art/previews/signoff/measurements.png` | Same review script URL above | Original project measurement table; CC0 1.0 |
 
 ## Announcer acquisition (milestone 11)
 

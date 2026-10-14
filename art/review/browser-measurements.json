@@ -1,0 +1,80 @@
+{
+  "productionUrl": "http://127.0.0.1:4173",
+  "cache": "disabled and cleared; new context each run",
+  "timings": [
+    {
+      "milliseconds": 1470.1999999955297,
+      "lastModelMs": 264.19999999552965,
+      "modelRequests": 15
+    },
+    {
+      "milliseconds": 688,
+      "lastModelMs": 227.59999999403954,
+      "modelRequests": 15
+    },
+    {
+      "milliseconds": 934.7999999970198,
+      "lastModelMs": 226.19999999552965,
+      "modelRequests": 15
+    },
+    {
+      "milliseconds": 1080.3999999985099,
+      "lastModelMs": 283.19999999552965,
+      "modelRequests": 15
+    },
+    {
+      "milliseconds": 1051.8999999985099,
+      "lastModelMs": 216.89999999850988,
+      "modelRequests": 15
+    }
+  ],
+  "desktopMetrics": {
+    "frames": 322,
+    "calls": 82,
+    "triangles": 88848,
+    "geometries": 141,
+    "textures": 6,
+    "delta": 16.699999999999818,
+    "tier": "high",
+    "choice": "auto",
+    "resolution": 1,
+    "pixelRatio": 1,
+    "p95": 16.700000000000728,
+    "worst": 16.800000000000182,
+    "programs": 65,
+    "rows": 25,
+    "generatedRows": 25,
+    "particles": 0,
+    "station": "home",
+    "mobile": false,
+    "animal": "fox",
+    "animalOffset": 0,
+    "crowdCheering": false,
+    "move": "idle"
+  },
+  "mobileMetrics": {
+    "frames": 311,
+    "calls": 75,
+    "triangles": 81470,
+    "geometries": 141,
+    "textures": 5,
+    "delta": 100,
+    "tier": "medium",
+    "choice": "auto",
+    "resolution": 1,
+    "pixelRatio": 1.5,
+    "p95": 16.800000000000182,
+    "worst": 16.800000000000182,
+    "programs": 64,
+    "rows": 25,
+    "generatedRows": 25,
+    "particles": 0,
+    "station": "home",
+    "mobile": true,
+    "animal": "fox",
+    "animalOffset": 0,
+    "crowdCheering": false,
+    "move": "idle"
+  },
+  "errors": []
+}

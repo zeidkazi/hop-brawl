@@ -1,0 +1,151 @@
+{
+  "totalBytes": 643416,
+  "limit": 2000000,
+  "models": [
+    {
+      "file": "arena.glb",
+      "bytes": 101636,
+      "meshes": 17,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "car.glb",
+      "bytes": 14916,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "cat.glb",
+      "bytes": 40988,
+      "meshes": 7,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "chicken.glb",
+      "bytes": 32020,
+      "meshes": 6,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "crate.glb",
+      "bytes": 16208,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "fox.glb",
+      "bytes": 38804,
+      "meshes": 7,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "frog.glb",
+      "bytes": 32892,
+      "meshes": 6,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "hatchback.glb",
+      "bytes": 14088,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "home_controls.glb",
+      "bytes": 5972,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "log.glb",
+      "bytes": 8612,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "logo.glb",
+      "bytes": 155500,
+      "meshes": 23,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "oak.glb",
+      "bytes": 20828,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "penguin.glb",
+      "bytes": 29156,
+      "meshes": 6,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "pig.glb",
+      "bytes": 38336,
+      "meshes": 7,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "taxi.glb",
+      "bytes": 18128,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "train_carriage.glb",
+      "bytes": 28240,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "train_engine.glb",
+      "bytes": 27816,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    },
+    {
+      "file": "truck.glb",
+      "bytes": 19276,
+      "meshes": 1,
+      "boundarySegments": 0,
+      "flatMeshes": 0,
+      "issues": []
+    }
+  ],
+  "pass": true
+}
