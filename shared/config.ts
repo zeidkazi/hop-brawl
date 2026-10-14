@@ -61,6 +61,16 @@ export const CONFIG = Object.freeze({
   HOME_DIORAMA_SEED: 20261030,
 } as const);
 
+export const ROOM = Object.freeze({
+  CODE_ALPHABET: 'ABCDEFGHJKLMNPQRSTUVWXYZ', CODE_LENGTH: 4, CREATE_ATTEMPTS: 10,
+  COUNTDOWN_MS: 3000, FREEZE_MS: 800, ROUND_END_MS: 4000, MAX_ROUNDS: 3,
+  SNAPSHOT_MS: 50, SAVE_MS: 1000, PING_MS: 15000, CLOCK_SYNC_MS: 10000, STALE_MS: 10000,
+  MAX_MESSAGE_BYTES: 4096, MAX_EVENTS: 16, MAX_PENDING: 32,
+  MIN_ASPECT: .35, MAX_ASPECT: 3, DEFAULT_ASPECT: 1.6,
+  RESPAWN_LOOKAHEAD: 20, RESPAWN_ROW_OFFSET: 2, SNAP_DISTANCE: 3,
+  SPAWNS: [[3, 5], [2, 4, 6], [1, 3, 5, 7]],
+} as const);
+
 /** Additional generator/hitbox numbers specified in §4 and §10. */
 export const WORLD = Object.freeze({
   START_GRASS_LAST_ROW: 4,

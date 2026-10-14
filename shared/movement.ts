@@ -13,6 +13,8 @@ export class Movement {
   fromX = this.x; fromZ = this.z; toX = this.x; toZ = this.z;
   time = 0; hopStart = 0; camZ = 0; distance = 0; hops = 0;
   firstHopAt: number | null = null;
+  externalCamera = false;
+  invulnerableUntil = 0;
   logIndex = -1; slotIndex = -1;
   private aimX = 0;
   private readonly landing = { log: -1, slot: -1, x: 0 };
@@ -26,11 +28,20 @@ export class Movement {
   belowScreen: ((x: number, z: number, camZ: number) => boolean) | null = null;
   private readonly hazard = { x: 0, z: 0 };
   constructor(readonly rowAt: (z: number) => Row) {}
+  save() {
+    return { x: this.x, z: this.z, fromX: this.fromX, fromZ: this.fromZ, toX: this.toX, toZ: this.toZ,
+      time: this.time, hopStart: this.hopStart, camZ: this.camZ, distance: this.distance, hops: this.hops,
+      firstHopAt: this.firstHopAt, logIndex: this.logIndex, slotIndex: this.slotIndex, aimX: this.aimX,
+      hopping: this.hopping, onLog: this.onLog, dead: this.dead, direction: this.direction, buffered: this.buffered,
+      externalCamera: this.externalCamera, invulnerableUntil: this.invulnerableUntil };
+  }
+  restore(state: ReturnType<Movement['save']>): void { Object.assign(this, state); }
   reset(): void {
     this.x = this.fromX = this.toX = SOLO.SPAWN_X;
     this.z = this.fromZ = this.toZ = SOLO.SPAWN_Z;
     this.time = this.hopStart = this.camZ = this.distance = this.hops = 0;
     this.firstHopAt = null;
+    this.invulnerableUntil = 0;
     this.logIndex = this.slotIndex = -1;
     this.hopping = this.onLog = false; this.dead = null; this.buffered = null; this.direction = 'up';
   }
@@ -99,9 +110,10 @@ export class Movement {
       if (row.kind === 'road' && vehicleHits(row, this.hazard.x, this.time)) this.kill('FLATTENED!');
       else if (row.kind === 'rail' && trainHits(row, this.hazard.x, this.time)) this.kill('DERAILED!');
       else if (this.onLog && carriedOffEdge(this.x)) this.kill('SWEPT AWAY!');
+      else if (!this.hopping && row.kind === 'river' && !this.onLog) this.kill('SPLASH!');
       const auto = this.camZ + (this.firstHopAt === null ? 0 : scrollSpeed(this.time - this.firstHopAt)) * dt;
       const follow = Math.min(this.z - CONFIG.LEADER_MAX_AHEAD_ROWS, this.camZ + CONFIG.CAMERA_MAX_SPEED * dt);
-      this.camZ = Math.max(auto, follow);
+      if (!this.externalCamera) this.camZ = Math.max(auto, follow);
       if (this.belowScreen ? this.belowScreen(this.x, this.z, this.camZ) : this.hazard.z < this.camZ) this.kill('LEFT BEHIND!');
       if (!this.hopping && !this.dead && this.buffered) {
         const queued = this.buffered; this.buffered = null; this.input(queued);
@@ -110,6 +122,8 @@ export class Movement {
   }
   private kill(cause: DeathCause): void {
     if (this.dead) return;
+    if (cause !== 'LEFT BEHIND!' && this.time < this.invulnerableUntil) return;
     this.dead = cause; this.buffered = null; this.onDeath?.(cause);
   }
 }
+export type MovementState = ReturnType<Movement['save']>;
