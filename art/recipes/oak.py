@@ -2,19 +2,22 @@ from voxel_source import VoxelSource
 
 
 def create():
-    v = VoxelSource([10, 20, 10])
+    v = VoxelSource([14, 20, 14])
     bark, bark_light, dark, green, light = '#88583B', '#AA7750', '#3F854A', '#65AE52', '#87C663'
-    v.box(4, 5, 0, 12, 4, 5, bark)
-    v.box(4, 4, 1, 9, 6, 6, bark_light)
-    v.box(2, 7, 7, 8, 4, 5, bark).box(2, 3, 8, 12, 4, 5, bark)
-    v.box(6, 7, 9, 12, 4, 5, bark)
-    v.box(2, 7, 9, 12, 2, 7, dark)
-    v.box(0, 9, 11, 14, 3, 6, green)
-    v.box(2, 7, 11, 15, 0, 9, green)
-    v.box(1, 8, 12, 16, 1, 8, green)
-    v.box(2, 7, 16, 18, 2, 7, light)
-    v.box(3, 6, 19, 19, 3, 6, light)
-    v.box(0, 2, 14, 15, 3, 5, light)
-    v.box(6, 8, 15, 17, 3, 6, green)
-    v.box(3, 5, 14, 16, 8, 9, light)
+    # Four-voxel trunk: twice the original two-voxel width and depth.
+    v.box(5, 8, 0, 12, 5, 8, bark)
+    v.box(5, 5, 1, 8, 8, 8, bark_light)
+    v.box(4, 9, 0, 1, 5, 8, bark).box(5, 8, 0, 1, 4, 9, bark)
+    v.box(2, 11, 6, 8, 5, 8, bark)
+    v.box(2, 4, 8, 11, 5, 8, bark).box(9, 11, 8, 11, 5, 8, bark)
+    # Broad interlocking blocks and low spreading tiers, not a ball on a stick.
+    v.box(1, 12, 8, 11, 2, 11, dark)
+    v.box(0, 13, 10, 13, 3, 10, green)
+    v.box(2, 11, 10, 14, 0, 13, green)
+    v.box(1, 12, 13, 16, 2, 11, green)
+    v.box(3, 10, 16, 18, 3, 10, light)
+    v.box(4, 9, 19, 19, 4, 9, light)
+    v.box(0, 3, 13, 14, 4, 8, light)
+    v.box(9, 13, 14, 16, 4, 8, green)
+    v.box(4, 7, 14, 16, 10, 13, light)
     return v
