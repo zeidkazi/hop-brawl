@@ -153,6 +153,7 @@ export class GameRenderer {
     if (time * 1000 > VIEW.FRAME_WINDOW_MS && this.quality.sample(now, delta, this.playing)) this.applyQuality();
     this.rig.update(dt, time);
     this.world.requestWindow(this.rig.camZ);
+    this.world.setView(this.rig.camera);
     this.world.update(time);
     this.particles.update(dt);
     this.draw();

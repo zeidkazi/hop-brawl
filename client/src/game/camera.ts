@@ -59,6 +59,7 @@ export class CameraRig {
 
   go(station: Station): void {
     this.station = station;
+    this.drift = 0;
     if (station === 'soloEnd') { this.flight = 1; return; }
     this.destination();
     this.fromFocus.copy(this.focus);
@@ -76,11 +77,11 @@ export class CameraRig {
         : this.station === 'search' ? VIEW.SEARCH_DISTANCE
           : this.station === 'vs' ? VIEW.VS_DISTANCE
             : this.station === 'roundEnd' ? VIEW.WINNER_DISTANCE : VIEW.HOME_DISTANCE;
-    const distance = this.station === 'gameplay' ? baseDistance : baseDistance * Math.max(1, 0.8 / this.aspect);
+    const distance = this.station === 'gameplay' ? baseDistance : baseDistance * Math.max(1, VIEW.PORTRAIT_DISTANCE_FACTOR / this.aspect);
     this.goalFocus.set(this.station === 'matchEnd' ? VIEW.PODIUM_X : 4,
-      this.station === 'home' && mobile ? -2 : 0,
+      this.station === 'home' && mobile ? VIEW.HOME_PORTRAIT_Y : 0,
       this.station === 'gameplay' ? -this.camZ - (CONFIG.VIEW_ROWS - 1) / 2 : -1);
-    if (this.station === 'home' && !mobile) this.goalFocus.x += 3;
+    if (this.station === 'home' && !mobile) this.goalFocus.x += VIEW.HOME_DESKTOP_X;
     this.goal.copy(back).multiplyScalar(distance).add(this.goalFocus);
   }
 

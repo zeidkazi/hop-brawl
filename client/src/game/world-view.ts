@@ -1,8 +1,9 @@
 import {
-  BoxGeometry, CircleGeometry, Color, DynamicDrawUsage, Float32BufferAttribute,
+  Box3, BoxGeometry, CircleGeometry, Color, DynamicDrawUsage, Float32BufferAttribute, Frustum,
   Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial,
   Object3D, Sphere, Vector3,
 } from 'three';
+import type { Camera } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ANIMAL_SIZES, COLORS, CONFIG, VIEW, WORLD } from '../../../shared/config';
 import { laneItemX, trainX } from '../../../shared/hazards';
@@ -56,6 +57,10 @@ export class WorldView {
   private readonly transform = new Object3D();
   private readonly color = new Color();
   private readonly matrix = new Matrix4();
+  private readonly frustum = new Frustum();
+  private readonly rowBounds = new Box3();
+  private readonly palette = new Map<string, Color>();
+  private hasView = false;
   private seed: number = CONFIG.HOME_DIORAMA_SEED;
   private preparedBottom = NaN;
   private requestedBottom = 0;
@@ -71,6 +76,10 @@ export class WorldView {
   generatedRows = 0;
 
   constructor() {
+    for (const value of Object.values(COLORS)) {
+      if (typeof value === 'string') this.palette.set(value, new Color(value));
+      else for (const color of value) this.palette.set(color, new Color(color));
+    }
     whiteVertices(this.cube);
     const geometry = groundGeometry()!;
     for (let i = 0; i < KINDS.length; i++) {
@@ -153,6 +162,11 @@ export class WorldView {
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
+    // Batch bounds follow the recycled window even thousands of rows from home.
+    for (const mesh of [...this.grounds, this.obstacles, this.vehicles, this.logs, this.crates, this.blobs]) {
+      mesh.boundingSphere!.center.set(4, 0, -camZ - CONFIG.VIEW_ROWS / 2);
+      mesh.boundingSphere!.radius = VIEW.POOL_ROWS;
+    }
   }
 
   private readonly flushWindow = (): void => { this.pending = false; this.prepareWindow(this.requestedBottom); };
@@ -188,7 +202,7 @@ export class WorldView {
     this.transform.scale.set(sx, sy, sz);
     this.transform.updateMatrix();
     mesh.setMatrixAt(index, this.transform.matrix);
-    mesh.setColorAt(index, this.color.set(color));
+    mesh.setColorAt(index, this.palette.get(color)!);
   }
 
   private blob(x: number, z: number, sx: number, sz: number): void {
@@ -199,11 +213,21 @@ export class WorldView {
     this.blobs.setMatrixAt(this.blobs.count++, this.transform.matrix);
   }
 
+  setView(camera: Camera): void {
+    camera.updateMatrixWorld();
+    this.matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    this.frustum.setFromProjectionMatrix(this.matrix);
+    this.hasView = true;
+  }
+
   update(time: number): void {
     this.waterUniform.value = time;
     this.obstacles.count = this.vehicles.count = this.logs.count = this.crates.count = this.animals.count = this.blobs.count = this.podium.count = 0;
     for (let i = 0; i < this.rows.length; i++) {
       const row = this.rows[i]!.row!;
+      this.rowBounds.min.set(VIEW.DECOR_MIN_X, -VIEW.GROUND_DEPTH, -row.z - 0.5);
+      this.rowBounds.max.set(VIEW.DECOR_MAX_X + 1, 2, -row.z + 0.5);
+      if (this.hasView && !this.frustum.intersectsBox(this.rowBounds)) continue;
       if (row.kind === 'grass') {
         for (let j = 0; j < row.obstacles.length; j++) {
           const obstacle = row.obstacles[j]!;
@@ -240,5 +264,11 @@ export class WorldView {
     this.crates.instanceMatrix.needsUpdate = this.animals.instanceMatrix.needsUpdate = this.blobs.instanceMatrix.needsUpdate = this.podium.instanceMatrix.needsUpdate = true;
     this.obstacles.instanceColor!.needsUpdate = this.vehicles.instanceColor!.needsUpdate = this.logs.instanceColor!.needsUpdate = true;
     this.crates.instanceColor!.needsUpdate = this.animals.instanceColor!.needsUpdate = this.podium.instanceColor!.needsUpdate = true;
+    if (this.tier === 'low') {
+      this.color.copy(this.palette.get(COLORS.water)!).multiplyScalar(1 + Math.sin(time * VIEW.WATER_SPEED) * VIEW.WATER_AMPLITUDE);
+      const water = this.grounds[2]!;
+      for (let i = 0; i < water.count; i++) water.setColorAt(i, this.color);
+      if (water.instanceColor) water.instanceColor.needsUpdate = true;
+    }
   }
 }
