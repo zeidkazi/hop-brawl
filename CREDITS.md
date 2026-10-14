@@ -23,7 +23,7 @@ The animals, vehicles and props below are original voxel creations built in Blen
 | Files | Source URL / original recipe |
 |---|---|
 | `art/home_controls.blend`, `client/public/models/home_controls.glb`, `art/previews/home_controls.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_menu.py ; original CC0 wooden sign and voxel arrows, Lilita One outline labels using the font and OFL notice above |
-| `client/public/models/logo.glb` | Owner-selected A; identical to `art/variants/logo_smooth.glb`, built from https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py using Lilita One (OFL notice above) |
+| `client/public/models/logo.glb` | Street Brawl revision; identical to `art/variants/logo_street.glb`, built from https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py using Lilita One (OFL notice above) |
 | `art/logo_smooth.blend`, `art/variants/logo_smooth.glb`, `art/variants/logo_smooth.json`, `art/previews/logo_smooth.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; Lilita One font source above |
 | `art/logo_blocks.blend`, `art/variants/logo_blocks.glb`, `art/variants/logo_blocks.json`, `art/previews/logo_blocks.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; actual Blender Blocks remesh of the same Lilita One text |
 | `art/previews/logo-comparison.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; side-by-side native Blender renders |
@@ -43,7 +43,7 @@ The animals, vehicles and props below are original voxel creations built in Blen
 | `art/voxels/train_carriage.json`, `art/train_carriage.blend`, `client/public/models/train_carriage.glb`, `art/previews/train_carriage.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/train_carriage.py |
 | `art/voxels/log.json`, `art/log.blend`, `client/public/models/log.glb`, `art/previews/log.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/log.py |
 
-The owner approved all six animals, oak and crate. The lowered sedan, six new vehicle/log models, composed logo and intro pose strip await approval. The logo reuses the approved original chicken geometry with a forward viewing pitch. The runtime imports these only after the M2.5 preview approval gate. Remaining props arrive in M10 using the same mandatory Blender pipeline.
+Earlier animal/vehicle geometry was approved before section 29. The Street Brawl gear, arena and gloved-fox logo now supersede the old Home appearance; final Home approval is pending. Older silhouettes document the original anatomy before boxing gear.
 
 The following silhouette previews are original Blender renders of the same animal geometry, with black material on white. Each is also **CC0 1.0 Universal**, with the same license above.
 

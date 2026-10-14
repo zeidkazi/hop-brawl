@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** M2.5 Home rebuild is ready for visual review before M3. The owner selected smooth Lilita One logo A (182.9 KB); Home now uses that animated 3D logo, approved Blender animals/vehicles/trees, in-scene animal arrows/sign, Lilita One UI and full menu resolution. The 390x844 and 1440x900 screenshots remain the approval gate before Solo development. No public deployment or cover image exists yet.
+**Status:** M2.5 Street Brawl identity is awaiting Home visual approval before M3. All six animals wear recolorable boxing gloves/headbands; fox is the default and logo mascot. Toon outlines, saturated colors, an instanced arena crowd and corrected carousel direction follow SPEC section 29. Solo and multiplayer remain scheduled for subsequent milestones; no public deployment exists yet.
 
 ## Local development
 

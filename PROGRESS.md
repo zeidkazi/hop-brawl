@@ -5,9 +5,9 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 ## Status
 
 - Completed milestones: M1 (world generation/hazards) and M2 (persistent-canvas architecture).
-- Current phase: M2.5 Home screenshot approval. The owner selected smooth logo A and authorized the Home rebuild. The corrected live Home is implemented; WAIT for approval of the 390x844 and 1440x900 screenshots before M3. M1 is owner-verified. Do not tag M2.5 complete yet.
+- Current phase: M2.5 Street Brawl identity under SPEC section 29. The previous Home was NOT approved. All five requested visual steps are implemented for the next 390x844 / 1440x900 Home review. M3 awaits approval; do not tag M2.5 complete before owner approval.
 - Owner approved the plan and M1 on 2026-10-14. Deployment is deferred until after M13 and before M14, no later than 2026-10-26; no deployment without the owner's pre-deploy approval.
-- Read SPEC.md including the complete new §28, which overrides earlier art/UI/fallback directions where they conflict.
+- Read SPEC.md including sections 28 and 29; Street Brawl overrides the earlier art direction. Owner section 29 committed as 65e3131, docs(spec): add street brawl visual identity.
 - Initial commit c6ec455 (`docs: add game spec`) pushed to `origin/main` at https://github.com/zeidkazi/hop-brawl.git.
 - Owner's SPEC change committed as 7b4041c (`docs(spec): defer deployment milestone`).
 
@@ -52,7 +52,7 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 - Latest vehicle review approved car, hatchback, taxi, engine/carriage and log. Truck rear cab glass was replaced by a solid painted wall; removed the forward grey cargo trim. Its recipe, voxel JSON, .blend, GLB and preview were committed separately. All voxel source solids still pass exact volume/opaque-material checks.
 - npm run check passes: 69 tests in 14 files, strict typecheck and production build. Tests include 15 voxel models plus two actual logo loader round trips, named hierarchy, opacity, normal precision, perch placement, file dimensions, font/layout metadata and <200 KB guards. Previous browser checks remain the M2 baseline; no Home runtime code changed during this asset revision. Lilita One font URL/OFL notice and every new artwork file are in CREDITS.md.
 
-## M2.5 Home review checkpoint (awaiting owner approval)
+## M2.5 first Home review checkpoint (rejected; superseded by section 29)
 
 - Owner chose smooth Lilita One logo A. Runtime logo is the unchanged 182,904-byte approved export, with sequential HOP/BRAWL letter drops, squash/stretch, chicken landing on O last, idle bob and blinking. Reduced motion bypasses the intro and idle movement.
 - Home uses the persistent canvas and scene: approved Blender animals, instanced oak/traffic/logs, grass strip, roads above/below, river, sky gradient, slow camera drift. Six animal variants and sign labels load once and warm during Loading, including blinkable meshes. High/Medium use waves; Low uses animated flat water and blob shadows.
@@ -63,6 +63,21 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 - Screenshots: output/playwright/home-review/desktop.png (1440x900 viewport), mobile.png (390x844 viewport, DPR 2). Reviewed locally; awaiting owner visual approval. The local dev server is at http://localhost:5173/ and http://192.168.7.7:5173/ on the same Wi-Fi.
 - Five-second host-GPU samples: desktop High 50 draw calls / 132,050 triangles, touch Medium 40 calls / 72,746 triangles; rolling p95 about 16.7 ms. These measure Home on Intel Iris Xe, not real-phone or full-game performance.
 - No M3 gameplay work started. PLAY/SOLO/Create/Join stay disabled until their implementation milestones. No deployment and no M2.5 completion tag before Home approval.
+
+## M2.5 Street Brawl review checkpoint
+
+- All six animals have separate closed voxel glove, headband and stripe meshes. Neutral AO colors plus runtime material tint support coral/blue/green/purple without duplicate character GLBs. Front paws/wings are visually replaced, glove pivots are at the wrists, and headbands sit flush above the eyes. Each animal revision is a separate tested commit.
+- Preview sheets: art/previews/boxing-lineup.png (all six, coral) and fox-team-colors.png (four colors). Individual animal/player-color PNGs remain available. Geometry remains bottom-centered; added gear is cosmetic and does not change gameplay hitboxes.
+- Inverted back-face hulls use Ink and 1.03 scale. High outlines characters/vehicles/props/logo; Medium characters/vehicles/logo; Low characters only. Hulls share instance buffers and cached geometry. Eight logo letter faces/backings merge once during loading; Low uses their prewarmed face-only geometry.
+- Saturated Meadow palette, yellow dashes, red/white kerbs, turquoise water with instanced foam, warm horizon/cool sky, stronger key and cool rim light. Home layout widens to show the event roadside without covering the animal/sign.
+- Blender arena kit contains bleachers, a blocky spectator, bunting, cones/barriers, spotlight tower, tufts/flowers/foam, autumn hay/pumpkins, snowy bleachers/scarves, and neon signs. Repeated props are instanced; spectators use shared shader time for idle bob and a K.O. cheer impulse. Decorations remain outside columns 0..8; grass-row trees remain inside, clear of the Home selection stage.
+- Smooth Lilita One Street Brawl logo replaces the chicken with the gloved fox and thickens Ink backing to 11% of cap height. Full-precision positions and compact normals/colors keep the export at 155,892 bytes, below 200 KB. All letter/mascot animation handles remain independent; fox lands on O last and blinks while idle.
+- Fox is the default for new/corrupt-storage sessions; a user's valid saved animal remains respected. Next exits left/enters right; Previous exits right/enters left; swipes follow finger direction and keyboard arrows match.
+- Screenshots and browser metrics are under ignored output/playwright/home-review/. Final Home approval remains pending. No M3 gameplay or deployment work has started.
+- Shove/K.O. presentation hooks are ready for the corresponding future gameplay events; no fake gameplay is introduced to exercise them. Runtime biome blending and full match event wiring remain in their scheduled gameplay/art milestones.
+- Final validation: `npm run check` passes 82 unit tests in 16 files, strict typechecking and the production build. `npm run test:e2e` passes all 12 desktop/touch browser tests, including outgoing/incoming carousel signs, finger-direction swipes, crowd cheer lifetime, persistent resources and DPR 1/1.25/1.5/2 canvas coverage. No page or console errors in the final screenshot runs.
+- Final screenshots: output/playwright/home-review/desktop.png at 1440x900; mobile.png at a 390x844 CSS viewport and DPR 2. Five-second host-GPU samples: desktop High 82 calls / 97,846 triangles, mobile Medium 73 calls / 89,122 triangles (below the Medium <80 target); rolling p95 16.7–16.8 ms. These are Intel Iris Xe browser measurements, not a real-phone or full-match performance certification. Menus remain at full tier resolution (Medium pixel ratio capped at 1.5).
+- Runtime GLBs total 790,228 bytes, below 3 MB; main production JS is about 208 KB gzip, below 400 KB. Vite still emits its default uncompressed-chunk advisory. Dev server remains at http://localhost:5173/ and http://192.168.7.7:5173/ for the same-Wi-Fi phone review. No M2.5 completion tag until owner acceptance.
 
 ## Setup preflight (§27)
 
@@ -91,7 +106,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Known bugs / unresolved checks
 
-- The rebuilt Home is awaiting owner visual approval. Solo remains disabled until M3; multiplayer actions remain disabled until networking milestones.
+- The Street Brawl Home is awaiting owner visual approval; the previous Home was rejected. Solo remains disabled until M3; multiplayer actions remain disabled until networking milestones.
 - Worker/Room implementation and wrangler dev arrive in M4. Do not add fake server endpoints just to make an unavailable server command appear to work.
 - Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only Home on the host GPU.
 - Cloudflare and Vercel authentication and free-account plan verification remain required before deployment.
@@ -99,7 +114,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Next exact step
 
-WAIT for the owner's approval of the rebuilt Home screenshots at 390x844 and 1440x900. Logo A is selected and integrated; do not ask for another asset choice. After Home approval, record acceptance, complete/tag/push m2.5-art-direction, then begin M3 Solo with responsive PC/phone controls, hopping, hazards/death, camera and tile-flip retry. Preserve the persistent canvas, full menu resolution and warmed models. Stop after M3 for owner playtesting.
+WAIT for the owner's approval of the Street Brawl Home screenshots at 390x844 and 1440x900. Section 29 supersedes the former chicken/pastel Home and logo. After approval, record acceptance, complete/tag/push m2.5-art-direction, then begin M3 Solo. Preserve the persistent canvas, full menu resolution, warmed models, brawler gear and tiered outlines. Stop after M3 for owner playtesting.
 
 ## Milestone plan / gates
 
@@ -123,7 +138,7 @@ WAIT for the owner's approval of the rebuilt Home screenshots at 390x844 and 144
 
 ## How to run
 
-Blender pipeline (local executable already configured in ignored .env.local): `npm run art:build -- --version`, `npm run art:build -- --self-test`, `npm run art:build -- --model chicken`, or `npm run art:build` for all voxel sources; `npm run art:build -- --logo-variants` rebuilds both Text-based logo candidates and their comparison. Add `--author` when regenerating a model's voxel JSON from its edited recipe. See art/README.md. Use --menu-props to rebuild the sign/arrows. Home loads the approved runtime models; review asset PNGs directly from art/previews/.
+Blender pipeline (local executable already configured in ignored .env.local): `npm run art:build -- --version`, `npm run art:build -- --self-test`, `npm run art:build -- --model chicken`, or `npm run art:build` for all voxel sources. Add `--author` when regenerating a model's voxel JSON from its edited recipe. Use `--street-logo` for the active fox logo, `--arena` for roadside props, and `--menu-props` for sign/arrows. The `--logo-variants` command rebuilds the archived A/B candidates. See art/README.md for exports and runtime copy steps; review asset PNGs directly from art/previews/.
 
 From C:\Users\zeidk\Desktop\game_challenge:
 
@@ -134,7 +149,7 @@ npm run dev
 
 Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Tap the top-left name pill, change animals by tapping the animal or using arrows/swipe, open Friends/Settings/How to Play and Settings > Credits, and return using Back/Esc. The world must stay visible and animated throughout. Reload to check saved preferences; incognito should keep its own session. Try http://localhost:5173/?room=ABCD for prefilled code boxes. Gameplay/multiplayer buttons are intentionally disabled at M2.
 
-Open http://localhost:5173/?debug=1 for the FPS overlay. Expand the debug panel to change stations, toggle menu visibility, scroll camZ, and trigger Tile flip/Dust burst/Toast. In Settings switch Graphics High/Low/Auto and Reduce motion. Resize or rotate: the canvas should remain visible with smooth reframing.
+Open http://localhost:5173/?debug=1 for the FPS overlay. Expand the debug panel to change stations, toggle menu visibility, scroll camZ, and trigger Tile flip/Dust burst/Toast/Crowd K.O./Glove punch. In Settings switch Graphics High/Low/Auto and Reduce motion. Resize or rotate: the canvas should remain visible with smooth reframing. Next must exit left and enter right; Previous must do the reverse. Swipes follow the finger.
 
 For a phone on the same Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open `http://<PC-LAN-IP>:5173/`. If another dev server owns 5173, stop that terminal's server first. Verify the animal remains above the portrait menu, swipe the carousel, operate Settings, rotate the phone, and check for flashes/stalls. Permit private-network access if Windows prompts; no firewall settings are changed by the build. Server launch for the M2 handoff uses this LAN-capable command.
 
