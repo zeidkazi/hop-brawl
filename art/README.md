@@ -8,7 +8,7 @@ npm run art:build -- --self-test
 npm run art:build -- --model chicken
 npm run art:build -- --model chicken --author
 npm run art:build -- --model chicken --silhouette-only
-npm run art:build -- --logo-poses
+npm run art:build -- --logo-variants
 npm run art:build
 ```
 
@@ -18,25 +18,31 @@ Normal builds read committed voxel JSON. `--author` regenerates that JSON from `
 
 Voxel source coordinates use width, height, depth. One tile is 12 voxels; model origin is bottom-center, forward is Blender +Y / glTF -Z. Optional `parts` maps part names to voxel indices so eyes and tails can animate independently. These parts still share the one opaque vertex-color material.
 
-The Blender builder removes faces inside each solid part and greedily merges adjacent coplanar faces of the same palette color before baking Cycles AO at 64 samples. Parts stay closed at their attachment surfaces, including eyes and tails. All geometry comes from full voxel volumes; there are no detached decorative planes. Baked vertex colors export to texture-free GLBs without Draco. The logo must remain below `ART.LOGO_GLB_BUDGET` (200,000 bytes); the complete library must remain below `ART.TOTAL_GLB_BUDGET`. Per-part transforms support reproducible letter tilts, the chicken's forward pitch, and the owner-requested continuous R diagonal via a volume-preserving shear. Optional groups expose animation handles while keeping blinkable eyes separate.
+The Blender builder removes faces inside each solid part and greedily merges adjacent coplanar faces of the same palette color before baking Cycles AO at 64 samples. Parts stay closed at their attachment surfaces, including eyes and tails. All geometry comes from full voxel volumes; there are no detached decorative planes. Baked vertex colors export to texture-free GLBs without Draco. The logo must remain below `ART.LOGO_GLB_BUDGET` (200,000 bytes); the complete library must remain below `ART.TOTAL_GLB_BUDGET`. Optional groups expose animation handles while keeping blinkable eyes separate.
 
 Deliverables per asset: `art/voxels/<name>.json`, editable `art/<name>.blend`, `client/public/models/<name>.glb`, and transparent three-quarter `art/previews/<name>.png`. Preview lights/camera are excluded from GLB export. `--silhouette-only` opens the saved Blender scene and renders the same camera with black emission geometry on white, saving `<name>-silhouette.png` without changing the approved model, scene or color preview.
 
-M2.5 approval gate: all six animals, oak and crate are owner-approved. The lowered sedan, hatchback, taxi, truck, train engine/carriage, log and composed logo are awaiting review. Home changes wait for approval. The `m2.5-art-direction` tag is reserved for the completed, approved Home revision.
+M2.5 approval gate: all six animals, oak, crate, car, hatchback, taxi, engine, carriage and log are approved. The truck has a solid painted rear cab wall and no forward grey cargo trim; its updated preview is ready. The owner chooses logo A or B next, then Home implementation proceeds immediately. The `m2.5-art-direction` tag is reserved for completed, approved Home screenshots.
+
+## Lilita One logo candidates
+
+`--logo-variants` builds A (smooth) and B (Blocks) from real Blender Text objects using `art/fonts/LilitaOne-Regular.ttf`, with its OFL notice alongside. No bitmap alphabet is used. Editable Text sources are kept in a hidden collection in each .blend, and the font is packed. Text extrusion is 0.35, bevel 0.03; expanded Ink backing plates sit behind cream HOP and yellow BRAWL. Backing plates fill counters so small inner contours cannot invert under Text Offset. The chicken is perched on O facing the viewer. Layout, dimensions, colors and deterministic tilt/nudge settings live in shared/config.ts.
+
+B applies Blender's actual Remesh modifier in Blocks mode at octree depth 5, scale 0.9, before coplanar simplification. Raster cross-sections were inspected across all eight glyphs: stems, bowls, diagonals and crossbars retain at least four blocks of stroke thickness. The shared layout preserves the same letter pivots and near-frontal camera in both candidates.
+
+Files per candidate: `art/logo_smooth.blend` / `art/logo_blocks.blend`, their `art/variants/<name>.glb` exports and JSON manifests, and 1600x1000 `art/previews/<name>.png` renders on #87CEFA. `art/previews/logo-comparison.png` places A on the left and B on the right at native resolution. A is 182,904 bytes; B is 162,248 bytes. The build fails at 200,000 bytes. Candidates stay outside public runtime downloads until one is selected.
+
+Both use one opaque vertex-color material, Cycles AO, no textures and no Draco. `compact_glb.py` keeps full-precision positions and uses byte colors/normals with standard KHR_mesh_quantization, supported by the installed Three.js loader without a decoder. Unit tests load both actual exports through that loader and check node handles, bounds, material opacity, colors, normal precision, perch position, preview size and byte budgets.
 
 ## Logo animation contract
 
-The single `logo.glb` contains 19 named nodes (17 meshes and two parent handles), one opaque vertex-color material, and no textures. Positions are in tiles; node pivots are at letter bases, the chicken's perch, glove cuff and burst center. Geometry transforms are baked; preserve each loaded node's resting transform when animating. The road is the stable base.
+Each candidate contains 27 nodes: nine animation handles and 18 mesh children. Letter handles own their face and backing meshes, so outline geometry moves with the letter. Pivot positions are at letter bases; preserve the loaded rotations and resting positions when applying animation. The chicken handle owns body and eyes. This logo faces Blender -Y / glTF +Z, unlike the gameplay animals; orient its root toward the Home camera.
 
 | Purpose | Exact node names |
 |---|---|
-| HOP letters, in arrival order | `logo_HOP_H`, `logo_HOP_O`, `logo_HOP_P` |
-| BRAWL letters, in arrival order | `logo_BRAWL_B`, `logo_letter_R`, `logo_BRAWL_A`, `logo_BRAWL_W`, `logo_BRAWL_L` |
-| R children (animate their parent) | `logo_BRAWL_R`, `logo_BRAWL_R_diagonal` |
-| Chicken handle and children | `logo_chicken` → `logo_chicken_body`, `logo_chicken_eyes` |
-| Punch / hit / base | `logo_glove`, `logo_starburst`, `logo_road_strip` |
-| Dust puffs | `logo_dust_H`, `logo_dust_O`, `logo_dust_P` |
+| HOP, in arrival order | `logo_HOP_H`, `logo_HOP_O`, `logo_HOP_P` |
+| BRAWL, in arrival order | `logo_BRAWL_B`, `logo_BRAWL_R`, `logo_BRAWL_A`, `logo_BRAWL_W`, `logo_BRAWL_L` |
+| Each letter's mesh children | `<handle>_face`, `<handle>_outline` |
+| Chicken handle and children | `logo_chicken` -> `logo_chicken_body`, `logo_chicken_eyes` |
 
-`--logo-poses` opens the saved .blend and renders four key poses from its existing camera into the 2400×384 `art/previews/logo-intro.png`: HOP arrival; BRAWL arrival with chicken descending; chicken perched and glove wound back; glove impact, starburst pop and BRAWL shake. Source frames are temporary files under ignored `tmp/`. Render-buffer assembly verifies color fidelity. Pose tunables are in shared/config.ts. This is a storyboard, not an embedded animation clip or runtime Home implementation.
-
-After owner approval, Home must animate HOP letters one by one, then BRAWL letters, land the chicken on P, punch with the glove, pop the starburst and shake only the BRAWL handles. Idle keeps a gentle bob, toggles the chicken eye mesh for blinks, and performs occasional small glove jabs. Keep the road stable and preserve the persistent canvas, quality tiers and reduced-motion behavior. Do not rotate only the R body: its parent owns both its bowl/stem and continuous diagonal.
+After selection, copy that candidate to `client/public/models/logo.glb` and proceed directly to Home. Animate the letters dropping one by one with squash/stretch, then the chicken hopping onto O last. Idle uses a gentle bob and eye blinks. Preserve persistent canvas, quality tiers and reduced-motion behavior. The glove, burst, road, dust, bitmap source and former four-pose storyboard have been removed. Show Home at 390x844 and 1440x900 for approval before M3.

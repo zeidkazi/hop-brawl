@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** M2.5 is at the vehicle/composed-logo approval checkpoint, before M3. All six animals, oak and crate are approved. The lowered sedan, six new vehicle/log models, composed logo and four intro poses are ready in `art/previews/`. Sixteen optimized GLBs total 412.4 KB; the logo is 111.6 KB with separate animation nodes. Home still uses M2 placeholders and will be rebuilt under SPEC §28 after owner approval. No public deployment or cover image exists yet.
+**Status:** M2.5 is waiting for the owner's final logo choice, before M3. All animals, oak, crate and vehicles except the revised truck are approved. Lilita One logo candidates A (smooth, 182.9 KB) and B (Blocks, 162.2 KB) are shown side by side in `art/previews/logo-comparison.png`; each has independent letter/chicken handles. The truck's updated preview is also ready. The rejected bitmap logo has been removed. Choose A or B, then Home is rebuilt immediately under SPEC §28; Home screenshots remain the approval gate before M3. No public deployment or cover image exists yet.
 
 ## Local development
 
