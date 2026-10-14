@@ -11,6 +11,29 @@ async function fixture(): Promise<Arena> {
   return new Arena(asset.scene, new MeshStandardMaterial({ vertexColors: true }), new MeshLambertMaterial({ vertexColors: true }));
 }
 describe('arena roadside', () => {
+  it('meets final bleacher clearance, nearby structure height and tower spacing limits', async () => {
+    const arena = await fixture(), matrix = new Matrix4();
+    const towers: number[] = []; let nearestStand = Infinity, nearHeight = 0;
+    for (const mesh of arena.root.children) {
+      if (!(mesh instanceof InstancedMesh) || ['arena_foam', 'arena_tuft', 'arena_flower', 'arena_spectator', 'arena_scarf'].includes(mesh.name)) continue;
+      mesh.geometry.computeBoundingBox();
+      for (let i = 0; i < mesh.count; i++) {
+        mesh.getMatrixAt(i, matrix);
+        const bounds = new Box3().copy(mesh.geometry.boundingBox!).applyMatrix4(matrix);
+        const gap = bounds.max.x < -0.5 ? -0.5 - bounds.max.x : bounds.min.x - 8.5;
+        if (mesh.name.includes('bleacher')) nearestStand = Math.min(nearestStand, gap);
+        if (gap < STREET.MIN_BLEACHER_GAP) nearHeight = Math.max(nearHeight, bounds.max.y);
+        if (mesh.name === 'arena_spotlight') towers.push(matrix.elements[14]!);
+      }
+    }
+    expect(nearestStand).toBeGreaterThanOrEqual(STREET.MIN_BLEACHER_GAP);
+    expect(nearestStand).toBeCloseTo(2.15, 5);
+    expect(nearHeight).toBeLessThanOrEqual(STREET.NEAR_DECOR_MAX_HEIGHT);
+    expect(nearHeight).toBeCloseTo(11 / 12, 5);
+    towers.sort((a, b) => a - b);
+    for (let i = 1; i < towers.length; i++) expect(towers[i]! - towers[i - 1]!).toBeGreaterThanOrEqual(STREET.SPOT_MIN_ROWS);
+    expect(towers).toEqual([10, 26]); // Home's top rows are behind the selection stage, at negative Z.
+  });
   it('keeps every instance of the event furniture outside playable columns', async () => {
     const arena = await fixture(), matrix = new Matrix4();
     for (const mesh of arena.root.children) {
