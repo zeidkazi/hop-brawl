@@ -58,6 +58,10 @@ The following silhouette previews are original Blender renders of the same anima
 
 ## Street Brawl revisions
 
+| Logo files | Source / license |
+|---|---|
+| `art/logo_street.blend`, `art/variants/logo_street.glb`, `art/variants/logo_street.json`, `art/previews/logo_street.png`, `client/public/models/logo.glb` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; smooth Lilita One, thicker Ink backing and gloved fox; original CC0 1.0 artwork, Lilita One OFL font notice above. Supersedes the runtime A/chicken copy; A/B review files remain archived. |
+
 | Arena files | Source / license |
 |---|---|
 | `art/arena.blend`, `client/public/models/arena.glb`, `art/previews/arena.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_arena.py ; original CC0 1.0 closed voxel bleachers, spectator, bunting, cone, barrier, spotlight, tuft, flower, foam, hay, pumpkin, snowy bleachers, scarf and neon sign |
