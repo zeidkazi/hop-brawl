@@ -106,6 +106,21 @@ export const WORLD = Object.freeze({
   CARRY_EDGE_MARGIN: 0.5,
 } as const);
 
+/** Section 30 segment rules, replacing the earlier weighted-row generator. */
+export const SEGMENTS = Object.freeze({
+  REST_EVERY: 20, REST_ROWS: 3, REST_CLEAR_MIN: 2, REST_CLEAR_MAX: 6, REST_CRATE_MULTIPLIER: 2,
+  CORRIDOR_COLUMNS: 2, ADJACENT_OBSTACLES: 1, ROAD_SPEED_RATIO: 1.25,
+  FIRST_RAIL_ROW: 30, FIRST_ROAD_ROW: 5, EARLY_END: 10,
+  LOG_SLOT_REACH: .6, LOG_SLOT_WIDTH: 1, LOG_GAP_MIN: .2, LOG_WAIT_S: 2,
+  OVERLAP_WINDOW_S: .5, OVERLAP_PERIOD_S: 3, TRAIN_PERIOD_MIN_S: 7,
+  TIERS: [
+    { start: 0, road: [1, 2], car: [1.2, 2], river: [1, 1], log: [.6, .9], length: [3, 4], rail: [0, 0], grass: [2, 3], obstacles: 2, warning: 0 },
+    { start: 25, road: [2, 3], car: [1.5, 2.6], river: [1, 2], log: [.7, 1.1], length: [3, 4], rail: [1, 1], grass: [1, 2], obstacles: 2, warning: 2 },
+    { start: 60, road: [2, 4], car: [1.8, 3.4], river: [2, 3], log: [.8, 1.4], length: [2, 4], rail: [1, 2], grass: [1, 2], obstacles: 3, warning: 1.5 },
+    { start: 120, road: [3, 5], car: [2, 4.2], river: [2, 3], log: [.9, 1.6], length: [2, 4], rail: [1, 2], grass: [1, 1], obstacles: 3, warning: 1.5 },
+  ],
+} as const);
+
 /** t is round time since HOP!, including the initial scroll delay (§4.3). */
 export function scrollSpeed(t: number): number {
   if (t < CONFIG.SCROLL_START_DELAY_S) return 0;
