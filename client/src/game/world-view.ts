@@ -11,6 +11,7 @@ import { hash32, mulberry32 } from '../../../shared/rng';
 import type { Row, RowKind } from '../../../shared/types';
 import { generateRow } from '../../../shared/worldgen';
 import type { Tier } from './quality';
+import { Outlines } from './outlines';
 
 const KINDS: readonly RowKind[] = ['grass', 'road', 'river', 'rail'];
 const ROW_COLORS = [COLORS.grass, COLORS.road, COLORS.water, COLORS.rail];
@@ -41,6 +42,7 @@ function groundGeometry(): ReturnType<typeof mergeGeometries> {
 /** All meshes, matrices and row slots exist before Loading ends. */
 export class WorldView {
   readonly root = new Group();
+  readonly outlines = new Outlines();
   readonly standard = new MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 });
   readonly lambert = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
   readonly grounds: InstancedMesh[] = [];
@@ -117,6 +119,8 @@ export class WorldView {
     }
     this.prepareWindow(0);
     this.update(0);
+    this.outlines.add(this.animals, 'animal'); this.outlines.add(this.vehicles, 'vehicle');
+    this.outlines.add(this.logs, 'prop'); this.outlines.add(this.crates, 'prop');
   }
 
   private batch(size: number): InstancedMesh {
@@ -187,6 +191,7 @@ export class WorldView {
 
   applyTier(tier: Tier): void {
     this.tier = tier;
+    this.outlines.applyTier(tier);
     const material = tier === 'high' ? this.standard : this.lambert;
     for (const mesh of this.grounds) mesh.material = material;
     for (const mesh of [this.obstacles, this.vehicles, this.logs, this.crates, this.animals, this.podium]) mesh.material = material;
@@ -272,5 +277,6 @@ export class WorldView {
       for (let i = 0; i < water.count; i++) water.setColorAt(i, this.color);
       if (water.instanceColor) water.instanceColor.needsUpdate = true;
     }
+    this.outlines.sync();
   }
 }

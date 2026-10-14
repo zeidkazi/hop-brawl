@@ -1,4 +1,4 @@
-import { BackSide, InstancedMesh, Mesh, MeshBasicMaterial, Vector3 } from 'three';
+import { BackSide, BufferGeometry, InstancedMesh, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { COLORS, STREET } from '../../../shared/config';
 import type { Tier } from './quality';
 
@@ -11,12 +11,17 @@ export function outlinedAt(kind: OutlineKind, tier: Tier): boolean {
 export class Outlines {
   readonly material = new MeshBasicMaterial({ color: COLORS.ink, side: BackSide, toneMapped: false });
   readonly entries: { source: Mesh; shell: Mesh; kind: OutlineKind }[] = [];
+  private readonly geometries = new Map<BufferGeometry, BufferGeometry>();
   add(source: Mesh, kind: OutlineKind): void {
-    const geometry = source.geometry.clone(); geometry.computeBoundingBox();
-    const center = geometry.boundingBox!.getCenter(new Vector3());
-    geometry.translate(-center.x, -center.y, -center.z);
-    geometry.scale(STREET.OUTLINE_SCALE, STREET.OUTLINE_SCALE, STREET.OUTLINE_SCALE);
-    geometry.translate(center.x, center.y, center.z);
+    let geometry = this.geometries.get(source.geometry);
+    if (!geometry) {
+      geometry = source.geometry.clone(); geometry.computeBoundingBox();
+      const center = geometry.boundingBox!.getCenter(new Vector3());
+      geometry.translate(-center.x, -center.y, -center.z);
+      geometry.scale(STREET.OUTLINE_SCALE, STREET.OUTLINE_SCALE, STREET.OUTLINE_SCALE);
+      geometry.translate(center.x, center.y, center.z);
+      this.geometries.set(source.geometry, geometry);
+    }
     const shell = source instanceof InstancedMesh ? new InstancedMesh(geometry, this.material, source.count) : new Mesh(geometry, this.material);
     if (shell instanceof InstancedMesh && source instanceof InstancedMesh) {
       shell.instanceMatrix = source.instanceMatrix;
@@ -29,6 +34,9 @@ export class Outlines {
     for (const entry of this.entries) entry.shell.visible = outlinedAt(entry.kind, tier);
   }
   sync(): void {
-    for (const { source, shell } of this.entries) if (source instanceof InstancedMesh && shell instanceof InstancedMesh) shell.count = source.count;
+    for (const { source, shell } of this.entries) if (source instanceof InstancedMesh && shell instanceof InstancedMesh) {
+      shell.count = source.count;
+      if (shell.boundingSphere && source.boundingSphere) shell.boundingSphere.copy(source.boundingSphere);
+    }
   }
 }
