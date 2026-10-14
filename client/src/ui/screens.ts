@@ -211,6 +211,9 @@ export class Screens {
   private updateAnimal(): void { this.animalLabel.textContent = ANIMALS[this.preferences.animal]!; }
   private updateName(): void { this.root.querySelector('#name-caption')!.textContent = this.preferences.name.trim() || 'Tap to set name'; }
   private changeAnimal(direction: number): void {
+    // Anchor a new gesture to input time, including the first gesture after startup warm-up.
+    // An old GSAP ticker time could otherwise consume the outgoing half before its first paint.
+    gsap.ticker.tick();
     this.preferences.animal = (this.preferences.animal + direction + ANIMALS.length) % ANIMALS.length;
     this.save(); this.updateAnimal(); this.carousel?.kill();
     const home = this.game.home;

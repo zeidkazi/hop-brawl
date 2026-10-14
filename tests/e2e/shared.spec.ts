@@ -4,6 +4,8 @@ import { laneItemX, slowMoWindow, trainWarning, trainX } from '../../shared/haza
 import { generateRow } from '../../shared/worldgen';
 
 test('loads locally and reproduces Node world/hazard results in independent browser contexts', async ({ page, browser }, testInfo) => {
+  // Two complete contexts plus 600 row comparisons; load latency is measured separately in production.
+  test.setTimeout(90000);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
