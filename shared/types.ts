@@ -54,6 +54,7 @@ export interface RailRow extends RowBase {
   readonly direction: Direction;
   readonly period: number;
   readonly phase: number;
+  readonly warning?: number;
 }
 
 export type Row = GrassRow | RoadRow | RiverRow | RailRow;

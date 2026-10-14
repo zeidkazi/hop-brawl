@@ -56,6 +56,12 @@ describe('hazard positions', () => {
 });
 
 describe('trains', () => {
+  it('uses the two-second T2 warning independently of later tiers', () => {
+    const beginner = { ...rail, warning: 2 };
+    expect(trainWarning(beginner, 5.999)).toBe(false);
+    expect(trainWarning(beginner, 6)).toBe(true);
+    expect(trainWarning(beginner, 8)).toBe(false);
+  });
   it('warns for 1.5 seconds before the next pass and traverses at 25 tiles/s', () => {
     expect(trainWarning(rail, 6.499)).toBe(false);
     expect(trainWarning(rail, 6.5)).toBe(true);

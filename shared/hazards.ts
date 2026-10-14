@@ -64,7 +64,7 @@ export function trainCycle(
 export function trainWarning(
   row: RailRow, t: number, windows: readonly SlowMoWindow[] = NO_SLOW_MO,
 ): boolean {
-  return trainCycle(row, t, windows) >= row.period - WORLD.TRAIN_WARNING_S;
+  return trainCycle(row, t, windows) >= row.period - (row.warning ?? WORLD.TRAIN_WARNING_S);
 }
 
 /** null while the train is between passes; both endpoints are fully off-screen. */
