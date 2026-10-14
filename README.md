@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** M2.5 is waiting for the owner's final logo choice, before M3. All animals, oak, crate and vehicles except the revised truck are approved. Lilita One logo candidates A (smooth, 182.9 KB) and B (Blocks, 162.2 KB) are shown side by side in `art/previews/logo-comparison.png`; each has independent letter/chicken handles. The truck's updated preview is also ready. The rejected bitmap logo has been removed. Choose A or B, then Home is rebuilt immediately under SPEC §28; Home screenshots remain the approval gate before M3. No public deployment or cover image exists yet.
+**Status:** M2.5 Home rebuild is ready for visual review before M3. The owner selected smooth Lilita One logo A (182.9 KB); Home now uses that animated 3D logo, approved Blender animals/vehicles/trees, in-scene animal arrows/sign, Lilita One UI and full menu resolution. The 390x844 and 1440x900 screenshots remain the approval gate before Solo development. No public deployment or cover image exists yet.
 
 ## Local development
 
@@ -17,7 +17,7 @@ npm run dev
 
 Open http://localhost:5173/. For a clean install from the committed lockfile, use npm ci. The local Cloudflare server and npm run dev:server / wrangler dev command will be added in M4.
 
-Try the animal carousel, Friends sheet, Settings, How to Play and Credits. Solo and multiplayer buttons are disabled until their implementation milestones. Add `?debug=1` for FPS/draw/pool metrics and camera/quality/tile-flip controls. For phone testing on the same Wi-Fi, start with `npm run dev -- --host 0.0.0.0` and open the PC's LAN address on port 5173.
+Tap the name pill to edit, tap the animal or use arrows/swipe to change it, and try Friends, Settings, How to Play and Settings > Credits. Solo and multiplayer buttons are disabled until their implementation milestones. Add `?debug=1` for FPS/draw/pool metrics and camera/quality/tile-flip controls. For phone testing on the same Wi-Fi, start with `npm run dev -- --host 0.0.0.0` and open the PC's LAN address on port 5173.
 
 ## Tests and build
 
@@ -31,7 +31,7 @@ npm run test:e2e
 
 - Unit tests cover deterministic randomness, all four row types, hazards, Slow-Mo and collision boundaries.
 - The generator fuzz test checks 1,000 random seeds × 300 rows against every §10 solvability guarantee.
-- Browser tests compare shared world/hazard results with Node in independent contexts and check persistent-canvas navigation, resize, graphics switches, resource bounds, denied storage and room links. Windows tests use D3D11 hardware acceleration; metrics identify the GPU backend. Full gameplay, latency, 4× CPU and real-device performance tests arrive with their corresponding features.
+- Browser tests compare shared world/hazard results with Node in independent contexts and check persistent-canvas navigation, resize, graphics switches, resource bounds, denied storage and room links, all six animal selections, name validation and exact odd-window canvas coverage at DPR 1/1.25/1.5/2. Windows tests use D3D11 hardware acceleration; metrics identify the GPU backend. Full gameplay, latency, 4× CPU and real-device performance tests arrive with their corresponding features.
 - npm run build:client creates client/dist; npm run preview serves the production build locally.
 
 ## How to play (target gameplay)

@@ -9,6 +9,7 @@ npm run art:build -- --model chicken
 npm run art:build -- --model chicken --author
 npm run art:build -- --model chicken --silhouette-only
 npm run art:build -- --logo-variants
+npm run art:build -- --menu-props
 npm run art:build
 ```
 
@@ -22,7 +23,7 @@ The Blender builder removes faces inside each solid part and greedily merges adj
 
 Deliverables per asset: `art/voxels/<name>.json`, editable `art/<name>.blend`, `client/public/models/<name>.glb`, and transparent three-quarter `art/previews/<name>.png`. Preview lights/camera are excluded from GLB export. `--silhouette-only` opens the saved Blender scene and renders the same camera with black emission geometry on white, saving `<name>-silhouette.png` without changing the approved model, scene or color preview.
 
-M2.5 approval gate: all six animals, oak, crate, car, hatchback, taxi, engine, carriage and log are approved. The truck has a solid painted rear cab wall and no forward grey cargo trim; its updated preview is ready. The owner chooses logo A or B next, then Home implementation proceeds immediately. The `m2.5-art-direction` tag is reserved for completed, approved Home screenshots.
+M2.5 approval gate: all six animals, oak, crate, car, hatchback, taxi, engine, carriage and log are approved. The truck has a solid painted rear cab wall and no forward grey cargo trim; its updated preview is ready. The owner chose A (smooth); it is integrated in the rebuilt Home, whose screenshots now await approval. The `m2.5-art-direction` tag is reserved for completed, approved Home screenshots.
 
 ## Lilita One logo candidates
 
@@ -30,7 +31,7 @@ M2.5 approval gate: all six animals, oak, crate, car, hatchback, taxi, engine, c
 
 B applies Blender's actual Remesh modifier in Blocks mode at octree depth 5, scale 0.9, before coplanar simplification. Raster cross-sections were inspected across all eight glyphs: stems, bowls, diagonals and crossbars retain at least four blocks of stroke thickness. The shared layout preserves the same letter pivots and near-frontal camera in both candidates.
 
-Files per candidate: `art/logo_smooth.blend` / `art/logo_blocks.blend`, their `art/variants/<name>.glb` exports and JSON manifests, and 1600x1000 `art/previews/<name>.png` renders on #87CEFA. `art/previews/logo-comparison.png` places A on the left and B on the right at native resolution. A is 182,904 bytes; B is 162,248 bytes. The build fails at 200,000 bytes. Candidates stay outside public runtime downloads until one is selected.
+Files per candidate: `art/logo_smooth.blend` / `art/logo_blocks.blend`, their `art/variants/<name>.glb` exports and JSON manifests, and 1600x1000 `art/previews/<name>.png` renders on #87CEFA. `art/previews/logo-comparison.png` places A on the left and B on the right at native resolution. A is 182,904 bytes; B is 162,248 bytes. The build fails at 200,000 bytes. The selected A is copied unchanged to client/public/models/logo.glb; the unused B stays outside runtime downloads.
 
 Both use one opaque vertex-color material, Cycles AO, no textures and no Draco. `compact_glb.py` keeps full-precision positions and uses byte colors/normals with standard KHR_mesh_quantization, supported by the installed Three.js loader without a decoder. Unit tests load both actual exports through that loader and check node handles, bounds, material opacity, colors, normal precision, perch position, preview size and byte budgets.
 
@@ -45,4 +46,9 @@ Each candidate contains 27 nodes: nine animation handles and 18 mesh children. L
 | Each letter's mesh children | `<handle>_face`, `<handle>_outline` |
 | Chicken handle and children | `logo_chicken` -> `logo_chicken_body`, `logo_chicken_eyes` |
 
-After selection, copy that candidate to `client/public/models/logo.glb` and proceed directly to Home. Animate the letters dropping one by one with squash/stretch, then the chicken hopping onto O last. Idle uses a gentle bob and eye blinks. Preserve persistent canvas, quality tiers and reduced-motion behavior. The glove, burst, road, dust, bitmap source and former four-pose storyboard have been removed. Show Home at 390x844 and 1440x900 for approval before M3.
+The owner selected A; its unchanged export is now `client/public/models/logo.glb`. Animate the letters dropping one by one with squash/stretch, then the chicken hopping onto O last. Idle uses a gentle bob and eye blinks. Preserve persistent canvas, quality tiers and reduced-motion behavior. The glove, burst, road, dust, bitmap source and former four-pose storyboard have been removed. Show Home at 390x844 and 1440x900 for approval before M3.
+
+
+## Home scene controls
+
+`--menu-props` builds `art/home_controls.blend`, `client/public/models/home_controls.glb` and `art/previews/home_controls.png`. The voxel arrow is `home_controls_arrow`; the closed wooden sign/post is `home_controls_sign`. Six separate `home_label_<animal>` meshes use the packed Lilita One font. The runtime shows only the selected label and reuses the arrow geometry twice. Export only the combined baked color layer as COLOR_0; exporting every Blender layer puts raw AO ahead of the intended wood/text colors. These original assets and their font provenance are listed in CREDITS.md.

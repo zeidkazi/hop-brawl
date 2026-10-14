@@ -5,7 +5,7 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 ## Status
 
 - Completed milestones: M1 (world generation/hazards) and M2 (persistent-canvas architecture).
-- Current phase: M2.5 final logo selection. All six animals, oak, crate, car, hatchback, taxi, train engine/carriage and log are approved. The truck revision and two Lilita One logo previews are ready. Wait for A/B selection, then proceed straight to Home. M1 is owner-verified; M2's menu appearance remains rejected pending §28.
+- Current phase: M2.5 Home screenshot approval. The owner selected smooth logo A and authorized the Home rebuild. The corrected live Home is implemented; WAIT for approval of the 390x844 and 1440x900 screenshots before M3. M1 is owner-verified. Do not tag M2.5 complete yet.
 - Owner approved the plan and M1 on 2026-10-14. Deployment is deferred until after M13 and before M14, no later than 2026-10-26; no deployment without the owner's pre-deploy approval.
 - Read SPEC.md including the complete new §28, which overrides earlier art/UI/fallback directions where they conflict.
 - Initial commit c6ec455 (`docs: add game spec`) pushed to `origin/main` at https://github.com/zeidkazi/hop-brawl.git.
@@ -48,10 +48,21 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 - Second owner review approved fox, cat, pig, frog and oak, so all six animals plus oak/crate are now approved. Sedan cabin lowered by two voxels, front windshield exposed, red blocks removed above the wheels. Built blue hatchback, yellow roof-sign taxi, cab/box truck, red/black engine, blue carriage and bark-ring log segment at §12.2 dimensions. Each vehicle/log is committed separately with recipe, voxel source, .blend, GLB and preview.
 - Final owner direction replaced the entire bitmap logo. Built A smooth and B Blocks from actual Lilita One Blender Text objects, with 0.35 extrusion, 0.03 bevel, 70% HOP cap height, tight spacing, signed 3–6 degree tilts, <=5% height nudges and expanded dark backing plates. Chicken sits on O facing the viewer. No glove, starburst, road or dust. Old logo sources, export and storyboard were deleted.
 - Both candidates retain packed font/editable Text sources in .blend, nine independent animation handles (eight letters plus chicken), separate eye mesh and texture-free opaque vertex colors with Cycles AO. A: 182,904 bytes. B: 162,248 bytes. Byte normals/colors use standard KHR_mesh_quantization; positions stay full precision. Both load successfully in the installed Three.js GLTFLoader without extra decoder code.
-- B uses actual Blender Remesh Blocks, depth 5, then coplanar simplification. Reviewed raster cross-sections for all glyphs; core letter strokes are at least four blocks thick. Preview cameras are near-frontal (~10 degrees above/to the side), 1600x1000, #87CEFA background. Side-by-side file: art/previews/logo-comparison.png, A left / B right. Each candidate remains in art/variants until selection, outside runtime downloads.
+- B uses actual Blender Remesh Blocks, depth 5, then coplanar simplification. Reviewed raster cross-sections for all glyphs; core letter strokes are at least four blocks thick. Preview cameras are near-frontal (~10 degrees above/to the side), 1600x1000, #87CEFA background. Side-by-side file: art/previews/logo-comparison.png, A left / B right. Both candidates remain archived in art/variants; the selected A is also copied unchanged to the runtime logo.glb.
 - Latest vehicle review approved car, hatchback, taxi, engine/carriage and log. Truck rear cab glass was replaced by a solid painted wall; removed the forward grey cargo trim. Its recipe, voxel JSON, .blend, GLB and preview were committed separately. All voxel source solids still pass exact volume/opaque-material checks.
 - npm run check passes: 69 tests in 14 files, strict typecheck and production build. Tests include 15 voxel models plus two actual logo loader round trips, named hierarchy, opacity, normal precision, perch placement, file dimensions, font/layout metadata and <200 KB guards. Previous browser checks remain the M2 baseline; no Home runtime code changed during this asset revision. Lilita One font URL/OFL notice and every new artwork file are in CREDITS.md.
-- Home and runtime font/quality/layout remain the M2 version pending asset approval, as requested. Lilita One replacement, no menu dynamic resolution, DPR 1.25/odd-size edge fixes, biome sky/scenery fill, in-world logo/select/sign/arrows and the §28.4 layout are the second half of M2.5. No M3 work started; m2.5-art-direction tag is reserved until the corrected Home is approved.
+
+## M2.5 Home review checkpoint (awaiting owner approval)
+
+- Owner chose smooth Lilita One logo A. Runtime logo is the unchanged 182,904-byte approved export, with sequential HOP/BRAWL letter drops, squash/stretch, chicken landing on O last, idle bob and blinking. Reduced motion bypasses the intro and idle movement.
+- Home uses the persistent canvas and scene: approved Blender animals, instanced oak/traffic/logs, grass strip, roads above/below, river, sky gradient, slow camera drift. Six animal variants and sign labels load once and warm during Loading, including blinkable meshes. High/Medium use waves; Low uses animated flat water and blob shadows.
+- Blender-authored arrows and wooden animal sign with Lilita One labels are exported from art/build_menu.py. No visible HTML logo or boxed Home form. Tap/click, arrows, swipe and keyboard cycle animals with hop-out/hop-in motion. Compact name editor, help/settings icons, bottom PLAY/FRIENDS/SOLO actions; Credits is inside Settings. Empty-name Friends opens the name editor and continues after a valid name.
+- Pixelify Sans and its package/license removed. Lilita One and Nunito preload locally. Menus always use the full tier pixel ratio; adaptive resolution runs only while PLAYING. Physical canvas/render-target dimensions round up to integer pixels; page background matches sky.
+- npm run check: 70 unit tests, strict TypeScript and production build pass. Complete runtime model library is 638,700 bytes including logo and controls, below 3 MB. Main JS is about 205 KB gzip, below 400 KB; fonts total about 43 KB. Vite's default uncompressed-chunk advisory remains; no runtime console errors observed.
+- npm run test:e2e passes all 10 browser tests. They cover all six animals without additional model downloads or canvas replacement, name editing/validation, nested Settings/Credits/Back navigation, denied storage, persistent resources, shared determinism and viewport rotation. Odd 391x845, 1441x901 and 845x391 windows run at DPR 1, 1.25, 1.5 and 2 for both desktop and touch contexts, with full menu resolution and exact canvas coverage.
+- Screenshots: output/playwright/home-review/desktop.png (1440x900 viewport), mobile.png (390x844 viewport, DPR 2). Reviewed locally; awaiting owner visual approval. The local dev server is at http://localhost:5173/ and http://192.168.7.7:5173/ on the same Wi-Fi.
+- Five-second host-GPU samples: desktop High 50 draw calls / 132,050 triangles, touch Medium 40 calls / 72,746 triangles; rolling p95 about 16.7 ms. These measure Home on Intel Iris Xe, not real-phone or full-game performance.
+- No M3 gameplay work started. PLAY/SOLO/Create/Join stay disabled until their implementation milestones. No deployment and no M2.5 completion tag before Home approval.
 
 ## Setup preflight (§27)
 
@@ -80,15 +91,15 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Known bugs / unresolved checks
 
-- M2's visual direction is rejected and must be replaced under §28 after the current model-preview approval. The unchanged Home still has Pixelify Sans, boxed menus and menu dynamic resolution; these are explicitly pending M2.5 fixes, not accepted final visuals. Solo remains disabled until M3.
+- The rebuilt Home is awaiting owner visual approval. Solo remains disabled until M3; multiplayer actions remain disabled until networking milestones.
 - Worker/Room implementation and wrangler dev arrive in M4. Do not add fake server endpoints just to make an unavailable server command appear to work.
-- Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only the placeholder diorama on the host GPU.
+- Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only Home on the host GPU.
 - Cloudflare and Vercel authentication and free-account plan verification remain required before deployment.
 - Real Android/iPhone checks remain owner-assisted at the relevant milestones.
 
 ## Next exact step
 
-WAIT only for the owner's logo choice: A smooth or B Blocks. Show both side by side plus the updated truck preview. Once A/B is selected, immediately copy that GLB to client/public/models/logo.glb and rebuild Home under §28.2–28.4: Lilita One, full menu resolution, precise canvas sizing/sky/scenery, in-world animal select/sign/arrows and minimal bottom actions/icons. Use the named-node contract in art/README.md for sequential letter drops with squash/stretch, chicken hop onto O last, then gentle idle bob/blinks. Preserve persistent canvas/pooling. Show Home at 390x844 and 1440x900 and WAIT for approval before M3. No additional asset approval gate after the logo choice. Do not tag M2.5 complete at this checkpoint.
+WAIT for the owner's approval of the rebuilt Home screenshots at 390x844 and 1440x900. Logo A is selected and integrated; do not ask for another asset choice. After Home approval, record acceptance, complete/tag/push m2.5-art-direction, then begin M3 Solo with responsive PC/phone controls, hopping, hazards/death, camera and tile-flip retry. Preserve the persistent canvas, full menu resolution and warmed models. Stop after M3 for owner playtesting.
 
 ## Milestone plan / gates
 
@@ -112,7 +123,7 @@ WAIT only for the owner's logo choice: A smooth or B Blocks. Show both side by s
 
 ## How to run
 
-Blender pipeline (local executable already configured in ignored .env.local): `npm run art:build -- --version`, `npm run art:build -- --self-test`, `npm run art:build -- --model chicken`, or `npm run art:build` for all voxel sources; `npm run art:build -- --logo-variants` rebuilds both Text-based logo candidates and their comparison. Add `--author` when regenerating a model's voxel JSON from its edited recipe. See art/README.md. Review PNGs directly from art/previews/; the current game does not load these models yet.
+Blender pipeline (local executable already configured in ignored .env.local): `npm run art:build -- --version`, `npm run art:build -- --self-test`, `npm run art:build -- --model chicken`, or `npm run art:build` for all voxel sources; `npm run art:build -- --logo-variants` rebuilds both Text-based logo candidates and their comparison. Add `--author` when regenerating a model's voxel JSON from its edited recipe. See art/README.md. Use --menu-props to rebuild the sign/arrows. Home loads the approved runtime models; review asset PNGs directly from art/previews/.
 
 From C:\Users\zeidk\Desktop\game_challenge:
 
@@ -121,7 +132,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Enter a name, change animals using arrows/swipe, open Friends/Settings/How to Play/Credits, and return using Back/Esc. The world must stay visible and animated throughout. Reload to check saved preferences; incognito should keep its own session. Try http://localhost:5173/?room=ABCD for prefilled code boxes. Gameplay/multiplayer buttons are intentionally disabled at M2.
+Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Tap the top-left name pill, change animals by tapping the animal or using arrows/swipe, open Friends/Settings/How to Play and Settings > Credits, and return using Back/Esc. The world must stay visible and animated throughout. Reload to check saved preferences; incognito should keep its own session. Try http://localhost:5173/?room=ABCD for prefilled code boxes. Gameplay/multiplayer buttons are intentionally disabled at M2.
 
 Open http://localhost:5173/?debug=1 for the FPS overlay. Expand the debug panel to change stations, toggle menu visibility, scroll camZ, and trigger Tile flip/Dust burst/Toast. In Settings switch Graphics High/Low/Auto and Reduce motion. Resize or rotate: the canvas should remain visible with smooth reframing.
 

@@ -1,6 +1,6 @@
 # Hop Brawl asset credits
 
-M2 includes the spec-required self-hosted fonts and original colored-box geometry. Runtime/development packages retain their respective upstream licenses; this ledger tracks assets shipped with the game.
+M2.5 includes self-hosted Lilita One/Nunito fonts, approved Blender assets and original procedural scenery. Runtime/development packages retain their respective upstream licenses; this ledger tracks assets shipped with the game.
 
 Every imported asset must have an individual file path, source URL and verified license recorded here before it is committed. Only CC0 or licenses requiring no attribution are permitted by the owner. Project-generated model and audio files will also be logged with their provenance when created.
 
@@ -12,11 +12,11 @@ Every imported asset must have an individual file path, source URL and verified 
 | `@fontsource/lilita-one/files/lilita-one-latin-400-normal.woff2` (5.3.0) | https://cdn.jsdelivr.net/npm/@fontsource/lilita-one@5.3.0/files/lilita-one-latin-400-normal.woff2 | SIL OFL 1.1, no in-game attribution required; redistribution notice retained in `client/public/licenses/lilita-one.txt` |
 | `@fontsource/nunito/files/nunito-latin-700-normal.woff2` (5.3.0) | https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.3.0/files/nunito-latin-700-normal.woff2 ; authors: https://github.com/googlefonts/nunito | SIL OFL 1.1, no in-game attribution required; required redistribution notice retained in `client/public/licenses/nunito.txt` |
 | `@fontsource/nunito/files/nunito-latin-800-normal.woff2` (5.3.0) | https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.3.0/files/nunito-latin-800-normal.woff2 ; authors: https://github.com/googlefonts/nunito | SIL OFL 1.1; same included notice |
-| `client/src/game/world-view.ts`, `client/src/game/particles.ts` | Original procedural colored boxes, ground and circle shadows created for Hop Brawl; no imported art | Original project geometry, no third-party attribution |
+| `client/src/game/world-view.ts`, `client/src/game/home-scene.ts`, `client/src/game/sky.ts`, `client/src/game/particles.ts` | Original procedural colored boxes, ground and circle shadows created for Hop Brawl; no imported art | Original project geometry, no third-party attribution |
 
 Font license text verified from the pinned packages. Lilita One and Nunito are bundled locally; no external font requests. Pixelify Sans is retired under §28.
 
-## M2.5 Blender assets — partial owner approval
+## M2.5 Blender assets — logo A selected; Home review pending
 
 The animals, vehicles and props below are original voxel creations built in Blender 5.2.2 LTS. The two logo candidates use the licensed Lilita One font listed above, converted from Blender Text objects; they are rendered artwork, not redistributed font software. Original artwork and arrangements: **CC0 1.0 Universal**, no attribution required; see `art/LICENSE.md` and https://creativecommons.org/publicdomain/zero/1.0/legalcode . The font itself retains OFL 1.1. Preview files are transparent except the logo review on the owner-requested sky-blue background.
 
