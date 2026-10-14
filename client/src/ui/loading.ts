@@ -2,6 +2,10 @@ import { LOADING } from '../../../shared/config';
 import { downloads } from './downloads';
 import { readPreferences } from './settings';
 
+export function loadingExit(elapsedMs: number, reduced: boolean): 'fade' | 'split' | 'punch' {
+  return reduced ? 'fade' : elapsedMs < LOADING.FAST_MS ? 'split' : 'punch';
+}
+
 /** Inline markup paints before this module arrives; add byte progress and the exit. */
 export class Loading {
   private readonly layer = document.querySelector<HTMLElement>('#loading')!;
@@ -47,9 +51,11 @@ export class Loading {
   async finish(): Promise<void> {
     this.stopped = true; cancelAnimationFrame(this.frame); downloads.onProgress = null;
     this.fill.style.transform = 'scaleX(1)'; this.meter.setAttribute('aria-valuenow', '100'); this.percent.textContent = 'Loading… 100%';
-    const fast = performance.now() < LOADING.FAST_MS;
+    const exit = loadingExit(performance.now(), this.reduced);
+    const fast = exit === 'split';
+    if (fast) for (const element of this.layer.querySelectorAll<HTMLElement>('.load-wait')) element.hidden = true;
     this.layer.dataset.fast = String(fast); this.layer.dataset.state = 'ready';
-    if (this.reduced) {
+    if (exit === 'fade') {
       this.layer.dataset.state = 'fade';
       await this.layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: LOADING.FADE_MS, fill: 'forwards' }).finished;
     } else {

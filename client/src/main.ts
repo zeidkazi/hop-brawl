@@ -3,7 +3,10 @@ import { GameRenderer } from './game/renderer';
 import { preloadFonts } from './ui/fonts';
 import { Screens } from './ui/screens';
 import { Loading } from './ui/loading';
-import './ui/styles.css';
+import styles from './ui/styles.css?inline';
+
+// Keep the game stylesheet out of index.html's render-blocking critical path.
+document.head.append(Object.assign(document.createElement('style'), { textContent: styles }));
 
 const root = document.querySelector<HTMLElement>('#ui-root')!;
 const loading = new Loading();
