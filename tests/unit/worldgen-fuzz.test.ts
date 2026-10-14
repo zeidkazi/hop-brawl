@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CONFIG, SEGMENTS, WORLD } from '../../shared/config';
 import { mulberry32 } from '../../shared/rng';
@@ -94,7 +95,9 @@ describe('section 30 segment fuzz', () => {
     expect([...seen].sort()).toEqual(['grass', 'rail', 'river', 'road']);
     expect(restCrates / restRows).toBeGreaterThan(.47); expect(restCrates / restRows).toBeLessThan(.53);
     expect(normalCrates / normalRows).toBeGreaterThan(.22); expect(normalCrates / normalRows).toBeLessThan(.28);
-    console.log(JSON.stringify({ seeds: 1000, rows: 300000, segments, riverPairs, restCrateRate: restCrates / restRows, normalCrateRate: normalCrates / normalRows }));
+    const report = { seeds: 1000, rows: 300000, segments, riverPairs, restCrateRate: restCrates / restRows, normalCrateRate: normalCrates / normalRows };
+    if (process.env.FUZZ_REPORT) writeFileSync(process.env.FUZZ_REPORT, JSON.stringify(report, null, 2) + '\n');
+    console.log(JSON.stringify(report));
   });
   it('reconstructs arbitrary distant streamed windows without replaying earlier chapters', () => {
     for (const camZ of [0, 50, 1000, 1000000]) {

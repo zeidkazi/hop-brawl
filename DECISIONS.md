@@ -1,5 +1,8 @@
 # Hop Brawl decisions
 
+- 2026-10-15, owner clarification for section 30.5: the 2.0-second river guarantee means maximum wait for a landable slot at each column, not the interval between log centers. This supersedes the earlier 2.5-second arrival interpretation. The fuzz audit uses exact periodic safe-slot intervals and a phase-independent overlap bound for adjacent river rows.
+- Section 30 replaces the earlier weighted generator and 13-row gameplay window: use tiered grass-separated segments and 11 visible rows. Gameplay uses a straight-across camera yaw so the two boundaries remain readable, with the same 55-degree pitch; Home retains its approved angle. Shift the projection so logical camZ lies at the actual bottom edge and test the rendered death frames.
+
 - M3 follows the section 21 milestone split: Solo movement, hazards, camera, deaths, best, pause and Retry are active. Crate pickups/boosts remain M9, remaining biome art M10, full audio M11, and the owner's two camera-angle animation notes M12. M3 hides inactive crates instead of presenting an unimplemented pickup. Approved M2.5 Blender models replace the matching old boxes; no new model revision is introduced.
 - Section 4.3's identical gameplay window is enforced in rendering as well as camera fit: only the same 13 row slots expose hazards on either aspect ratio; additional space shows decorative ground. The full 25-row simulation cache remains prepared for streaming and collision checks.
 - Retry overlaps its one-second countdown with the 300 ms tile cover/reveal, so the world resets under cover without adding another transition delay before HOP. Browser timing reports separately distinguish the reset and the end of that countdown.

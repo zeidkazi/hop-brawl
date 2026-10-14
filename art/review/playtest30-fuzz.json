@@ -1,0 +1,8 @@
+{
+  "seeds": 1000,
+  "rows": 300000,
+  "segments": 154396,
+  "riverPairs": 25732,
+  "restCrateRate": 0.5015714285714286,
+  "normalCrateRate": 0.24694207859057019
+}
