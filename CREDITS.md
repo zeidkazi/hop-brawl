@@ -127,6 +127,14 @@ All six animal model/source/preview entries above now include original CC0 float
 
 These sounds are generated in the browser, with no downloaded clips, external service, API key or attribution requirement. A user gesture unlocks audio; SFX volume applies to every cue; at most 16 voices play at once. No announcer is included in the submission.
 
+## Submission cover (§32.1 step 7)
+
+| Asset | Source | License |
+|---|---|---|
+| `art/cover/hop-brawl-1800x1200.png` | [Original local multiplayer capture](https://github.com/zeidkazi/hop-brawl/blob/main/scripts/capture-submission.mjs), two real room clients using authoritative hops | Original game artwork, CC0 1.0; font/model provenance above |
+
+The cover is an uncomposited 1800×1200 production-renderer screenshot: two animals, player-colored boxing gloves, traffic and the logo-free multiplayer HUD. Capture metadata is in art/cover/capture.json.
+
 ## Historical announcer acquisition plan (deferred by §31.5)
 
 Find one consistent, energetic voice for: "Round one", "Round two", "Final round", "Showdown", "Hop!", "K.O.!", "Winner!". Search free voice packs, including Kenney and CC0-filtered OpenGameArt/Freesound sources. Verify each file's license; free download alone is not license permission. Record missing same-voice lines and ask the owner to record them at M11. Until then use text slams and SFX. No announcer files have been selected or downloaded yet.
