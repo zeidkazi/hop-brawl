@@ -12,6 +12,7 @@ export class Movement {
   x: number = SOLO.SPAWN_X; z: number = SOLO.SPAWN_Z;
   fromX = this.x; fromZ = this.z; toX = this.x; toZ = this.z;
   time = 0; hopStart = 0; camZ = 0; distance = 0; hops = 0;
+  firstHopAt: number | null = null;
   hopping = false; onLog = false; dead: DeathCause | null = null;
   direction: HopDirection = 'up';
   buffered: HopDirection | null = null;
@@ -26,6 +27,7 @@ export class Movement {
     this.x = this.fromX = this.toX = SOLO.SPAWN_X;
     this.z = this.fromZ = this.toZ = SOLO.SPAWN_Z;
     this.time = this.hopStart = this.camZ = this.distance = this.hops = 0;
+    this.firstHopAt = null;
     this.hopping = this.onLog = false; this.dead = null; this.buffered = null; this.direction = 'up';
   }
   private blocked(x: number, z: number): boolean {
@@ -48,6 +50,7 @@ export class Movement {
     const column = destination.kind === 'river' ? Math.round(x) : x;
     if (this.blocked(column, z)) { this.onBonk?.(direction); return false; }
     this.direction = direction;
+    this.firstHopAt ??= this.time;
     this.fromX = this.x; this.fromZ = this.z; this.toX = x; this.toZ = z;
     this.hopStart = this.time; this.hopping = true; this.onLog = false; this.buffered = null;
     this.onHop?.(); return true;
@@ -81,7 +84,7 @@ export class Movement {
       if (row.kind === 'road' && vehicleHits(row, this.hazard.x, this.time)) this.kill('FLATTENED!');
       else if (row.kind === 'rail' && trainHits(row, this.hazard.x, this.time)) this.kill('DERAILED!');
       else if (this.onLog && carriedOffEdge(this.x)) this.kill('SWEPT AWAY!');
-      const auto = this.camZ + scrollSpeed(this.time) * dt;
+      const auto = this.camZ + (this.firstHopAt === null ? 0 : scrollSpeed(this.time - this.firstHopAt)) * dt;
       const follow = Math.min(this.z - CONFIG.LEADER_MAX_AHEAD_ROWS, this.camZ + CONFIG.CAMERA_MAX_SPEED * dt);
       this.camZ = Math.max(auto, follow);
       if (this.belowScreen ? this.belowScreen(this.x, this.z, this.camZ) : this.hazard.z < this.camZ) this.kill('LEFT BEHIND!');

@@ -39,7 +39,7 @@ describe('Solo/shared movement', () => {
     expect(player.input('up')).toBe(true); expect(player.toX).toBe(5);
   });
   it('advances camera after the delay and never moves it backwards', () => {
-    const player = new Movement(grass); player.z = 4;
+    const player = new Movement(grass); player.z = 4; player.input('right');
     player.advance(2.99); expect(player.camZ).toBe(0);
     player.advance(4); expect(player.camZ).toBeGreaterThan(.25);
     const cam = player.camZ; player.z = 1; player.advance(4.1); expect(player.camZ).toBeGreaterThanOrEqual(cam);
@@ -51,6 +51,13 @@ describe('Solo/shared movement', () => {
     const player = new Movement(rowAt); player.x = 4.2; player.z = 2; player.onLog = true;
     expect(player.input('up')).toBe(false); expect(player.onLog).toBe(true); expect(player.x).toBe(4.2);
     expect(player.input('right')).toBe(true); expect(player.toX).toBe(5.2);
+  });
+  it('never auto-scrolls before the first hop and starts three seconds after it', () => {
+    const player = new Movement(grass);
+    player.advance(30); expect(player.camZ).toBe(0); expect(player.dead).toBeNull();
+    player.input('up'); player.advance(32.999); expect(player.camZ).toBe(0);
+    player.advance(33.1); expect(player.camZ).toBeGreaterThan(0);
+    player.reset(); expect(player.firstHopAt).toBeNull();
   });
   it('catches a vehicle passing completely through during a long frame and uses full train length', () => {
     const car = new Movement(z => ({ kind: 'road', z, biome: 'meadow', direction: 1, speed: 10, phase: 0, vehicles: [{ offset: 4, length: 1, kind: 'car' }] }));
