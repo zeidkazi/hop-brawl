@@ -976,3 +976,60 @@ Goal: at a glance, nobody should mistake Hop Brawl for another voxel crossing ga
 - **Slow loads:** after 8 s show "Still loading… slow connection" under the bar. On an asset error show "Couldn't load the game" + **Retry** button (re-fetches only the failed files).
 - Respect Reduce Motion: no punch, the layer just fades (200 ms).
 - Remove the current blurred-gradient intro.
+
+## 30. M3 playtest fixes: readability, fair world design, logs, trains (overrides §4.2, §4.3, §10, §23 where they conflict)
+
+### 30.1 Camera framing & playfield size
+- Gameplay window becomes **9 columns × 11 rows** (`VIEW_ROWS = 11`, `TOP_LIMIT_ROWS = 10`, `LEADER_MAX_AHEAD_ROWS = 7`).
+- **Portrait:** the 9 columns + 0.5 tile margin each side fill **≥ 92 % of screen width**.
+- **Landscape/desktop:** fit the 11 rows to the screen height; the 9 playable columns must span **≥ 45 % of screen width** (measure and report). The player character must be clearly readable (≥ 48 px tall at 1440×900).
+- Everything outside the 9 columns is clearly *not* playable (§30.2).
+
+### 30.2 Clear boundaries
+- Out-of-bounds tiles (x < 0 or x > 8) are rendered **30 % darker and 25 % desaturated** and sit 0.1 lower than playfield tiles.
+- A continuous **boundary line** runs along x = −0.5 and x = 8.5 on every row: grass → low white-painted kerb (0.15 tall); road → solid white edge line; river → white foam strip; rail → gravel edge.
+- Bonking the edge flashes a short translucent wall pulse on that boundary line + bonk sound.
+- While riding a log within 1.5 tiles of a boundary: that boundary line pulses red and a "!" pops above the player.
+
+### 30.3 Scenery must match the row
+- Decorative props only appear on **grass rows** outside the playfield (trees, bleachers, bunting, cones, towers). Road rows outside the playfield: just road (optional cones ≥ 3 columns out). River rows: water + reeds/lily pads. Rail rows: track continues.
+- **Never** a tree, rock or prop on a road, river or rail tile — inside or outside the playfield. Add a test that scans 1,000 seeds for this.
+- Arena props (bleachers etc.) start ≥ 2 columns outside the playfield.
+
+### 30.4 What you see is what kills you
+- The rendered camera must match the logical `camZ` (smoothing lag ≤ 0.05 rows). **LEFT BEHIND triggers only when the player is visibly at/below the bottom edge** of the screen; the bottom row shows the red danger vignette (§9.2) before that.
+- Add a test that renders the frame of every LEFT BEHIND death and asserts the player is at/below the bottom edge.
+- Hidden tab / frame drops: when the tab becomes visible again or a frame gap > 250 ms occurs, Solo auto-pauses (versus resyncs). Camera never jumps the player off screen during a hitch.
+
+### 30.5 World generator: segments with rules (replaces the per-row weights in §10)
+The world is a sequence of **segments**; each segment is one type and spans several rows.
+- **Types:** GRASS (breather), ROAD (lanes), RIVER (rows of logs), RAIL (tracks).
+- **Hard rule:** every ROAD / RIVER / RAIL segment is preceded **and** followed by a GRASS segment of ≥ 1 row. No hazard type ever touches a different hazard type (never river → rail, road → river, etc.).
+- **Difficulty tiers by row z** (all numbers in config):
+  | Tier | Rows | ROAD lanes | Car speed (tiles/s) | RIVER rows | Log speed | Log length | RAIL | Grass breather rows | Max obstacles per grass row |
+  |---|---|---|---|---|---|---|---|---|---|
+  | T1 | 0–24 | 1–2 | 1.2–2.0 | 1 | 0.6–0.9 | 3–4 | none | 2–3 | 2 |
+  | T2 | 25–59 | 2–3 | 1.5–2.6 | 1–2 | 0.7–1.1 | 3–4 | single track, first one at z ≥ 30 | 1–2 | 2 |
+  | T3 | 60–119 | 2–4 | 1.8–3.4 | 2–3 | 0.8–1.4 | 2–4 | 1–2 tracks | 1–2 | 3 |
+  | T4 | 120+ | 3–5 | 2.0–4.2 | 2–3 | 0.9–1.6 | 2–4 | 1–2 tracks | 1 | 3 |
+- **Rest stop:** every ~20 rows insert a 3-row GRASS segment with no obstacles in columns 2–6 and doubled crate chance.
+- **Roads:** no 3 consecutive lanes in the same direction; adjacent lanes differ in speed by ≥ 25 %; trucks from T2; the first road ever has 1 lane.
+- **Rivers:** directions alternate per row; logs are always slower than the slowest car of the same tier; at every column a log arrives at least every 2.0 s; consecutive river rows guarantee a jumpable overlap window ≥ 0.5 s at least every 3 s.
+- **Rails:** grass on both sides; the first rail of a run has 2 grass rows before it; train warning 2.0 s in T2, 1.5 s from T3; minimum 7 s between trains on a track.
+- **Grass:** a guaranteed open **corridor** — at least 2 columns that are open on every row of the grass segment; rows directly next to a hazard segment have ≤ 1 obstacle.
+- **Solo start:** auto-scroll begins 3 s after the player's **first hop** (not at HOP!); first 10 rows are T1 with only 1-lane roads.
+- Fuzz tests (1,000 seeds × 300 rows) assert every rule above.
+
+### 30.6 Logs: slot snapping (replaces the log landing rule in §4.2)
+- Each log is divided into **1-tile slots**. When a hop lands on a river row, the player **snaps to the nearest slot** of a log if that slot's center is within **0.6 tiles** of the landing point; otherwise splash. (Forgiving, never "fell off the edge" when it looked like a hit.)
+- While on a log the player's x = log position + slot index; left/right hops move one slot along the log, or off the log onto the next log's nearest slot / water by the same 0.6 rule.
+- Landing is evaluated using the log position **at the moment the hop lands**, and the hop arc visually curves to the slot it will land on.
+
+### 30.7 Trains & rails readability
+- Rail rows have their own ground: gravel bed (grey-brown voxels), wooden sleepers every 0.5 tile, two steel rails — clearly a track, never asphalt.
+- A warning-light post (Blender) at both playfield edges of every rail row; lights flash red + bell during the warning; the whole rail row tints red-pulsing during the warning.
+- Train: engine + carriages from Blender, headlight glow, slight camera shake when passing within 2 rows.
+
+### 30.8 Bugs found in playtest
+- **Logo intro breaks under frame drops** (letters end up scattered/misplaced). All intro/UI animations must be time-based and always settle to their exact final pose; on tab visibility return or a frame gap > 250 ms, jump animations to their end state.
+- **Name dialog leaves a faint ghost panel** after confirming. Overlays must reach opacity 0 and `display: none`/`visibility: hidden` after exit.
