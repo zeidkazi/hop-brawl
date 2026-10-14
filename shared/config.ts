@@ -114,3 +114,50 @@ export function scrollSpeed(t: number): number {
     CONFIG.SCROLL_MAX_SPEED,
   );
 }
+
+/** Presentation/quality numbers from §8.3, §12.4 and §19b; implementation sizing. */
+export const VIEW = Object.freeze({
+  FOV: 35, PITCH_DEG: 55, YAW_DEG: 15, FIT_MARGIN: 1.08,
+  NEAR: 0.1, FAR: 150, RESIZE_DEBOUNCE_MS: 100, RESIZE_SPRING: 12,
+  FPS_CAP: 60, FRAME_TOLERANCE_MS: 0.5, MAX_DELTA_MS: 50,
+  FRAME_WINDOW_MS: 2000, FRAME_SAMPLES: 240, QUALITY_CHECK_MS: 250,
+  DOWNGRADE_P90_MS: 20, DOWNGRADE_HOLD_MS: 3000, UPGRADE_P90_MS: 12,
+  RESOLUTION_MIN: 0.75, RESOLUTION_STEP: 0.05, DEBUG_UPDATE_MS: 500,
+  GROUND_DEPTH: 0.3, TILE_NOISE: 0.04, VOXELS_PER_TILE: 12,
+  DECOR_MIN_X: -6, DECOR_MAX_X: 14, POOL_ROWS: 25, PROPS_PER_ROW: 8,
+  PARTICLE_POOL: 128, TOAST_POOL: 2, SNAPSHOT_POOL: 20,
+  DUST_LIFE_S: 0.45, DUST_SPEED: 1.8, DUST_GRAVITY: 4,
+  IDLE_PERIOD_S: 1.2, IDLE_BOB: 0.035, MENU_DRIFT: 0.2,
+  HEMISPHERE_INTENSITY: 2.2, SUN_INTENSITY: 2.8,
+  SHADOW_MARGIN: 2, SHADOW_BIAS: -0.0005, SHADOW_NORMAL_BIAS: 0.03,
+  BLOB_OPACITY: 0.2, BLOB_Y: 0.013, BLOB_SEGMENTS: 16,
+  WATER_AMPLITUDE: 0.035, WATER_FREQUENCY: 3, WATER_SPEED: 2,
+  HOME_DISTANCE: 13, LOBBY_DISTANCE: 17, SEARCH_DISTANCE: 12,
+  VS_DISTANCE: 8, WINNER_DISTANCE: 10, PODIUM_X: 12,
+  PANEL_ENTER_MS: 280, PANEL_EXIT_MS: 160, PANEL_OVERLAP: 0.6,
+  PANEL_OVERSHOOT: 1.4, STAGGER_MS: 40, WIPE_MS: 250,
+  BUTTON_PRESS_MS: 60, BUTTON_RELEASE_MS: 180, BUTTON_PRESS_PX: 4,
+  COUNTUP_MS: 600, TOAST_IN_MS: 220, TOAST_OUT_MS: 180, TOAST_HOLD_MS: 2500,
+  BANNER_IN_MS: 180, BANNER_OUT_MS: 200, BANNER_OVERSHOOT: 1.06,
+  TILE_FLIP_COLUMNS: 8, TILE_FLIP_ROWS: 10, CAROUSEL_MS: 250,
+  MUSIC_VOLUME: 0.5, SFX_VOLUME: 0.8, NAME_MAX_LENGTH: 12,
+  LOADING_LABEL: 'Loading…',
+} as const);
+
+export const QUALITY = Object.freeze({
+  high: { pixelRatio: 2, samples: 4, shadowSize: 2048, particles: 1, weather: 400, pointLights: 4 },
+  medium: { pixelRatio: 1.5, samples: 0, shadowSize: 1024, particles: 0.6, weather: 150, pointLights: 0 },
+  low: { pixelRatio: 1, samples: 0, shadowSize: 0, particles: 0.3, weather: 0, pointLights: 0 },
+} as const);
+
+export const COLORS = Object.freeze({
+  yellow: '#FFD23F', red: '#EE4266', green: '#3BCEAC', blue: '#4EA8DE', ink: '#1B1B2F', cream: '#FFF6E5',
+  grass: '#8BD46E', grassAlt: '#7CC861', road: '#4A4E5A', water: '#5CC8FF',
+  sky: '#E0F6FF', skyTop: '#87CEFA', sun: '#FFF4E0', tree: '#397D46', rock: '#909CA6',
+  log: '#99633E', rail: '#A8ACB5', crate: '#CC944C', groundSide: '#597D44',
+  players: ['#FF6B6B', '#4D96FF', '#6BCB77', '#C77DFF'],
+  animals: ['#FFF6E5', '#6BCB77', '#E98E3D', '#354050', '#F5A3B9', '#929CAB'],
+} as const);
+
+export const ANIMALS = ['chicken', 'frog', 'fox', 'penguin', 'pig', 'cat'] as const;
+export const ANIMAL_SIZES = [[8, 11, 8], [9, 7, 9], [8, 10, 10], [8, 11, 8], [9, 9, 10], [8, 10, 9]] as const;
