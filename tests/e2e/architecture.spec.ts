@@ -27,7 +27,7 @@ test('keeps one canvas through menus, tier swaps, streaming and tile flips', asy
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('#home')).toBeVisible();
   await page.getByRole('button', { name: 'Next animal' }).click();
-  await expect(page.locator('#animal-label')).toHaveText('frog');
+  await expect(page.locator('#animal-label')).toHaveText('penguin');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.locator('#graphics').selectOption('low');
   await page.locator('#reducedMotion').check();

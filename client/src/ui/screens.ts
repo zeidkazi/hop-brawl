@@ -209,8 +209,8 @@ export class Screens {
     this.preferences.animal = (this.preferences.animal + direction + ANIMALS.length) % ANIMALS.length;
     this.save(); this.updateAnimal(); this.carousel?.kill();
     const home = this.game.home;
-    this.carousel = gsap.timeline().to(home, { swap: -VIEW.CAROUSEL_TRAVEL, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.in', overwrite: 'auto' })
-      .call(() => { this.game.world.animal = this.preferences.animal; home.select(this.preferences.animal); home.swap = VIEW.CAROUSEL_TRAVEL; })
+    this.carousel = gsap.timeline().to(home, { swap: -direction * VIEW.CAROUSEL_TRAVEL, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.in', overwrite: 'auto' })
+      .call(() => { this.game.world.animal = this.preferences.animal; home.select(this.preferences.animal); home.swap = direction * VIEW.CAROUSEL_TRAVEL; })
       .to(home, { swap: 0, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.out' });
   }
   private changeCard(direction: number): void {

@@ -1,4 +1,4 @@
-import { ANIMALS, VIEW } from '../../../shared/config';
+import { ANIMALS, STREET, VIEW } from '../../../shared/config';
 import type { GraphicsChoice } from '../game/quality';
 
 export interface Preferences {
@@ -12,7 +12,7 @@ export interface Preferences {
 }
 export const SETTINGS_KEY = 'hop-brawl-settings';
 export function readPreferences(storage: Pick<Storage, 'getItem'>, reducedMotion = false): Preferences {
-  const defaults: Preferences = { name: '', animal: 0, music: VIEW.MUSIC_VOLUME, sfx: VIEW.SFX_VOLUME,
+  const defaults: Preferences = { name: '', animal: STREET.DEFAULT_ANIMAL, music: VIEW.MUSIC_VOLUME, sfx: VIEW.SFX_VOLUME,
     haptics: true, reducedMotion, graphics: 'auto' };
   try {
     const raw: unknown = JSON.parse(storage.getItem(SETTINGS_KEY) ?? 'null');

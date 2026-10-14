@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ANIMALS } from '../../shared/config';
+import { ANIMALS, STREET } from '../../shared/config';
 
 test('Home keeps its loaded scene through animal and name controls', async ({ page }) => {
   const models: string[] = [];
@@ -8,6 +8,7 @@ test('Home keeps its loaded scene through animal and name controls', async ({ pa
   await expect(page.locator('#home')).toBeVisible({ timeout: 30000 });
   const canvas = await page.locator('#game-canvas').elementHandle();
   const loaded = models.length;
+  await expect(page.locator('#animal-label')).toHaveText('fox');
   expect(models.filter(url => url.endsWith('/logo.glb'))).toHaveLength(1);
   await expect(page.locator('.mode-buttons button')).toHaveCount(3);
   await expect(page.locator('#home .panel')).toHaveCount(0);
@@ -22,12 +23,12 @@ test('Home keeps its loaded scene through animal and name controls', async ({ pa
   await expect(page.locator('#name-caption')).toHaveText('Hopper');
   for (let index = 1; index <= ANIMALS.length; index++) {
     await page.getByRole('button', { name: 'Next animal', exact: true }).click();
-    await expect(page.locator('#animal-label')).toHaveText(ANIMALS[index % ANIMALS.length]!);
+    await expect(page.locator('#animal-label')).toHaveText(ANIMALS[(index + STREET.DEFAULT_ANIMAL) % ANIMALS.length]!);
   }
   await page.getByRole('button', { name: 'Change animal', exact: true }).click();
-  await expect(page.locator('#animal-label')).toHaveText('frog');
+  await expect(page.locator('#animal-label')).toHaveText('penguin');
   await page.keyboard.press('ArrowLeft');
-  await expect(page.locator('#animal-label')).toHaveText('chicken');
+  await expect(page.locator('#animal-label')).toHaveText('fox');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Credits', exact: true }).click();
   await expect(page.locator('#credits')).toContainText('Lilita One');
