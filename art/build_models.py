@@ -320,8 +320,8 @@ def main():
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     config = json.loads(Path(args.config).read_text(encoding='utf-8'))
     if args.menu_props:
-        from build_menu import build
-        build(ROOT, config)
+        from build_menu import build as build_menu
+        build_menu(ROOT, config)
         return
     if args.logo_variants:
         from build_logo import build_variants

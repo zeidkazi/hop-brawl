@@ -19,10 +19,13 @@ export class HomeScene {
   readonly animalRoot = new Group();
   readonly standard = new MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
   readonly lambert = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  private readonly gloveStandard = this.standard.clone();
+  private readonly gloveLambert = this.lambert.clone();
   private readonly flatWater = this.lambert.clone();
   readonly animals: Group[] = [];
   readonly eyes: Object3D[][] = [];
   readonly tails: Object3D[][] = [];
+  readonly gloves: Object3D[][] = [];
   readonly labels: Object3D[] = [];
   readonly arrows: Object3D[] = [];
   private readonly meshes: Mesh[] = [];
@@ -47,6 +50,7 @@ export class HomeScene {
   onTargets: ((points: Float64Array) => void) | null = null;
 
   async load(): Promise<void> {
+    this.setPlayerColor(0);
     const loader = new GLTFLoader();
     const names = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls'];
     const loaded = await Promise.all(names.map(async name => [name, (await loader.loadAsync(`/models/${name}.glb`)).scene] as const));
@@ -63,9 +67,10 @@ export class HomeScene {
     for (const name of ANIMALS) {
       const animal = assets.get(name)!;
       this.animals.push(animal); this.animalRoot.add(animal);
-      const eyes: Object3D[] = [], tails: Object3D[] = [];
-      animal.traverse(obj => { if (obj.userData.part === 'eyes') eyes.push(obj); if (obj.userData.part === 'tail') tails.push(obj); });
+      const eyes: Object3D[] = [], tails: Object3D[] = [], gloves: Object3D[] = [];
+      animal.traverse(obj => { if (obj.userData.part === 'eyes') eyes.push(obj); if (obj.userData.part === 'tail') tails.push(obj); if (obj.userData.part?.startsWith('glove_')) gloves.push(obj); });
       this.eyes.push(eyes); this.tails.push(tails);
+      this.gloves.push(gloves);
       animal.visible = false;
     }
     this.animalRoot.position.set(4, 0, -1);
@@ -202,11 +207,16 @@ export class HomeScene {
   applyTier(tier: Tier): void {
     for (const mesh of this.meshes) {
       if (mesh === this.blobs) continue;
-      mesh.material = tier === 'high' ? this.standard : this.lambert;
+      mesh.material = mesh.userData.player_color ? (tier === 'high' ? this.gloveStandard : this.gloveLambert) : (tier === 'high' ? this.standard : this.lambert);
       mesh.castShadow = mesh.userData.shadowKind !== 'logo' && (tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string)));
     }
     if (this.blobs) this.blobs.visible = tier === 'low';
     if (this.water) this.water.material = tier === 'low' ? this.flatWater : this.waterMaterials[tier === 'high' ? 0 : 1]!;
+  }
+
+  setPlayerColor(index: number): void {
+    const color = COLORS.players[index] ?? COLORS.players[0];
+    this.gloveStandard.color.set(color); this.gloveLambert.color.set(color);
   }
 
   warmAll(value: boolean): void {
@@ -283,6 +293,7 @@ export class HomeScene {
     for (const eye of this.eyes[this.selected]!) eye.visible = !blink;
     for (const eye of this.logoEyes) eye.visible = !blink;
     for (const tail of this.tails[this.selected]!) tail.rotation.y = this.reduced ? 0 : Math.sin(time * HOME.TAIL_SPEED) * HOME.TAIL_WAG;
+    for (let i = 0; i < this.gloves[this.selected]!.length; i++) this.gloves[this.selected]![i]!.rotation.x = this.reduced ? 0 : Math.sin(time * HOME.GLOVE_SPEED + i * Math.PI) * HOME.GLOVE_SWING * (hop > 0 ? 2 : 1);
     this.logo.position.copy(this.logoBase).addScaledVector(this.up, this.reduced ? 0 : Math.sin(time) * HOME.LOGO_BOB);
   }
 }
