@@ -24,6 +24,7 @@ export class Boxer {
   private clock = 0;
   review: { move: BoxerMove; elapsed: number } | null = null;
   onCue: ((cue: BoxerCue) => void) | null = null;
+  get punchSide(): number { return this.side; }
 
   constructor(readonly body: Object3D, private readonly random = Math.random) {
     let left: Object3D | undefined, right: Object3D | undefined;

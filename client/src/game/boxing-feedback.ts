@@ -1,4 +1,4 @@
-import { Group, Mesh, MeshBasicMaterial, Shape, ShapeGeometry } from 'three';
+import { Group, Mesh, MeshBasicMaterial, Shape, ShapeGeometry, Vector3 } from 'three';
 import { BOXER, COLORS } from '../../../shared/config';
 import type { BoxerCue, BoxerMove } from './boxer';
 
@@ -31,6 +31,7 @@ export class BoxingEffects {
   readonly root = new Group();
   private readonly stars: Mesh[] = [];
   private until = -1;
+  private readonly contactPoint = new Vector3();
   constructor() {
     const shape = new Shape();
     for (let i = 0; i < 10; i++) {
@@ -41,9 +42,10 @@ export class BoxingEffects {
     shape.closePath();
     const geometry = new ShapeGeometry(shape);
     const material = new MeshBasicMaterial({ color: COLORS.yellow, toneMapped: false, fog: false });
-    for (let i = 0; i < 3; i++) { const star = new Mesh(geometry, material); star.userData.effect = true; star.scale.setScalar(BOXER.STAR_SIZE); this.stars.push(star); this.root.add(star); }
+    for (let i = 0; i < 3; i++) { const star = new Mesh(geometry, material); star.userData.effect = true; star.frustumCulled = false; star.scale.setScalar(BOXER.STAR_SIZE); this.stars.push(star); this.root.add(star); }
   }
-  contact(time: number): void { this.until = time + BOXER.STAR_LIFE; }
+  contact(time: number, point: Vector3): void { this.until = time + BOXER.STAR_LIFE; this.contactPoint.copy(point); }
+  warmAll(value: boolean): void { for (const star of this.stars) star.visible = value; }
   update(time: number, move: BoxerMove, reduced: boolean): void {
     for (let i = 0; i < this.stars.length; i++) {
       const star = this.stars[i]!;
@@ -51,6 +53,7 @@ export class BoxingEffects {
       const angle = time * 8 + i * Math.PI * 2 / 3;
       star.position.set(move === 'stunned' ? Math.cos(angle) * BOXER.STAR_RADIUS : 0,
         move === 'stunned' ? BOXER.STAR_Y : 0.45, move === 'stunned' ? Math.sin(angle) * BOXER.STAR_RADIUS : -0.6);
+      if (move !== 'stunned') star.position.copy(this.contactPoint).sub(this.root.position);
       star.rotation.z = angle;
     }
   }

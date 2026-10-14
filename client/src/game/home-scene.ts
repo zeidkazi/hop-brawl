@@ -6,7 +6,7 @@ import {
 import type { PerspectiveCamera } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { ANIMALS, COLORS, CONFIG, HOME, STREET, VIEW } from '../../../shared/config';
+import { ANIMALS, BOXER, COLORS, CONFIG, HOME, STREET, VIEW } from '../../../shared/config';
 import { mulberry32 } from '../../../shared/rng';
 import type { Tier } from './quality';
 import { Outlines } from './outlines';
@@ -35,6 +35,8 @@ export class HomeScene {
   readonly sound = new BoxingSound();
   readonly effects = new BoxingEffects();
   private time = 0;
+  private readonly contactLeft = new Vector3();
+  private readonly contactRight = new Vector3();
   private readonly flatWater = this.lambert.clone();
   readonly animals: Group[] = [];
   readonly eyes: Object3D[][] = [];
@@ -87,7 +89,11 @@ export class HomeScene {
       this.eyes.push(eyes); this.tails.push(tails);
       this.gloves.push(gloves);
       const boxer = new Boxer(animal); this.boxers.push(boxer);
-      boxer.onCue = cue => { this.sound.play(cue); if (cue === 'tock' || cue === 'hit') this.effects.contact(this.time); if (cue === 'win') this.arena?.cheerKO(this.time); };
+      boxer.onCue = cue => {
+        this.sound.play(cue);
+        if (cue === 'tock' || cue === 'hit') this.contact(boxer, cue);
+        if (cue === 'win') this.arena?.cheerKO(this.time);
+      };
       animal.visible = false;
     }
     this.animalRoot.position.set(4, 0, -1);
@@ -274,9 +280,18 @@ export class HomeScene {
   move(move: BoxerMove, side: -1 | 1 = -1): void { this.boxers[this.selected]!.play(move, side); }
   landed(): void { this.boxers[this.selected]!.landed(); }
   reviewMove(move: BoxerMove, elapsed: number): void { this.boxers[this.selected]!.review = { move, elapsed }; }
+  private contact(boxer: Boxer, cue: 'tock' | 'hit'): void {
+    boxer.body.updateWorldMatrix(true, true);
+    boxer.left.localToWorld(this.contactLeft.set(0, 0, -BOXER.PUNCH_DISTANCE / 2));
+    boxer.right.localToWorld(this.contactRight.set(0, 0, -BOXER.PUNCH_DISTANCE / 2));
+    if (cue === 'tock') this.contactLeft.lerp(this.contactRight, 0.5);
+    else if (boxer.punchSide > 0) this.contactLeft.copy(this.contactRight);
+    this.effects.contact(this.time, this.contactLeft);
+  }
 
   warmAll(value: boolean): void {
     this.warming = value;
+    this.effects.warmAll(value);
     if (value) this.arena?.warmAll();
     for (const animal of this.animals) animal.visible = value;
     for (const label of this.labels) label.visible = value;
@@ -289,7 +304,7 @@ export class HomeScene {
 
   layout(camera: PerspectiveCamera): void {
     camera.updateMatrixWorld();
-    this.effects.root.quaternion.copy(camera.quaternion);
+    for (const star of this.effects.root.children) star.quaternion.copy(camera.quaternion);
     const distance = camera.position.distanceTo(new Vector3(4, HOME.FOCUS_Y, -1));
     const height = 2 * Math.tan(camera.fov * Math.PI / 360) * distance;
     this.right.set(1, 0, 0).applyQuaternion(camera.quaternion);
@@ -348,6 +363,9 @@ export class HomeScene {
     }
     this.boxers[this.selected]!.update(time);
     this.animalRoot.position.set(4 + this.swap, Math.abs(this.swap) / 2, -1);
+    const review = this.boxers[this.selected]!.review;
+    if (review && ((review.move === 'tap' && BOXER.TAP_CONTACTS.some(at => Math.abs(at - review.elapsed) < BOXER.STAR_LIFE / 4))
+      || (review.move === 'punch' && Math.abs(BOXER.PUNCH_CONTACT - review.elapsed) < BOXER.STAR_LIFE / 4))) this.contact(this.boxers[this.selected]!, review.move === 'tap' ? 'tock' : 'hit');
     this.effects.root.position.copy(this.animalRoot.position);
     this.effects.update(time, this.boxers[this.selected]!.review?.move ?? this.boxers[this.selected]!.move, this.reduced);
     if (this.blobs) {

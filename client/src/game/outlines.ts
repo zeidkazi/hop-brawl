@@ -10,6 +10,7 @@ export function outlinedAt(kind: OutlineKind, tier: Tier): boolean {
 /** Back-face hulls share instance buffers and never cast shadows. No screen pass. */
 export class Outlines {
   readonly material = new MeshBasicMaterial({ color: COLORS.ink, side: BackSide, toneMapped: false });
+  private readonly foregroundMaterial = new MeshBasicMaterial({ color: COLORS.ink, side: BackSide, toneMapped: false, fog: false });
   readonly entries: { source: Mesh; shell: Mesh; kind: OutlineKind }[] = [];
   private readonly geometries = new Map<BufferGeometry, BufferGeometry>();
   add(source: Mesh, kind: OutlineKind): void {
@@ -22,7 +23,8 @@ export class Outlines {
       geometry.translate(center.x, center.y, center.z);
       this.geometries.set(source.geometry, geometry);
     }
-    const shell = source instanceof InstancedMesh ? new InstancedMesh(geometry, this.material, source.count) : new Mesh(geometry, this.material);
+    const material = kind === 'logo' || kind === 'ui' ? this.foregroundMaterial : this.material;
+    const shell = source instanceof InstancedMesh ? new InstancedMesh(geometry, material, source.count) : new Mesh(geometry, material);
     if (shell instanceof InstancedMesh && source instanceof InstancedMesh) {
       shell.instanceMatrix = source.instanceMatrix;
       shell.boundingSphere = source.boundingSphere?.clone() ?? null;
