@@ -96,11 +96,12 @@ export class HomeScene {
       };
       animal.visible = false;
     }
-    this.animalRoot.position.set(4, 0, -1);
+    this.animalRoot.position.set(4, 0, HOME.ANIMAL_Z);
     this.animalRoot.rotation.y = HOME.ANIMAL_YAW;
     this.animalRoot.scale.setScalar(HOME.ANIMAL_SCALE);
     this.root.add(this.animalRoot);
     this.root.add(this.effects.root);
+    this.effects.root.scale.setScalar(HOME.ANIMAL_SCALE);
     const logo = assets.get('logo')!;
     const logoBounds = new Box3().setFromObject(logo);
     const center = logoBounds.getCenter(new Vector3());
@@ -282,8 +283,8 @@ export class HomeScene {
   reviewMove(move: BoxerMove, elapsed: number): void { this.boxers[this.selected]!.review = { move, elapsed }; }
   private contact(boxer: Boxer, cue: 'tock' | 'hit'): void {
     boxer.body.updateWorldMatrix(true, true);
-    boxer.left.localToWorld(this.contactLeft.set(0, 0, -BOXER.PUNCH_DISTANCE / 2));
-    boxer.right.localToWorld(this.contactRight.set(0, 0, -BOXER.PUNCH_DISTANCE / 2));
+    boxer.left.localToWorld(this.contactLeft.set(0, 0, -BOXER.PUNCH_DISTANCE));
+    boxer.right.localToWorld(this.contactRight.set(0, 0, -BOXER.PUNCH_DISTANCE));
     if (cue === 'tock') this.contactLeft.lerp(this.contactRight, 0.5);
     else if (boxer.punchSide > 0) this.contactLeft.copy(this.contactRight);
     this.effects.contact(this.time, this.contactLeft);
@@ -316,12 +317,12 @@ export class HomeScene {
     this.logo.scale.setScalar(Math.min(height * camera.aspect * HOME.LOGO_WIDTH_RATIO, height * HOME.LOGO_HEIGHT_RATIO) / this.logoWidth);
     for (let i = 0; i < this.arrows.length; i++) {
       const arrow = this.arrows[i]!;
-      arrow.position.set(4, HOME.ARROW_HEIGHT, -1).addScaledVector(this.right, (i ? 1 : -1) * HOME.ARROW_OFFSET);
+      arrow.position.set(4, HOME.ARROW_HEIGHT, HOME.ANIMAL_Z).addScaledVector(this.right, (i ? 1 : -1) * HOME.ARROW_OFFSET);
       arrow.quaternion.copy(camera.quaternion);
       this.point.copy(arrow.position).project(camera);
       this.targets[i * 2] = (this.point.x + 1) / 2; this.targets[i * 2 + 1] = (1 - this.point.y) / 2;
     }
-    this.point.set(4, 0.65, -1).project(camera); this.targets[4] = (this.point.x + 1) / 2; this.targets[5] = (1 - this.point.y) / 2;
+    this.point.set(4, 0.65, HOME.ANIMAL_Z).project(camera); this.targets[4] = (this.point.x + 1) / 2; this.targets[5] = (1 - this.point.y) / 2;
     this.onTargets?.(this.targets);
   }
 
@@ -362,14 +363,14 @@ export class HomeScene {
       }
     }
     this.boxers[this.selected]!.update(time);
-    this.animalRoot.position.set(4 + this.swap, Math.abs(this.swap) / 2, -1);
+    this.animalRoot.position.set(4 + this.swap, Math.abs(this.swap) / 2, HOME.ANIMAL_Z);
     const review = this.boxers[this.selected]!.review;
     if (review && ((review.move === 'tap' && BOXER.TAP_CONTACTS.some(at => Math.abs(at - review.elapsed) < BOXER.STAR_LIFE / 4))
       || (review.move === 'punch' && Math.abs(BOXER.PUNCH_CONTACT - review.elapsed) < BOXER.STAR_LIFE / 4))) this.contact(this.boxers[this.selected]!, review.move === 'tap' ? 'tock' : 'hit');
     this.effects.root.position.copy(this.animalRoot.position);
     this.effects.update(time, this.boxers[this.selected]!.review?.move ?? this.boxers[this.selected]!.move, this.reduced);
     if (this.blobs) {
-      this.transform.position.set(4 + this.swap, VIEW.BLOB_Y, -1); this.transform.rotation.set(0, 0, 0);
+      this.transform.position.set(4 + this.swap, VIEW.BLOB_Y, HOME.ANIMAL_Z); this.transform.rotation.set(0, 0, 0);
       this.transform.scale.set(0.6, 1, 0.5); this.transform.updateMatrix(); this.blobs.setMatrixAt(0, this.transform.matrix);
       this.blobs.instanceMatrix.needsUpdate = true;
     }

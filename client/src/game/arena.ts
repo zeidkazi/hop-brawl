@@ -103,7 +103,10 @@ export class Arena {
         float angle = armSide * 3.14159265 * min(1.0, uCheer / ${STREET.CHEER_HEIGHT});
         vec2 pivot = vec2(armSide * ${STREET.CROWD_ARM_X}, ${STREET.CROWD_ARM_Y});
         vec2 arm = transformed.xy - pivot;
-        if (armSide != 0.0) transformed.xy = mat2(cos(angle), sin(angle), -sin(angle), cos(angle)) * arm + pivot;
+        if (armSide != 0.0) {
+          transformed.xy = mat2(cos(angle), sin(angle), -sin(angle), cos(angle)) * arm + pivot;
+          transformed.xy += vec2(armSide * ${STREET.CROWD_ARM_SPREAD}, ${STREET.CROWD_ARM_LIFT}) * min(1.0, uCheer / ${STREET.CHEER_HEIGHT});
+        }
         transformed.y += sin(phase) * ${STREET.CROWD_BOB} + abs(sin(phase * 2.0)) * uCheer;`);
     };
     material.customProgramCacheKey = () => 'street-crowd';

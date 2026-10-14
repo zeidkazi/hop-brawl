@@ -53,7 +53,7 @@ export class BoxingEffects {
       const angle = time * 8 + i * Math.PI * 2 / 3;
       star.position.set(move === 'stunned' ? Math.cos(angle) * BOXER.STAR_RADIUS : 0,
         move === 'stunned' ? BOXER.STAR_Y : 0.45, move === 'stunned' ? Math.sin(angle) * BOXER.STAR_RADIUS : -0.6);
-      if (move !== 'stunned') star.position.copy(this.contactPoint).sub(this.root.position);
+      if (move !== 'stunned') star.position.copy(this.contactPoint).sub(this.root.position).divide(this.root.scale);
       star.rotation.z = angle;
     }
   }
