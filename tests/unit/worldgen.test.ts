@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../shared/config';
-import { biomeAtRow, difficultyAtRow, generateGrassRow, rowKind } from '../../shared/worldgen';
+import { biomeAtRow, difficultyAtRow, generateGrassRow, generateRailRow, generateRow, rowKind } from '../../shared/worldgen';
 
 describe('row selection', () => {
   it('protects starting rows and the first ten hazard rows', () => {
@@ -50,5 +50,28 @@ describe('grass', () => {
       }
     }
     expect(crates).toBeGreaterThan(0);
+  });
+});
+
+describe('complete world', () => {
+  it('reconstructs full descriptors in arbitrary order without shared mutable state', () => {
+    const indices = [0, 8, 17, 35, 81, 159, 8000, 0x100000001];
+    const first = indices.map(z => generateRow(20261030, z));
+    for (let i = indices.length - 1; i >= 0; i--) {
+      generateRow(999, indices[i]!);
+      expect(generateRow(20261030, indices[i]!)).toEqual(first[i]);
+    }
+  });
+
+  it('chooses train periods from 6–10 seconds with seeded phase and direction', () => {
+    for (let seed = 0; seed < 100; seed++) {
+      const rail = generateRailRow(seed, 80);
+      expect(rail.period).toBeGreaterThanOrEqual(6);
+      expect(rail.period).toBeLessThanOrEqual(10);
+      expect(rail.phase).toBeGreaterThanOrEqual(0);
+      expect(rail.phase).toBeLessThan(rail.period);
+      expect([-1, 1]).toContain(rail.direction);
+      expect(rail).toEqual(generateRailRow(seed, 80));
+    }
   });
 });

@@ -1,7 +1,7 @@
 import { CONFIG, WORLD } from './config';
 import { hash32, mulberry32, randomBetween, randomInt } from './rng';
 import type { Random } from './rng';
-import type { Biome, GrassRow, LaneItem, Obstacle, RiverRow, RoadRow, RowKind, Vehicle } from './types';
+import type { Biome, GrassRow, LaneItem, Obstacle, RailRow, RiverRow, RoadRow, Row, RowKind, Vehicle } from './types';
 
 const BIOMES: readonly Biome[] = ['meadow', 'autumn', 'snow', 'nightCity'];
 
@@ -156,4 +156,24 @@ export function generateRiverRow(seed: number, z: number): RiverRow {
     kind: 'river', z, biome: biomeAtRow(z), direction, speed,
     phase: randomBetween(random, 0, span), logs,
   };
+}
+
+export function generateRailRow(seed: number, z: number): RailRow {
+  const random = rowRandom(seed, z);
+  const period = randomBetween(random, WORLD.TRAIN_PERIOD_MIN_S, WORLD.TRAIN_PERIOD_MAX_S);
+  return {
+    kind: 'rail', z, biome: biomeAtRow(z), period,
+    phase: randomBetween(random, 0, period),
+    direction: randomInt(random, 0, 1) === 0 ? -1 : 1,
+  };
+}
+
+/** Pure row generation. Cache/recycle these descriptors outside the render loop. */
+export function generateRow(seed: number, z: number): Row {
+  switch (rowKind(seed, z)) {
+    case 'grass': return generateGrassRow(seed, z);
+    case 'road': return generateRoadRow(seed, z);
+    case 'river': return generateRiverRow(seed, z);
+    case 'rail': return generateRailRow(seed, z);
+  }
 }
