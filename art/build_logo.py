@@ -188,7 +188,7 @@ def build_variant(root, config, blocks, street=False):
     bpy.context.collection.objects.link(chicken)
     chicken.location = perch
     chicken.rotation_euler.z = math.pi
-    chicken.scale = (config['LOGO_CHICKEN_SCALE'],) * 3
+    chicken.scale = (config['LOGO_CHICKEN_SCALE'] * (config['LOGO_FOX_SCALE_MULTIPLIER'] if street else 1),) * 3
     for obj in chicken_parts:
         obj.parent = chicken
     handles.append(chicken); objects += chicken_parts
@@ -216,6 +216,16 @@ def build_variant(root, config, blocks, street=False):
     print(f'LOGO_SIZE {name}: {output.stat().st_size}', flush=True)
     from brawler_gear import tint_preview
     tint_preview(chicken_parts, config['PLAYER_COLORS'][0])
+    if street:
+        # Match the fog-free, unlit vertex-color runtime exactly, including tint.
+        for obj in objects:
+            mat = obj.data.materials[0].copy(); obj.data.materials[0] = mat
+            nodes, links = mat.node_tree.nodes, mat.node_tree.links
+            shader = nodes.get('Principled BSDF')
+            color_socket = shader.inputs['Base Color'].links[0].from_socket
+            emission = nodes.new('ShaderNodeEmission'); emission.inputs['Strength'].default_value = 1
+            links.new(color_socket, emission.inputs['Color'])
+            links.new(emission.outputs[0], nodes.get('Material Output').inputs['Surface'])
     render(root, objects, name, config)
     bpy.ops.file.pack_all()
     bpy.context.preferences.filepaths.save_version = 0
