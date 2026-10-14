@@ -858,3 +858,38 @@ Run each check, fix what you can, and give the owner exact instructions for anyt
 | 11 | Ports free for local dev | Vite 5173, wrangler 8787 | Use the next free port and update `ALLOWED_ORIGINS` for local dev |
 
 Items 9–10 may be postponed to milestone 7 if the owner prefers, but must be listed as pending in `PROGRESS.md`.
+
+## 28. Art & UI direction correction (after M2 review — overrides §8.1, §8.2 #3, §12.1, §25 where they conflict)
+
+### 28.1 Blender is mandatory for every 3D asset
+- The owner installs Blender (free, blender.org). Work drives it **headless from the terminal**: `blender -b -P art/build_models.py -- <args>` (no MCP needed). The Node voxel pipeline in §25 is **removed** as a fallback.
+- All models — animals, vehicles, props, crate, **and the HOP BRAWL logo** — are built in Blender (voxel style per §12), with baked AO, exported as `.glb`. `.blend` sources committed in `/art`.
+- For each model, Work renders a **preview PNG** from Blender (`art/previews/<name>.png`, 3/4 view, transparent background) and shows them to the owner for approval in batches.
+
+### 28.2 No pixel font, nothing blurry
+- **Remove Pixelify Sans.** Display font: **Lilita One** (`@fontsource/lilita-one`, OFL) for buttons, banners, numbers. Body: **Nunito** 700/800.
+- **Dynamic resolution never runs on menu screens** — menus always render at the full tier pixel ratio. Dynamic resolution only applies during PLAYING.
+- No `image-rendering: pixelated`, no upscaled low-res canvases, no bitmap text. Everything crisp at any DPR (test at 100 %, 125 %, 150 %, 200 %).
+
+### 28.3 No edges, no void
+- Canvas is `position: fixed; inset: 0`, sized to integer device pixels; `html`, `body` and every overlay background are transparent or the **current sky color**, so a 1-px rounding gap can never show white. Test at DPR 1.25 and odd window sizes.
+- The 3D world must always fill the screen with real scenery: no flat grey/blank background on any screen. Sky = gradient per biome (§12.3), fog matches sky.
+
+### 28.4 Home screen layout (replaces §8.2 #3)
+The 3D scene **is** the menu. UI is minimal and sits on top without covering the world.
+- **Scene:** a lit Meadow diorama in gameplay perspective — a grass strip in the middle with your animal idling (blinks, bob, occasional hop in place), a live road above and below with traffic passing, a river with logs in the distance, trees on the sides. Soft shadows. Camera drifts slowly.
+- **Logo:** the Blender **3D voxel "HOP BRAWL" logo** stands *in the world* in the upper third (two lines, "HOP" white/cream, "BRAWL" yellow with dark outline voxels), drops in with a bounce on load, then bobs gently. Not HTML text.
+- **Animal select:** tap/click the animal (or the ◀ ▶ arrows floating next to it in the scene, rendered as small 3D voxel arrows) to cycle animals; old one hops out, new one hops in. Animal name appears on a small in-world wooden signpost next to it.
+- **Name:** small pill top-left: "✎ {name}" (tap to edit in a compact sheet). If empty: "✎ Tap to set name".
+- **Primary actions (bottom, over a soft dark gradient so text reads):**
+  - Portrait: one big **PLAY** button (Brawl Yellow, full width minus 32 px), and under it two equal buttons **FRIENDS** (green) and **SOLO** (blue).
+  - Landscape/desktop: the three buttons in a single centered row at the bottom (PLAY widest).
+  - PLAY = Quick Play.
+- **Top-right:** round icon buttons — **?** (How to Play), **⚙** (Settings). Credits lives inside Settings.
+- No panels, cards or boxed forms on Home. Max 3 primary buttons visible.
+- Buttons: chunky 3D look (§8.1), Lilita One, white text with dark outline on colored buttons, bounce on hover/press.
+- Keyboard: Enter = PLAY, ←/→ = change animal, S = Solo, F = Friends.
+
+### 28.5 All other screens
+- Same rule: the scene stays visible and alive; UI is a bottom sheet or a centered card **only when input is needed** (join code, settings, results), with the slanted fighting-game banners from §8.1 for titles.
+- Before implementing any screen, Work takes a screenshot at 390×844 and 1440×900 and shows the owner for approval.
