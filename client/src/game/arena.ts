@@ -5,8 +5,9 @@ import { COLORS, CONFIG, HOME, STREET } from '../../../shared/config';
 import { mulberry32 } from '../../../shared/rng';
 import { Outlines } from './outlines';
 import type { Tier } from './quality';
+import type { Biome } from '../../../shared/types';
 
-export type ArenaBiome = 'meadow' | 'autumn' | 'snow' | 'city';
+export type ArenaBiome = Biome;
 /** Static instance buffers + shared GPU crowd clock, no spectator update objects. */
 export class Arena {
   readonly root = new Group();
@@ -100,15 +101,17 @@ export class Arena {
       mesh.visible = name === 'snow_bleacher' || name === 'scarf' ? this.biome === 'snow'
         : name === 'bleacher' ? this.biome !== 'snow'
           : name === 'hay' || name === 'pumpkin' ? this.biome === 'autumn'
-            : name === 'neon_sign' ? this.biome === 'city' : true;
+            : name === 'neon_sign' ? this.biome === 'nightCity' : true;
     }
     this.batches.get('spectator')!.material = this.crowdMaterials[tier === 'high' ? 0 : 1]!;
-    if (this.biome === 'city') { this.batches.get('neon_sign')!.material = this.night; this.batches.get('spotlight')!.material = this.night; }
-    for (const light of this.lamps) light.visible = this.biome === 'city' && tier === 'high';
+    this.batches.get('scarf')!.material = this.crowdMaterials[tier === 'high' ? 0 : 1]!;
+    if (this.biome === 'nightCity') { this.batches.get('neon_sign')!.material = this.night; this.batches.get('spotlight')!.material = this.night; }
+    for (const light of this.lamps) light.visible = this.biome === 'nightCity' && tier === 'high';
   }
   warmAll(): void { for (const mesh of this.batches.values()) mesh.visible = true; }
   setReduced(value: boolean): void { this.reduced = value; }
-  cheerKO(time: number): void { this.cheerEnd = time + STREET.CHEER_SECONDS; }
+  cheerKO(time = this.clock.value): void { this.cheerEnd = time + STREET.CHEER_SECONDS; }
+  get cheering(): boolean { return this.cheer.value > 0; }
   update(time: number): void {
     this.clock.value = this.reduced ? 0 : time;
     this.cheer.value = this.reduced || time >= this.cheerEnd ? 0 : STREET.CHEER_HEIGHT;

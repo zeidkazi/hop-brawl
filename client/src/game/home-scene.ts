@@ -262,6 +262,14 @@ export class HomeScene {
     const color = COLORS.players[index] ?? COLORS.players[0];
     this.gloveStandard.color.set(color); this.gloveLambert.color.set(color);
   }
+  get selectedAnimal(): string { return ANIMALS[this.selected]!; }
+  punch(): void {
+    for (const glove of this.gloves[this.selected]!) {
+      const rest = glove.userData.restZ ??= glove.position.z;
+      gsap.killTweensOf(glove.position);
+      gsap.fromTo(glove.position, { z: rest }, { z: rest - HOME.GLOVE_PUNCH, duration: HOME.GLOVE_PUNCH_MS / 2000, repeat: 1, yoyo: true });
+    }
+  }
 
   warmAll(value: boolean): void {
     this.warming = value;

@@ -164,6 +164,13 @@ export const COLORS = Object.freeze({
 } as const);
 
 export const ANIMALS = ['chicken', 'frog', 'fox', 'penguin', 'pig', 'cat'] as const;
+/** Section 29 saturation direction; gameplay biome blending remains in M10. */
+export const BIOME_PALETTES = Object.freeze({
+  meadow: { grass: [COLORS.grass, COLORS.grassAlt], road: COLORS.road, water: COLORS.water, sky: [COLORS.skyTop, COLORS.sky], sun: COLORS.sun },
+  autumn: { grass: ['#D6A436', '#C58D2B'], road: '#45323B', water: '#22A8B8', sky: ['#F29A58', '#FFE0B0'], sun: '#FFD28A' },
+  snow: { grass: ['#DAF3FF', '#C9E9F7'], road: '#384357', water: '#54CADD', sky: ['#8BBEED', '#E8F4FF'], sun: '#D6E7FF' },
+  nightCity: { grass: ['#26484B', '#1D3A40'], road: '#211D31', water: '#156B83', sky: ['#171637', '#493257'], sun: '#91B2FF' },
+} as const);
 export const STREET = Object.freeze({
   OUTLINE_SCALE: 1.03, RIM_COLOR: '#8CCBFF', RIM_INTENSITY: 1.8,
   RIM_POSITION: [8, 8, -8], DEFAULT_ANIMAL: 2,
@@ -215,4 +222,5 @@ export const HOME = Object.freeze({
   HOP_PERIOD_S: 6.5, HOP_DURATION_S: 0.5, HOP_HEIGHT: 0.35,
   TAIL_WAG: 0.12, TAIL_SPEED: 3, DASH_LENGTH: 0.6, DASH_WIDTH: 0.045,
   GLOVE_SWING: 0.12, GLOVE_SPEED: 3,
+  GLOVE_PUNCH: 0.18, GLOVE_PUNCH_MS: 100,
 } as const);

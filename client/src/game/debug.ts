@@ -12,6 +12,7 @@ export interface DebugApi {
     frames: number; calls: number; triangles: number; geometries: number; textures: number; delta: number;
     tier: string; choice: string; resolution: number; pixelRatio: number; p95: number; worst: number;
     programs: number; rows: number; generatedRows: number; particles: number; station: Station; mobile: boolean;
+    animal: string; animalOffset: number; crowdCheering: boolean;
   };
   station(value: Station): void;
   graphics(value: GraphicsChoice): void;
@@ -19,6 +20,8 @@ export interface DebugApi {
   flip(): void;
   toast(text: string): void;
   particles(): void;
+  cheer(): void;
+  punch(): void;
 }
 declare global { interface Window { __HOP_DEBUG__?: DebugApi } }
 
@@ -31,23 +34,27 @@ export function setupDebug(game: GameRenderer, screens: Screens): void {
       resolution: game.quality.resolution, pixelRatio: game.renderer.getPixelRatio(), p95: game.quality.frames.p95,
       worst: game.quality.frames.worst, programs: game.renderer.info.programs?.length ?? 0,
       rows: game.world.rows.length, generatedRows: game.world.generatedRows,
-      particles: game.particles.pool.count, station: game.rig.station, mobile: game.quality.mobile }),
+      particles: game.particles.pool.count, station: game.rig.station, mobile: game.quality.mobile,
+      animal: game.home.selectedAnimal, animalOffset: game.home.swap, crowdCheering: game.home.arena?.cheering ?? false }),
     station: value => game.go(value),
     graphics: value => game.setGraphics(value),
     scroll: value => { game.rig.targetCamZ = value; },
     flip: () => screens.motion.tileFlip(() => { game.world.reset(CONFIG.HOME_DIORAMA_SEED); game.rig.targetCamZ = 0; }),
     toast: text => screens.motion.toast(text),
     particles: () => game.particles.burst(game.world.animalX, game.world.animalZ),
+    cheer: () => game.home.arena?.cheerKO(),
+    punch: () => game.home.punch(),
   };
   window.__HOP_DEBUG__ = api;
   const gui = new GUI({ title: 'Hop Brawl · debug' });
   const controls = { station: 'home', graphics: game.quality.choice, camZ: 0, menus: true,
-    'Tile flip': api.flip, 'Dust burst': api.particles, Toast: () => api.toast('HOP!') };
+    'Tile flip': api.flip, 'Dust burst': api.particles, 'Crowd K.O.': api.cheer, 'Glove punch': api.punch, Toast: () => api.toast('HOP!') };
   gui.add(controls, 'station', STATIONS).onChange((value: Station) => api.station(value));
   gui.add(controls, 'graphics', ['auto', 'high', 'low']).onChange((value: GraphicsChoice) => api.graphics(value));
   gui.add(controls, 'camZ', 0, CONFIG.BIOME_LENGTH_ROWS * 2, 1).onChange((value: number) => api.scroll(value));
   gui.add(controls, 'menus').onChange((value: boolean) => { screens.root.hidden = !value; });
   gui.add(controls, 'Tile flip'); gui.add(controls, 'Dust burst'); gui.add(controls, 'Toast');
+  gui.add(controls, 'Crowd K.O.'); gui.add(controls, 'Glove punch');
   gui.close();
   let nextReadout = 0;
   game.onFrame = now => {
