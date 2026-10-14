@@ -279,6 +279,14 @@ export class WorldView {
     this.backdrop.boundingSphere!.center.set(4, 0, -this.requestedBottom); this.backdrop.boundingSphere!.radius = VIEW.FAR;
     for (let i = 0; i < this.rows.length; i++) {
       const row = this.rows[i]!.row!;
+      // Extra portrait/landscape space is scenery, never additional hazard information.
+      const inWindow = row.z >= Math.floor(this.requestedBottom) && row.z < Math.floor(this.requestedBottom) + CONFIG.VIEW_ROWS;
+      const ground = this.grounds[KINDS.indexOf(row.kind)]!;
+      if (inWindow) this.matrix.makeTranslation(0, 0, -row.z);
+      else this.matrix.makeScale(0, 0, 0);
+      ground.setMatrixAt(this.rows[i]!.groundIndex, this.matrix);
+      ground.instanceMatrix.needsUpdate = true;
+      if (!inWindow) continue;
       this.rowBounds.min.set(VIEW.DECOR_MIN_X, -VIEW.GROUND_DEPTH, -row.z - 0.5);
       this.rowBounds.max.set(VIEW.DECOR_MAX_X + 1, 2, -row.z + 0.5);
       if (this.hasView && !this.frustum.intersectsBox(this.rowBounds)) continue;

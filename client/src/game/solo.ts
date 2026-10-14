@@ -207,6 +207,8 @@ export class Solo {
     this.danger.style.opacity = this.phase === 'playing' && this.movement.z - this.movement.camZ < SOLO.DANGER_ROWS
       ? String(SOLO.DANGER_OPACITY + (this.preferences.reducedMotion ? 0 : Math.sin(this.poseTime * SOLO.DANGER_RATE) * SOLO.DANGER_PULSE)) : '0';
     this.marker.hidden = this.roundTime * 1000 > SOLO.MARKER_MS || this.phase === 'dying' || this.phase === 'over';
+    this.name.hidden = this.phase === 'over' || (this.phase === 'dying' && this.movement.dead === 'LEFT BEHIND!');
+    this.flag.hidden = this.runBest === 0 || this.runBest < this.movement.camZ || this.runBest >= this.movement.camZ + CONFIG.VIEW_ROWS;
     this.project(this.marker, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z, -SOLO.MARKER_GAP_PX);
     this.project(this.name, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z);
     if (!this.flag.hidden) this.project(this.flag, SOLO.FLAG_X, SOLO.FLAG_HEIGHT, this.runBest);
