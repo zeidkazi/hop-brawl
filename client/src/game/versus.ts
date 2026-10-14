@@ -1,5 +1,5 @@
 import { Group, Mesh, MeshLambertMaterial, MeshStandardMaterial, Vector3 } from 'three';
-import { ANIMALS, COLORS, CONFIG, HOME, ROOM, SOLO } from '../../../shared/config';
+import { ANIMALS, COLORS, CONFIG, HOME, ROOM, SOLO, SOUND } from '../../../shared/config';
 import type { PlayerState, RoomSnapshot } from '../../../shared/room';
 import type { HopDirection } from '../../../shared/movement';
 import type { GameRenderer } from './renderer';
@@ -8,6 +8,7 @@ import type { Motion } from '../ui/motion';
 import { Boxer } from './boxer';
 import { HopInput } from './input';
 import { RoomClient } from './room-client';
+import { RailSound } from './rail-sound';
 
 export type RoomScreen = 'lobby' | 'versus' | 'roundEnd' | 'matchEnd' | 'friends' | 'home';
 interface Actor { root: Group; boxer: Boxer; animal: number; id: string; heading: number; materials: (MeshStandardMaterial | MeshLambertMaterial)[]; deathAt: number }
@@ -19,6 +20,7 @@ export class Versus {
   active = false;
   private connecting = false; private phase = ''; private startAt = -1; private eventSequence = 0;
   private poseTime = 0; private arenaRow = NaN;
+  private readonly railSound = new RailSound();
   private readonly actors = new Map<string, Actor>();
   private readonly point = new Vector3();
   private readonly scenery = (z: number) => this.game.world.rows.find(slot => slot.z === z)?.row ?? undefined;
@@ -114,7 +116,7 @@ export class Versus {
     for (const p of state.players) if (p.connected) this.actor(p);
     if (this.startAt !== state.startAt) {
       this.startAt = state.startAt; this.game.world.reset(state.seed); this.game.rig.resetScroll(!first);
-      this.arenaRow = NaN; for (const actor of this.actors.values()) actor.boxer.countdown();
+      this.arenaRow = NaN; this.railSound.reset(); for (const actor of this.actors.values()) actor.boxer.countdown();
     }
     for (const event of state.events) if (event.seq > this.eventSequence) {
       const actor = this.actors.get(event.id);
@@ -122,6 +124,14 @@ export class Versus {
       if (event.kind === 'shove') { actor?.boxer.play('stunned'); this.actors.get(event.by)?.boxer.play('punch'); }
       if (event.kind === 'death' && actor) { actor.deathAt = this.poseTime; actor.boxer.play('stunned'); this.motion.toast(`${state.players.find(p => p.id === event.id)?.name ?? ''} ${event.cause}`); }
       if (event.kind === 'round') this.actors.get(event.id)?.boxer.play('victory');
+      const player = state.players.find(p => p.id === event.id);
+      const pan = player ? (player.movement.x - this.client.prediction.x) / SOUND.PAN_TILES : 0;
+      const sound = this.game.home.sound;
+      if (event.kind === 'hop') sound.play('hop', pan);
+      else if (event.kind === 'bonk') sound.play('bonk', pan);
+      else if (event.kind === 'shove') sound.play('punch', pan);
+      else if (event.kind === 'round' || event.kind === 'forfeit') sound.play('win');
+      else if (event.kind === 'death') { sound.play(event.cause === 'SPLASH!' || event.cause === 'SWEPT AWAY!' ? 'splash' : 'squash', pan); if (event.cause === 'DERAILED!') sound.play('horn', pan); }
       this.eventSequence = event.seq;
     }
     const screen: RoomScreen = state.phase === 'lobby' ? 'lobby' : state.phase === 'roundEnd' ? 'roundEnd' : state.phase === 'matchEnd' ? 'matchEnd' : 'versus';
@@ -172,6 +182,7 @@ export class Versus {
     this.game.playing = state.phase === 'playing';
     const time = state.phase === 'playing' ? this.client.time : Math.max(0, (state.now - state.startAt) / 1000);
     this.game.worldTime = time; this.game.rig.targetCamZ = state.camZ; this.game.rig.leaderZ = state.leaderZ;
+    if (state.phase === 'playing') this.railSound.update(this.game.world.rows, state.camZ, time, this.game.home.sound);
     const countdown = this.element('match-countdown');
     countdown.textContent = state.phase === 'countdown' ? String(Math.max(1, Math.ceil((state.startAt - now) / 1000)))
       : state.phase === 'playing' && now - state.startAt < SOLO.HOP_BANNER_MS ? 'HOP!' : '';

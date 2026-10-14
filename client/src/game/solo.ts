@@ -1,13 +1,14 @@
 import { Vector3 } from 'three';
 import { COLORS, CONFIG, HOME, RAIL, SOLO, VIEW, WORLD } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
-import { trainWarning, trainX } from '../../../shared/hazards';
+import { trainX } from '../../../shared/hazards';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
 import type { GameRenderer } from './renderer';
 import { HopInput } from './input';
 import type { Preferences } from '../ui/settings';
 import type { Motion } from '../ui/motion';
 import type { Boxer } from './boxer';
+import { RailSound } from './rail-sound';
 
 export const SOLO_BEST_KEY = 'hop-brawl-solo-best';
 export function readBest(storage: Pick<Storage, 'getItem'>): number | null {
@@ -31,8 +32,7 @@ export class Solo {
   private runBest = 0; private newBest = false;
   private countdownEnd = 0; private previousWall = 0; private roundTime = 0; private poseTime = 0;
   private countdownDuration: number = SOLO.COUNTDOWN_MS;
-  private warned = false;
-  private nextBell = 0;
+  private readonly railSound = new RailSound();
   private arenaRow = NaN;
   private readonly sceneryRow = (z: number) => this.game.world.rows.find(slot => slot.z === z)?.row ?? undefined;
   private deathAt = 0; private bonkAt = -Infinity; private bonkDirection: HopDirection = 'up';
@@ -57,7 +57,7 @@ export class Solo {
     this.input = new HopInput(game.canvas, this.hop);
     this.movement.onHop = this.hopped; this.movement.onLand = this.landed; this.movement.onDeath = this.died;
     this.movement.onBonk = direction => {
-      this.bonkAt = this.poseTime; this.bonkDirection = direction; game.home.sound.play('hit');
+      this.bonkAt = this.poseTime; this.bonkDirection = direction; game.home.sound.play('bonk');
       if ((direction === 'left' && this.movement.x < 1) || (direction === 'right' && this.movement.x > 7)) {
         game.world.boundarySide = direction === 'left' ? -1 : 1;
         game.world.boundaryUntil = this.movement.time + VIEW.BOUNDARY_PULSE_MS / 1000;
@@ -106,7 +106,7 @@ export class Solo {
     game.rig.resetScroll(retry); game.go('gameplay'); game.desaturation.value = 0;
     game.home.setActorOpacity(1); game.world.deathCause = null;
     this.roundTime = this.poseTime = 0; this.runBest = this.best ?? 0; this.newBest = false; this.lastScore = -1;
-    this.warned = false; this.nextBell = 0; this.arenaRow = NaN;
+    this.railSound.reset(); this.arenaRow = NaN;
     this.heading = 0; this.bonkAt = -Infinity; this.cause.hidden = true;
     this.name.textContent = this.preferences.name; this.bestLabel.textContent = `BEST ${this.runBest}`;
     this.flag.hidden = this.runBest === 0; this.heart.style.opacity = '1'; this.heart.style.transform = '';
@@ -154,7 +154,7 @@ export class Solo {
   }
   private readonly hop = (direction: HopDirection): void => { if (this.phase === 'playing') this.movement.input(direction); };
   private readonly hopped = (): void => {
-    this.boxer?.play('hop'); this.game.home.sound.unlock();
+    this.boxer?.play('hop'); this.game.home.sound.unlock(); this.game.home.sound.play('hop');
     if (this.preferences.haptics) navigator.vibrate?.(SOLO.HAPTIC_HOP_MS);
   };
   private readonly landed = (): void => {
@@ -163,6 +163,7 @@ export class Solo {
     if (player.onLog) { this.game.world.logDipRow = player.z; this.game.world.logDipUntil = player.time + CONFIG.HOP_MS / 1000; }
     if (player.distance > this.runBest && !this.newBest) {
       this.newBest = true; this.motion.toast('NEW BEST!');
+      this.game.home.sound.play('win');
       for (let i = 0; i < SOLO.NEW_BEST_PARTICLES; i++) this.game.particles.burst(player.x, player.z);
     }
   };
@@ -172,7 +173,8 @@ export class Solo {
     this.game.rig.update(0, this.poseTime);
     this.phase = 'dying'; this.deathAt = this.poseTime; this.input.enabled = false; this.game.playing = false;
     this.game.go('soloEnd'); this.cause.textContent = cause; this.cause.hidden = false; this.countdown.hidden = true;
-    this.game.home.sound.play('hit');
+    this.game.home.sound.play(cause === 'SPLASH!' || cause === 'SWEPT AWAY!' ? 'splash' : 'squash');
+    if (cause === 'DERAILED!') this.game.home.sound.play('horn');
     if (this.preferences.haptics) navigator.vibrate?.(SOLO.HAPTIC_DEATH_MS);
     this.best = Math.max(this.best ?? 0, this.movement.distance);
     try { localStorage.setItem(SOLO_BEST_KEY, String(this.best)); } catch { /* Session best remains usable. */ }
@@ -195,17 +197,12 @@ export class Solo {
       }
     } else if (this.phase === 'playing') {
       this.roundTime += elapsed; this.movement.advance(this.roundTime);
-      let warning = false;
+      this.railSound.update(this.game.world.rows, this.movement.camZ, this.movement.time, this.game.home.sound);
       for (const slot of this.game.world.rows) if (slot.row?.kind === 'rail' && slot.z >= this.movement.camZ && slot.z <= this.movement.camZ + CONFIG.VIEW_ROWS) {
-        if (trainWarning(slot.row, this.movement.time)) warning = true;
         const train = trainX(slot.row, this.movement.time);
         if (train !== null && Math.abs(train - this.movement.x) < WORLD.TRAIN_LENGTH / 2 + CONFIG.COLUMNS
           && Math.abs(slot.z - this.movement.z) <= RAIL.SHAKE_DISTANCE) this.game.rig.shake = RAIL.SHAKE_AMPLITUDE;
       }
-      if (warning && (!this.warned || this.movement.time >= this.nextBell)) {
-        this.game.home.sound.play('bell'); this.nextBell = this.movement.time + RAIL.BELL_INTERVAL_S;
-      }
-      this.warned = warning;
       if (now - this.countdownEnd > SOLO.HOP_BANNER_MS) this.countdown.hidden = true;
     } else if (this.phase === 'dying' || this.phase === 'over') {
       const deathMs = (this.poseTime - this.deathAt) * 1000;
