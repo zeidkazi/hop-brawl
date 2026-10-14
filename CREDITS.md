@@ -22,6 +22,7 @@ The animals, vehicles and props below are original voxel creations built in Blen
 
 | Files | Source URL / original recipe |
 |---|---|
+| `client/public/models/logo.glb` | Owner-selected A; identical to `art/variants/logo_smooth.glb`, built from https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py using Lilita One (OFL notice above) |
 | `art/logo_smooth.blend`, `art/variants/logo_smooth.glb`, `art/variants/logo_smooth.json`, `art/previews/logo_smooth.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; Lilita One font source above |
 | `art/logo_blocks.blend`, `art/variants/logo_blocks.glb`, `art/variants/logo_blocks.json`, `art/previews/logo_blocks.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; actual Blender Blocks remesh of the same Lilita One text |
 | `art/previews/logo-comparison.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; side-by-side native Blender renders |
