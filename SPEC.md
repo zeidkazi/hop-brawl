@@ -928,3 +928,41 @@ Goal: at a glance, nobody should mistake Hop Brawl for another voxel crossing ga
 - ▶ (next): current animal hops **out to the left**, new animal hops **in from the right**.
 - ◀ (previous): current hops **out to the right**, new hops **in from the left**.
 - Swipes follow the same direction as the finger. Keyboard ←/→ match the arrows.
+
+### 29.7 Boxer gear & moves (final model pass — overrides §29.1 where it conflicts)
+**Gear**
+- **No headbands.** Remove them from all animals.
+- **Floating gloves** (cartoon style, no arms), one per side, separate meshes with the pivot at the wrist, recolored by player color.
+- Glove shape (voxel): rounded fist (corners chamfered by 1 voxel), a **thumb bump** on the inner side, a **white wrist cuff** (1–2 voxel band), a lighter **highlight voxel** on the top front, knuckle ridge on the front face. Each glove ≈ **45 % of the head width**.
+- **Guard pose** by default: gloves beside the chin, slightly forward and apart; **the face (eyes, nose/beak/snout, mouth) must stay fully visible** from the gameplay camera and the 3/4 preview.
+
+**Moves (procedural, on the glove nodes + body)**
+| When | Move |
+|---|---|
+| Idle (Home, Lobby, in-round standing still) | **Boxer bounce**: body bobs ~2×/s, gloves in guard sway slightly. Every 3–5 s (random) one flourish: **glove tap** (knock gloves together twice in front of the chest, tiny spark + "tock" sound), **1-2 combo** (left jab, right cross straight ahead, ~350 ms), or **shoulder shake**. |
+| Hop | gloves swing back on take-off, forward on landing (follow-through) |
+| Shove | **real punch**: the glove on the hop side extends ~0.4 tile into the victim, body leans in, impact star + hit sound at contact |
+| Shoved / stunned | gloves fly up, body wobbles, dizzy stars |
+| Countdown | everyone in guard; on "HOP!" all players do a glove tap |
+| Round / match win | **victory pose**: both gloves raised overhead, bouncing; crowd cheers |
+| Home: tap/click your animal | it throws a 1-2 combo at the camera (with a whoosh) |
+| Animal select | new animal lands, then glove tap |
+| Lobby: player joins | that animal does a glove tap |
+- Respect Reduce Motion: flourishes off, bounce halved.
+
+### 29.8 Fixes from Home review
+- **Logo in-game must match the Blender preview**: Ink outline/backing plate visible, saturated yellow. Exclude the logo from fog, use an unlit or tone-mapping-free material so it's never washed out. Fox mascot on the logo **2.5× bigger**, sitting on top of the "O", wearing gloves.
+- **Arena scale**: decorative structures within 2 columns of the playfield are **≤ 1.5 tiles tall**; bleachers sit ≥ 2 columns outside the playfield; spotlight towers max 1 per ~15 rows and never in the top 3 visible rows on Home. Nothing decorative may overlap the road or the logo from the camera's view.
+- **Spectators**: chunkier voxel people (head, body, arms), ~1.5× current size, mixed shirt colors; idle bob; on K.O./win they raise both arms and jump.
+- **Animal sign**: remove the in-world sign text; show the animal name in the UI under the animal (Lilita One, white with Ink outline). The 3D arrows get an Ink outline and full opacity.
+- **Load time**: measure Home time-to-interactive on the production build (`npm run build` + preview) with a cold cache. Must be < 3 s on desktop; models load before the blur/gradient intro ends. Report the measured number.
+
+### 29.9 Model sign-off checklist (Work must verify and report each item)
+1. Lineup preview of all 6 animals (3/4 view) + the same lineup **at the in-game camera angle and distance** on the actual grass.
+2. Every face fully visible in both views; every animal recognizable by silhouette.
+3. Gloves read as boxing gloves (thumb, cuff, highlight visible) in both views.
+4. Fox in all 4 player colors.
+5. A 6-frame strip per move: glove tap, 1-2 combo, victory pose.
+6. Logo preview and an in-game Home screenshot side by side — colors and outline must match.
+7. Home screenshots at 390×844 and 1440×900.
+8. All models closed geometry (no stray planes), total models < 2 MB, measured load time.
