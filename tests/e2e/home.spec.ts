@@ -66,7 +66,7 @@ test('Home fills odd viewports at 100, 125, 150 and 200 percent DPR', async ({ b
         expect(actions!.x).toBeGreaterThanOrEqual(0);
         expect(actions!.y + actions!.height).toBeLessThanOrEqual(viewport.height);
       }
-      if (dpr === 1.25) await page.screenshot({ path: testInfo.outputPath('home-dpr125-landscape.png') });
+      if (dpr === 1.25 && process.env.HOP_CAPTURE_REVIEW) await page.screenshot({ path: testInfo.outputPath('home-dpr125-landscape.png') });
     } finally { await context.close(); }
   }
 });

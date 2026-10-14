@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
+import { VIEW } from '../../shared/config';
 
 test('keeps one canvas through menus, tier swaps, streaming and tile flips', async ({ page }, testInfo) => {
   test.setTimeout(90000);
@@ -13,7 +14,7 @@ test('keeps one canvas through menus, tier swaps, streaming and tile flips', asy
   const canvas = await page.locator('#game-canvas').elementHandle();
   const initial = await page.evaluate(() => window.__HOP_DEBUG__!.snapshot());
   expect(initial.mobile).toBe(testInfo.project.name === 'mobile');
-  expect(initial.rows).toBe(25);
+  expect(initial.rows).toBe(VIEW.POOL_ROWS);
   const baseline = await page.evaluate(async () => {
     await new Promise(resolve => setTimeout(resolve, 5000));
     const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
@@ -56,7 +57,7 @@ test('keeps one canvas through menus, tier swaps, streaming and tile flips', asy
     api.graphics('high'); api.station('gameplay'); api.scroll(1000);
   });
   // Exact gameplay camZ jumps directly to the destination instead of generating intermediate windows.
-  await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().generatedRows), { timeout: 10000 }).toBeGreaterThanOrEqual(initial.generatedRows + 25);
+  await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().generatedRows), { timeout: 10000 }).toBeGreaterThanOrEqual(initial.generatedRows + VIEW.POOL_ROWS);
   expect(await page.evaluate(() => window.__HOP_DEBUG__!.solo.game.world.rows.some(slot => slot.z === 1000))).toBe(true);
   await page.evaluate(() => { window.__HOP_DEBUG__!.graphics('low'); window.__HOP_DEBUG__!.particles(); });
   await page.setViewportSize({ width: 844, height: 390 });
@@ -75,7 +76,7 @@ test('keeps one canvas through menus, tier swaps, streaming and tile flips', asy
   expect(final.frames).toBeGreaterThan(initial.frames);
   await testInfo.attach('m2-render-metrics', { body: JSON.stringify({ initial, final }, null, 2), contentType: 'application/json' });
   await writeFile(testInfo.outputPath('m2-metrics.json'), JSON.stringify({ initial, baseline, final }, null, 2));
-  await page.screenshot({ path: testInfo.outputPath('m2-landscape.png') });
+  if (process.env.HOP_CAPTURE_REVIEW) await page.screenshot({ path: testInfo.outputPath('m2-landscape.png') });
   expect(errors).toEqual([]);
 });
 
@@ -84,6 +85,9 @@ test('deep links and denied storage keep the local menu usable', async ({ page }
     Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('Denied', 'SecurityError'); } });
   });
   await page.goto('/?room=abcd');
+  await expect(page.locator('#ui-root')).not.toHaveAttribute('inert', '', { timeout: 30000 });
+  await page.locator('#home-name').fill('No storage');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('#friends')).toBeVisible({ timeout: 30000 });
   await expect(page.getByLabel('Room code letter 1')).toHaveValue('A');
   await expect(page.getByLabel('Room code letter 4')).toHaveValue('D');

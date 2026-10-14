@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { VIEW } from '../../shared/config';
 
 test('Solo plays, buffers one hop, pauses, dies and retries without replacing the canvas', async ({ page }, testInfo) => {
   test.setTimeout(90000);
@@ -17,7 +18,7 @@ test('Solo plays, buffers one hop, pauses, dies and retries without replacing th
     await page.touchscreen.tap(160, 500);
   } else await page.keyboard.press('ArrowUp');
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.solo.movement.z)).toBe(2);
-  await page.screenshot({ path: testInfo.outputPath('solo-playing.png') });
+  if (process.env.HOP_CAPTURE_REVIEW) await page.screenshot({ path: testInfo.outputPath('solo-playing.png') });
   await page.keyboard.press('Escape'); await expect(page.locator('#pause')).toBeVisible();
   const paused = await page.evaluate(() => window.__HOP_DEBUG__!.solo.movement.time);
   await page.waitForTimeout(300); expect(await page.evaluate(() => window.__HOP_DEBUG__!.solo.movement.time)).toBe(paused);
@@ -25,9 +26,15 @@ test('Solo plays, buffers one hop, pauses, dies and retries without replacing th
   await page.getByRole('button', { name: 'Back', exact: true }).click(); await expect(page.locator('#pause')).toBeVisible();
   await page.getByRole('button', { name: 'Resume', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.solo.phase)).toBe('playing');
-  await page.evaluate(() => { window.__HOP_DEBUG__!.solo.movement.z = -1; });
+  await page.evaluate(rows => {
+    const solo = window.__HOP_DEBUG__!.solo, move = solo.movement;
+    for (let offset = 0; offset < rows; offset++) {
+      const z = Math.floor(move.camZ) - offset;
+      if (solo.game.rig.screenY(move.x, z) >= 1.1) { move.z = z; break; }
+    }
+  }, VIEW.POOL_ROWS);
   await expect(page.locator('#soloEnd')).toBeVisible(); await expect(page.locator('#solo-end-title')).toHaveText('LEFT BEHIND!');
-  await page.screenshot({ path: testInfo.outputPath('solo-over.png') });
+  if (process.env.HOP_CAPTURE_REVIEW) await page.screenshot({ path: testInfo.outputPath('solo-over.png') });
   const start = Date.now(); await page.getByRole('button', { name: 'RETRY', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.solo.phase)).toBe('countdown');
   expect(Date.now() - start).toBeLessThan(1000);

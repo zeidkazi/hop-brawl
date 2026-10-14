@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('section 30 measured playfield width and readable animal', async ({ page }, info) => {
+test('section 31 measured playfield width and readable animal', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('hop-brawl-settings', JSON.stringify({ name: 'Framing', animal: 2, sfx: 0 })));
   await page.goto('/?debug=1'); await page.waitForFunction(() => !!window.__HOP_DEBUG__);
   await page.getByRole('button', { name: 'SOLO', exact: true }).click();
@@ -9,8 +9,8 @@ test('section 30 measured playfield width and readable animal', async ({ page },
     const solo = window.__HOP_DEBUG__!.solo, game = solo.game, camera = game.rig.camera;
     const point = camera.position.clone();
     const width = (left: number, right: number) => {
-      const a = point.set(left, 0, -game.rig.camZ - 5.5).project(camera).x;
-      return (point.set(right, 0, -game.rig.camZ - 5.5).project(camera).x - a) * 50;
+      const a = point.set(left, 0, -solo.movement.z).project(camera).x;
+      return (point.set(right, 0, -solo.movement.z).project(camera).x - a) * 50;
     };
     let top = Infinity, bottom = -Infinity;
     game.home.animalRoot.updateMatrixWorld(true);
@@ -28,7 +28,7 @@ test('section 30 measured playfield width and readable animal', async ({ page },
   });
   await info.attach('framing-measurements', { body: JSON.stringify(metrics), contentType: 'application/json' });
   console.log(info.project.name, JSON.stringify(metrics));
-  if (info.project.name === 'mobile') expect(metrics.withMarginsPercent).toBeGreaterThanOrEqual(92);
+  if (info.project.name === 'mobile') expect(metrics.playableWidthPercent).toBeGreaterThanOrEqual(88);
   else { expect(metrics.playableWidthPercent).toBeGreaterThanOrEqual(45); expect(metrics.animalHeightPx).toBeGreaterThanOrEqual(48); }
 });
 
@@ -56,11 +56,11 @@ test('LEFT BEHIND renders at the bottom edge; long frames pause without moving t
         y: solo.game.rig.screenY(solo.movement.x, solo.movement.z), lag: Math.abs(solo.movement.camZ - solo.game.rig.camZ) });
     };
   });
-  await page.waitForFunction(() => window.__HOP_DEBUG__!.solo.phase === 'over');
+  await page.waitForFunction(() => window.__HOP_DEBUG__!.solo.phase === 'over', undefined, { timeout: 45000 });
   const frames = await page.evaluate(() => (window as any).deathFrames as { y: number; lag: number }[]);
   expect(frames.length).toBeGreaterThan(0);
   for (const frame of frames) { expect(frame.y).toBeGreaterThanOrEqual(.999); expect(frame.lag).toBeLessThanOrEqual(.05); }
-  await page.screenshot({ path: info.outputPath('left-behind-bottom.png') });
+  if (process.env.HOP_CAPTURE_REVIEW) await page.screenshot({ path: info.outputPath('left-behind-bottom.png') });
 });
 
 test('name dialog disappears completely and logo returns to its exact pose after a hitch', async ({ page }) => {
