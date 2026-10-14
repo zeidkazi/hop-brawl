@@ -5,13 +5,23 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 ## Status
 
 - Completed milestones: M1 (world generation/hazards), M2 (persistent-canvas architecture), M2.5 (approved Street Brawl models/Home and section 29.10 Loading), M3 (Solo).
-- Current phase: M2.5 tagged and pushed as m2.5-art-direction. M3 implementation is complete; STOP for owner playtesting and approval before M4. Loading evidence: art/review/LOADING.md. Solo evidence: art/review/SOLO.md.
+- Current phase: section 30 fixes are implemented and verified; STOP for another owner M3 playtest before M4. M3 is NOT approved. M2.5 remains tagged m2.5-art-direction. The original Solo report is historical; current review: art/review/PLAYTEST30.md, with six row 5/35/70 captures and raw fuzz/run/loading measurements.
 - Owner approved the plan and M1 on 2026-10-14. Deployment is deferred until after M13 and before M14, no later than 2026-10-26; no deployment without the owner's pre-deploy approval.
-- Read SPEC.md including sections 28 and 29; Street Brawl overrides the earlier art direction. Owner section 29 committed as 65e3131, docs(spec): add street brawl visual identity.
+- Read SPEC.md including section 30, committed as e675db9, docs(spec): add M3 playtest fixes. Section 30 overrides the prior movement/camera/generation rules. Owner's landable-slot wait interpretation is recorded in DECISIONS.md.
 - Initial commit c6ec455 (`docs: add game spec`) pushed to `origin/main` at https://github.com/zeidkazi/hop-brawl.git.
 - Owner's SPEC change committed as 7b4041c (`docs(spec): defer deployment milestone`).
 
-## M1 completed / verification
+## M3 section 30 fixes / awaiting owner playtest
+
+- Scenery footprints match grass, arena setbacks enforced, obstacle canopies contained within one row. Exact rendered/logical camera bottom, danger/death alignment, hitch auto-pause, exact logo/UI settlement and ghost-dialog fix.
+- Eleven-row camera and visible boundaries: desktop playable width 56.35%, fox 97.89 px tall; phone playable width 84.60%, or 94.00% with required half-tile margins.
+- Tiered segments, grass separators, rest stops, corridors, road/river/rail schedules, first-hop scroll delay and actual-time log slot snapping/carry. Owner clarified the river limit as maximum wait for a landable slot; recorded in DECISIONS.md.
+- Blender rail posts, gravel/sleepers/steel rails, warning flash/bell/row pulse, headlights and Reduce Motion-aware train shake. New original asset credited as CC0.
+- 113 unit tests in 25 files plus typecheck/build pass. Full browser run passed 28/30; two obsolete streaming assertions were corrected and all four architecture cases passed on the final code. Thus all 30 cases have passing results; no known failing checks.
+- Fuzz: 1,000 seeds × 300 rows, 154,396 segments, 25,732 adjacent river pairs, zero violations. Separate 1,000-seed scenery/segment audits pass. Review scripts drove real movement to rows 5/35/70 alive in both viewports, zero page errors. Six PNGs inspected.
+- Production cold loading: median 1685.1 ms, maximum 1712.1 ms over five runs. Physical-phone feel remains owner-assisted. Original m3-solo tag remains historical; no gate is advanced or tag moved.
+
+## M1 historical verification
 
 - Exact package versions and npm lockfile; strict TypeScript, Vite, Vitest and Playwright setup.
 - All §23 tunables in shared/config.ts, with generation/hitbox constants from §4/§10 in the same file.
@@ -142,7 +152,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Next exact step
 
-STOP and wait for owner M3 playtest approval. Ask them to play Solo in normal/incognito windows and on a phone using the checklist in art/review/SOLO.md. Fix only reported bugs with small verified commits. After approval, start M4 Worker + hibernating Room Durable Object, create/join/lobby/clock sync. Do not deploy or implement the M12 punch/tail polish notes now.
+STOP and wait for owner M3 playtest approval. Use the checklist and six current screenshots in art/review/PLAYTEST30.md; test normal/incognito and a phone. Fix only reported bugs with small verified commits. After approval, start M4 Worker + hibernating Room Durable Object, create/join/lobby/clock sync. Do not deploy or implement the M12 punch/tail polish notes now.
 
 ## Milestone plan / gates
 

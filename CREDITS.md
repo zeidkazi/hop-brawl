@@ -111,6 +111,13 @@ All six animal model/source/preview entries above now include original CC0 float
 | `art/previews/solo/desktop-countdown.png`, `desktop-playing.png`, `desktop-pause.png`, `desktop-over.png` | [Original runtime capture script](https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-solo.mjs) | Original project captures, CC0 1.0; existing model/font provenance above |
 | `art/previews/solo/mobile-countdown.png`, `mobile-playing.png`, `mobile-pause.png`, `mobile-over.png` | [Original runtime capture script](https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-solo.mjs) | Original project captures, CC0 1.0; existing model/font provenance above |
 
-## Announcer acquisition plan (milestone 11)
+## Section 30 rail warning post and review captures
+
+| Asset | Source | License |
+|---|---|---|
+| `rail_post.glb`, editable `art/rail_post.blend`, voxel source and preview | [Original Blender recipe](https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/rail_post.py) | Original closed voxel geometry and baked colors, CC0 1.0 |
+| `art/previews/playtest30/*-row*.png` | [Seeded gameplay review script](https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-playtest30.mjs) | Original runtime captures, CC0 1.0; existing font/model provenance above |
+
+## Announcer acquisition plan (milestone 11, unchanged)
 
 Find one consistent, energetic voice for: "Round one", "Round two", "Final round", "Showdown", "Hop!", "K.O.!", "Winner!". Search free voice packs, including Kenney and CC0-filtered OpenGameArt/Freesound sources. Verify each file's license; free download alone is not license permission. Record missing same-voice lines and ask the owner to record them at M11. Until then use text slams and SFX. No announcer files have been selected or downloaded yet.
