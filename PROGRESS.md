@@ -4,8 +4,8 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 
 ## Status
 
-- Completed milestones: M1 (shared config, PRNG, world generation, hazards, unit/fuzz tests).
-- Current phase: M1 complete; next is M2 persistent-canvas architecture.
+- Completed milestones: M1 (world generation/hazards) and M2 (persistent-canvas architecture).
+- Current phase: M2 complete; next is M3 Solo gameplay. M1 is owner-verified.
 - Owner approved the plan and M1 on 2026-10-14. Deployment is deferred until after M13 and before M14, no later than 2026-10-26; no deployment without the owner's pre-deploy approval.
 - Read the complete SPEC.md (all 27 sections); reread the owner's updated cap and spectator rules and recorded them in DECISIONS.md.
 - Initial commit c6ec455 (`docs: add game spec`) pushed to `origin/main` at https://github.com/zeidkazi/hop-brawl.git.
@@ -22,6 +22,21 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 - npm run test:e2e passes: 2 Chromium tests, desktop 1440×900 and touch/mobile 390×844. Each compares complete descriptors/hazard results for 300 rows against Node in two independent browser contexts. No page/console errors observed in the primary context.
 - Screenshots captured and inspected under ignored output/playwright/. M1 has only the unstyled Loading… shell; there is no playable scene or FPS overlay yet. These are not gameplay/performance test results.
 - Started npm run dev at http://127.0.0.1:5173/ for the owner; restart with the command below if the process stops.
+
+## M2 completed / verification
+
+- One persistent WebGL2 canvas/renderer and world scene. Menus remain mounted over the animated fixed-seed diorama; History API handles sheets and room-link prefilling without page reloads.
+- Reusable Catmull-Rom camera stations with 700 ms flights; critically damped scrolling follow, exact 9×13 perspective fit tested in desktop, portrait and landscape, debounced resizing. Later milestones connect gameplay/results to these stations and polish their presentation.
+- Instanced colored-box terrain, props, vehicles, logs, animals and podium; 25 recycled row slots, 128 particle slots, two toast slots. Shared row generation runs outside rendering; animation is culled to visible rows. Bounds follow distant recycled rows and moving entities. Generic bounded pool available for later network snapshots.
+- High/Medium/Low renderer paths, initial desktop High / touch Medium, manual Auto/High/Low settings, rolling-frame adaptive downgrade and dynamic resolution. High MSAA resolve preserves the canvas; Medium shadows cast only from animals/vehicles; Low uses blobs and animated flat-color water. All current shader variants warm before Home becomes interactive. Weather and Night City lights arrive with M10 art.
+- GSAP overlapping/interruptible panel motion, 40 ms list stagger, button presses, carousel hop swap, pooled tile-flip/fade and toasts. Reduce motion disables drift and halves particles. Self-hosted fonts preload before Home; font files/licenses logged in CREDITS.md.
+- Home, Friends sheet, basic Settings/How to Play/Credits layers exercise the architecture. Names, animal and settings persist with safe session fallback if storage is denied. Solo, Quick Play, Create Room and Join stay disabled until their gameplay/network milestones. Audio/haptics controls store preferences; their effects arrive in later milestones.
+- `?debug=1` alone loads lil-gui and stats.js: camera station, graphics tier, camZ, menu visibility, tile flip, particle burst and toast controls; live frame/draw/pool metrics. Normal navigation does not import these tools.
+- npm run check passes: 45 unit tests in 12 files, including the existing 300,000-row fuzz coverage, pool reuse, perspective fit, preferences and adaptive quality. Strict typecheck and production build pass.
+- npm run test:e2e passes: 6 tests across desktop 1440×900 and touch/mobile 390×844 at device scale 2. Checks canvas identity, no console/page errors, rapid navigation, browser Back, settings, denied storage, deep links, quality changes, distant streaming, rotation, tile transitions and Node/browser deterministic parity. Geometry count stays 5, shader program count stays 16, row slots stay 25 after warm-up.
+- Measured on local Intel Iris Xe via D3D11: Home desktop High = 13 draw calls / 7,262 triangles; mobile viewport Medium = 10 calls / 6,900 triangles, pixel ratio 1.5. Five-second diorama samples reported rolling p95 16.7–16.8 ms, worst 16.8 ms (about 60 FPS). This is host-GPU evidence, not real-phone or two-player performance certification. The initial SwiftShader desktop run missed the frame budget; the GPU backend is recorded in test metrics. Three.js now supplies soft filtering through PCFShadowMap; the removed PCFSoft API compatibility resolution is documented in DECISIONS.md.
+- Main production JS approximately 179 KB gzip (below 400 KB), debug-only chunk approximately 10 KB gzip; three font files total approximately 41 KB. Vite emits its default 500 KB uncompressed-chunk advisory; the specified compressed budget passes. First interactive frame on actual 4G remains unverified.
+- Desktop/mobile screenshots and JSON metrics are in ignored output/playwright/. Reviewed portrait framing: selected placeholder is above the mobile menu, and desktop leaves it visible beside the menu.
 
 ## Setup preflight (§27)
 
@@ -48,20 +63,20 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 
 ## Known bugs / unresolved checks
 
-- No known M1 failures. M2 rendering and M3 gameplay are not implemented; Loading… stays on screen by design at this milestone.
+- No known failing M1/M2 checks. Solo input, hopping, death, pause and retry are M3 work; the visible Solo button is deliberately disabled until then. Placeholder boxes and basic cards are intentional until their art/presentation milestones.
 - Worker/Room implementation and wrangler dev arrive in M4. Do not add fake server endpoints just to make an unavailable server command appear to work.
-- No FPS, mobile hardware performance or multiplayer claim is supported by M1's browser parity checks.
+- Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only the placeholder diorama on the host GPU.
 - Cloudflare and Vercel authentication and free-account plan verification remain required before deployment.
 - Real Android/iPhone checks remain owner-assisted at the relevant milestones.
 
 ## Next exact step
 
-Reread SPEC.md, this file, and DECISIONS.md. Begin M2 by pinning the specified rendering/animation/debug/font libraries and building the persistent WebGL canvas and single scene in client/src/game. Add camera stations, GSAP UI motion, pooled rows/objects and High/Medium/Low quality tiers from the start. Consume shared world descriptors generated outside the render loop. Replace the M1-only Loading… assertion in tests/e2e/shared.spec.ts as the real loading/Home flow arrives, while preserving browser/Node parity coverage. No new approval is needed before M2; the next required owner checkpoint is after M3.
+Reread SPEC.md, this file, and DECISIONS.md. Start M3 with the normalized keyboard/touch/mouse input layer and allocation-free local player/hop state, using §9 thresholds and §4 hitbox/forgiveness rules from shared/config.ts. Connect the existing Solo button to countdown → local run using the persistent GameRenderer/CameraRig/WorldView; reuse Motion.tileFlip for retry. Add hazards, death, auto-scroll/follow, score/best, Solo pause/resume and auto-pause, with focused tests. Avoid rebuilding the canvas or creating geometry during play. No new approval is required before M3; STOP after Solo is playable and M3 tests pass for owner testing/approval.
 
 ## Milestone plan / gates
 
 - M1: Shared config, PRNG, worldgen, hazards, unit/fuzz tests. COMPLETE.
-- M2: Persistent canvas/scene, camera stations, GSAP UI motion, pools, quality tiers, debug overlay.
+- M2: Persistent canvas/scene, camera stations, GSAP UI motion, pools, quality tiers, debug overlay. COMPLETE; tag m2-architecture.
 - M3: Responsive controls, hopping, hazards/death, camera, Solo and tile-flip retry. STOP for owner testing/approval.
 - M4: Worker + hibernating Room DO, create/join, lobby, clock sync.
 - M5: Authoritative movement, prediction, interpolation, shared camera.
@@ -86,7 +101,11 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173/ in a normal and an incognito window. Both should show Loading… and the correct browser title without console errors. There are no controls to test at M1; Solo begins at M3. Real-phone gameplay checks begin once rendering/input exist.
+Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Enter a name, change animals using arrows/swipe, open Friends/Settings/How to Play/Credits, and return using Back/Esc. The world must stay visible and animated throughout. Reload to check saved preferences; incognito should keep its own session. Try http://localhost:5173/?room=ABCD for prefilled code boxes. Gameplay/multiplayer buttons are intentionally disabled at M2.
+
+Open http://localhost:5173/?debug=1 for the FPS overlay. Expand the debug panel to change stations, toggle menu visibility, scroll camZ, and trigger Tile flip/Dust burst/Toast. In Settings switch Graphics High/Low/Auto and Reduce motion. Resize or rotate: the canvas should remain visible with smooth reframing.
+
+For a phone on the same Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open `http://<PC-LAN-IP>:5173/`. If another dev server owns 5173, stop that terminal's server first. Verify the animal remains above the portrait menu, swipe the carousel, operate Settings, rotate the phone, and check for flashes/stalls. Permit private-network access if Windows prompts; no firewall settings are changed by the build. Server launch for the M2 handoff uses this LAN-capable command.
 
 ```powershell
 npm run check

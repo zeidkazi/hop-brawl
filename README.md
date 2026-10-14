@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** milestone 1 complete. The shared generator and hazard simulation are tested. The local frontend currently shows only Loading…; the persistent scene arrives in M2 and playable Solo in M3. No public deployment or cover image exists yet.
+**Status:** milestones 1–2 complete. The local frontend has a persistent animated 3D diorama, menu layers, camera stations, pooled objects and adaptive graphics quality. Models are colored-box placeholders; playable Solo arrives in M3. No public deployment or cover image exists yet.
 
 ## Local development
 
@@ -17,6 +17,8 @@ npm run dev
 
 Open http://localhost:5173/. For a clean install from the committed lockfile, use npm ci. The local Cloudflare server and npm run dev:server / wrangler dev command will be added in M4.
 
+Try the animal carousel, Friends sheet, Settings, How to Play and Credits. Solo and multiplayer buttons are disabled until their implementation milestones. Add `?debug=1` for FPS/draw/pool metrics and camera/quality/tile-flip controls. For phone testing on the same Wi-Fi, start with `npm run dev -- --host 0.0.0.0` and open the PC's LAN address on port 5173.
+
 ## Tests and build
 
 ```powershell
@@ -27,7 +29,7 @@ npm run test:e2e
 
 - Unit tests cover deterministic randomness, all four row types, hazards, Slow-Mo and collision boundaries.
 - The generator fuzz test checks 1,000 random seeds × 300 rows against every §10 solvability guarantee.
-- M1 browser tests compare shared world/hazard results with Node in two separate contexts at desktop and phone viewport sizes. Full gameplay, latency and performance tests arrive with their corresponding features.
+- Browser tests compare shared world/hazard results with Node in independent contexts and check persistent-canvas navigation, resize, graphics switches, resource bounds, denied storage and room links. Windows tests use D3D11 hardware acceleration; metrics identify the GPU backend. Full gameplay, latency, 4× CPU and real-device performance tests arrive with their corresponding features.
 - npm run build:client creates client/dist; npm run preview serves the production build locally.
 
 ## How to play (target gameplay)
@@ -36,7 +38,7 @@ Hop with arrow keys/WASD or phone taps/swipes. Dodge traffic and trains, ride lo
 
 ## Planned modes and stack
 
-Solo, two-player Quick Play and two-to-four-player Private Rooms. TypeScript, Vite, Three.js, GSAP, Howler, Zod, Vitest and Playwright; Cloudflare Workers with hibernating Durable Objects for multiplayer. Only the M1 development/test dependencies are installed so far.
+Solo, two-player Quick Play and two-to-four-player Private Rooms. TypeScript, Vite, Three.js, GSAP, Howler, Zod, Vitest and Playwright; Cloudflare Workers with hibernating Durable Objects for multiplayer. Rendering, animation, fonts and test libraries are installed; networking/audio packages arrive with their respective milestones.
 
 ## Deployment
 
