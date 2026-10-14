@@ -123,7 +123,7 @@ export class RoomGame {
     if (!victim.move.input(dir) || this.occupied(victim.move.toX, victim.move.toZ, victim)) {
       victim.move.restore(victimBefore); this.event('bonk', p.id); return false;
     }
-    p.cooldownUntil = now + CONFIG.SHOVE_COOLDOWN_MS;
+    p.move.direction = dir; p.cooldownUntil = now + CONFIG.SHOVE_COOLDOWN_MS;
     victim.stunUntil = now + CONFIG.SHOVE_STUN_MS; victim.proofUntil = victim.stunUntil + CONFIG.SHOVE_PROOF_MS;
     victim.queued = null; victim.shoverId = p.id; victim.shovedAt = now;
     this.event('shove', victim.id, p.id, '', dir); return true;

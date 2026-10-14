@@ -105,6 +105,7 @@ export class Versus {
   }
   private receive(state: RoomSnapshot): void {
     const first = !this.active;
+    if (first) this.eventSequence = state.eventSequence;
     this.active = true; this.element('room-error').textContent = '';
     if (first) {
       this.game.world.actorVisible = false; this.game.world.showCrates = false;

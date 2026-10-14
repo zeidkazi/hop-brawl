@@ -57,6 +57,7 @@ describe('authoritative shove', () => {
     const game = playing(); position(game, 0, 3); position(game, 1, 4);
     expect(game.hop('0', 'right', 1, 3000)).toBe(true);
     expect(game.players[0]!.move.x).toBe(3); expect(game.players[1]!.move.toX).toBe(5);
+    expect(game.players[0]!.move.direction).toBe('right');
     expect(game.players[1]!.stunUntil).toBe(3300); expect(game.players[1]!.proofUntil).toBe(4800);
     expect(game.players[0]!.cooldownUntil).toBe(5500); expect(game.hop('1', 'up', 1, 3050)).toBe(false);
     game.tick(3140); expect(game.players[1]!.move.x).toBe(5);
@@ -104,6 +105,20 @@ describe('hearts, respawn and rounds', () => {
     const game = playing(); for (const p of game.players) { p.move.distance = 20; p.move.advance = () => {}; }
     game.players[0]!.reachedAt = 100; game.players[1]!.reachedAt = 200;
     game.tick(game.startAt + CONFIG.ROUND_CAP_S * 1000); expect(game.winner).toBe('0');
+  });
+  it('three different round winners resolve the match by total distance without Showdown', () => {
+    const game = playing(3);
+    for (let round = 0; round < 3; round++) {
+      for (const [i, p] of game.players.entries()) {
+        p.move.distance = i === 1 ? 30 : 10;
+        if (i !== round) { p.hearts = 1; p.move.dead = 'FLATTENED!'; }
+      }
+      game.tick(game.now + 50); game.tick(game.now + CONFIG.TIE_WINDOW_MS);
+      expect(game.winner).toBe(String(round)); game.tick(game.nextAt); game.tick(game.nextAt);
+      if (round < 2) game.tick(game.nextAt);
+    }
+    expect(game.phase).toBe('matchEnd'); expect(game.players.map(p => p.wins)).toEqual([1, 1, 1]);
+    expect(game.winner).toBe('1'); expect(game.round).toBe(3);
   });
 });
 
