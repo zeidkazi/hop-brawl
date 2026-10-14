@@ -20,6 +20,12 @@ class VoxelSource:
                     self.cells.pop((x, h, d), None)
         return self
 
+    def face(self, left, right, head_top, front):
+        # Chicken family: one dark cube per eye, one voxel below the face top.
+        for x in (left, right):
+            self.box(x, x, head_top - 1, head_top - 1, front, front, '#20283A', 'eyes')
+        return self
+
     def data(self):
         palette, voxels, parts = [], [], {}
         for (x, h, d), (color, part) in sorted(self.cells.items()):

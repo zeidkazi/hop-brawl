@@ -11,6 +11,7 @@ from mathutils import Vector
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'art'))
+from voxel_mesh import rectangles
 # Blender coordinates: x = width, y = forward/depth, z = height.
 FACES = (
     ((1, 0, 0), ((1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1))),
@@ -54,16 +55,14 @@ def mesh_parts(name, source, config):
     objects = []
     for part, cells in groups.items():
         vertices, faces, colors = [], [], []
-        for x, d, h, color in cells:
-            for normal, corners in FACES:
-                if (x + normal[0], d + normal[1], h + normal[2]) in occupied:
-                    continue
-                face = []
-                for cx, cy, cz in corners:
-                    face.append(len(vertices))
-                    vertices.append(((x + cx - size[0] / 2) * unit, (d + cy - size[2] / 2) * unit, (h + cz) * unit))
-                    colors.append((*palette[color], 1))
-                faces.append(face)
+        # Each animated part is its own closed solid; never cull against other parts.
+        for corners, color in rectangles(cells, FACES):
+            face = []
+            for x, d, h in corners:
+                face.append(len(vertices))
+                vertices.append(((x - size[0] / 2) * unit, (d - size[2] / 2) * unit, h * unit))
+                colors.append((*palette[color], 1))
+            faces.append(face)
         mesh = bpy.data.meshes.new(f'{name}_{part}')
         mesh.from_pydata(vertices, [], faces)
         mesh.update()
@@ -82,6 +81,7 @@ def mesh_parts(name, source, config):
             base.data[loop.index].color = colors[loop.vertex_index]
         mesh.color_attributes.active_color = ao
         obj['part'] = part
+        obj['surface_mesher'] = 'closed-part-greedy-v1'
         objects.append(obj)
     return objects
 
@@ -188,6 +188,40 @@ def preview(objects, name, config):
     bpy.ops.render.render(write_still=True)
 
 
+def silhouette(objects, name):
+    """Same camera, opaque black geometry on white: shape cannot hide in alpha."""
+    scene = bpy.context.scene
+    black = bpy.data.materials.new('SilhouetteBlack')
+    black.use_nodes = True
+    nodes = black.node_tree.nodes
+    nodes.clear()
+    emission = nodes.new('ShaderNodeEmission')
+    emission.inputs['Color'].default_value = (0, 0, 0, 1)
+    output = nodes.new('ShaderNodeOutputMaterial')
+    black.node_tree.links.new(emission.outputs[0], output.inputs['Surface'])
+    originals = [obj.data.materials[0] for obj in objects]
+    for obj in objects:
+        obj.data.materials[0] = black
+    background = scene.world.node_tree.nodes.get('Background')
+    original_color = tuple(background.inputs['Color'].default_value)
+    original_strength = background.inputs['Strength'].default_value
+    background.inputs['Color'].default_value = (1, 1, 1, 1)
+    background.inputs['Strength'].default_value = 1
+    scene.render.film_transparent = False
+    scene.render.filepath = str(ROOT / 'art' / 'previews' / f'{name}-silhouette.png')
+    bpy.ops.render.render(write_still=True)
+    for obj, mat in zip(objects, originals):
+        obj.data.materials[0] = mat
+    background.inputs['Color'].default_value = original_color
+    background.inputs['Strength'].default_value = original_strength
+    scene.render.film_transparent = True
+
+
+def silhouette_existing(name):
+    bpy.ops.wm.open_mainfile(filepath=str(ROOT / 'art' / f'{name}.blend'))
+    silhouette([obj for obj in bpy.context.scene.objects if obj.type == 'MESH'], name)
+
+
 def build(name, config, author=False):
     if not name.replace('_', '').isalnum():
         raise ValueError('Invalid asset name')
@@ -225,6 +259,7 @@ def main():
     parser.add_argument('--model')
     parser.add_argument('--author', action='store_true')
     parser.add_argument('--self-test', action='store_true')
+    parser.add_argument('--silhouette-only', action='store_true')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     config = json.loads(Path(args.config).read_text(encoding='utf-8'))
     for path in ('art/voxels', 'art/previews', 'client/public/models'):
@@ -233,16 +268,26 @@ def main():
         bpy.ops.wm.read_factory_settings(use_empty=True)
         bpy.context.scene.world = bpy.data.worlds.new('TestWorld')
         objects = mesh_parts('fixture', {'size': [2, 1, 1], 'palette': ['#FFFFFF'], 'voxels': [[0, 0, 0, 0], [1, 0, 0, 0]]}, config)
-        assert len(objects[0].data.polygons) == 10, 'Interior faces must be removed'
+        assert len(objects[0].data.polygons) == 6, 'Interior removal and coplanar merging must form one box'
         bake(objects, config)
         assert all(math.isfinite(v) for c in objects[0].data.color_attributes['COLOR_0'].data for v in c.color)
+        split = mesh_parts('split', {'size': [2, 1, 1], 'palette': ['#FFFFFF'], 'voxels': [[0, 0, 0, 0], [1, 0, 0, 0]], 'parts': {'eyes': [1]}}, config)
+        assert [len(obj.data.polygons) for obj in split] == [6, 6], 'Separate parts must stay closed'
+        for path in (ROOT / 'art' / 'voxels').glob('*.json'):
+            source = json.loads(path.read_text())
+            cells = [(x, d, h, color) for x, h, d, color in source['voxels']]
+            quads = rectangles(cells, FACES)
+            print(f'SURFACE_AUDIT {path.stem}: {len(quads)} merged quads', flush=True)
         print('BLENDER_SELF_TEST_OK', flush=True)
         return
     names = [args.model] if args.model else [p.stem for p in sorted((ROOT / 'art' / 'voxels').glob('*.json'))]
     if not names:
         parser.error('No voxel sources found; select an authored recipe with --model NAME --author')
     for name in names:
-        build(name, config, args.author)
+        if args.silhouette_only:
+            silhouette_existing(name)
+        else:
+            build(name, config, args.author)
     total = sum(p.stat().st_size for p in (ROOT / 'client' / 'public' / 'models').glob('*.glb'))
     if total >= config['TOTAL_GLB_BUDGET']:
         raise ValueError(f'GLB asset budget exceeded: {total}')
