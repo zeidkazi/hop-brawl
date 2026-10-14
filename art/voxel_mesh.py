@@ -43,3 +43,17 @@ def rectangles(cells, faces):
             result.append((quad, color))
     assert covered == exposed, 'Greedy surfaces must cover every exposed voxel face exactly once'
     return result
+
+
+def audit(cells, faces):
+    """Check emitted closed surfaces conserve voxel volume, with no flat parts."""
+    quads = rectangles(cells, faces)
+    def cross(a, b):
+        return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+    volume6 = 0
+    for (a, b, c, d), color in quads:
+        for p, q in ((b, c), (c, d)):
+            product = cross(p, q)
+            volume6 += sum(a[i] * product[i] for i in range(3))
+    assert volume6 == len(cells) * 6, 'Closed surfaces must preserve the exact solid voxel volume'
+    return len(quads)

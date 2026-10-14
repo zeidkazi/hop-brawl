@@ -11,7 +11,7 @@ from mathutils import Vector
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'art'))
-from voxel_mesh import rectangles
+from voxel_mesh import rectangles, audit
 # Blender coordinates: x = width, y = forward/depth, z = height.
 FACES = (
     ((1, 0, 0), ((1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1))),
@@ -291,9 +291,12 @@ def main():
         assert [len(obj.data.polygons) for obj in split] == [6, 6], 'Separate parts must stay closed'
         for path in (ROOT / 'art' / 'voxels').glob('*.json'):
             source = json.loads(path.read_text())
-            cells = [(x, d, h, color) for x, h, d, color in source['voxels']]
-            quads = rectangles(cells, FACES)
-            print(f'SURFACE_AUDIT {path.stem}: {len(quads)} merged quads', flush=True)
+            assignments = {i: part for part, indices in source.get('parts', {}).items() for i in indices}
+            groups = {}
+            for i, (x, h, d, color) in enumerate(source['voxels']):
+                groups.setdefault(assignments.get(i, 'body'), []).append((x, d, h, color))
+            count = sum(audit(cells, FACES) for cells in groups.values())
+            print(f'SURFACE_AUDIT {path.stem}: {len(groups)} closed parts, {count} merged quads', flush=True)
         print('BLENDER_SELF_TEST_OK', flush=True)
         return
     names = [args.model] if args.model else [p.stem for p in sorted((ROOT / 'art' / 'voxels').glob('*.json'))]
