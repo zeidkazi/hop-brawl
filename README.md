@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** Final models are signed off and M2.5 Loading is complete; M3 Solo is next. All six animals have floating cuffed gloves, no headbands, and a shared procedural move controller. See the [model checklist](art/review/SIGNOFF.md) and [loading transition/error evidence](art/review/LOADING.md). No public deployment exists yet.
+**Status:** M2.5 models/Home/Loading are complete and tagged. M3 Solo is playable locally and awaiting owner playtesting before M4. See the [Solo screens and measurements](art/review/SOLO.md), [model checklist](art/review/SIGNOFF.md), and [loading transition/error evidence](art/review/LOADING.md). No public deployment exists yet.
 
 ## Local development
 
@@ -17,7 +17,7 @@ npm run dev
 
 Open http://localhost:5173/. For a clean install from the committed lockfile, use npm ci. The local Cloudflare server and npm run dev:server / wrangler dev command will be added in M4.
 
-Tap the name pill to edit, tap the animal or use arrows/swipe to change it, and try Friends, Settings, How to Play and Settings > Credits. Solo and multiplayer buttons are disabled until their implementation milestones. Add `?debug=1` for FPS/draw/pool metrics and camera/quality/tile-flip controls. For phone testing on the same Wi-Fi, start with `npm run dev -- --host 0.0.0.0` and open the PC's LAN address on port 5173.
+Tap the name pill to edit; tap the animal for a boxing combo or use arrows/swipe to change it. Choose SOLO, enter a name if needed, and wait for HOP! Arrow keys/WASD move one tile; click/tap hops forward, and a phone swipe hops in its direction. Esc or the gear pauses; Resume counts down, Restart creates a fresh run, and Retry/Space/Enter starts again after Game Over. Best score saves locally. Multiplayer buttons remain disabled until their networking milestones. Add `?debug=1` for FPS/draw/pool metrics. For phone testing on the same Wi-Fi, start with `npm run dev -- --host 0.0.0.0` and open the PC's LAN address on port 5173.
 
 ## Tests and build
 
@@ -29,9 +29,9 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-- Unit tests cover deterministic randomness, all four row types, hazards, Slow-Mo and collision boundaries.
+- Unit tests cover deterministic randomness, all four row types, hazards, Slow-Mo, buffered hops, log carry/exit boundaries, input gestures, and saved Solo best.
 - The generator fuzz test checks 1,000 random seeds × 300 rows against every §10 solvability guarantee.
-- Browser tests compare shared world/hazard results with Node in independent contexts and check persistent-canvas navigation, resize, graphics switches, resource bounds, denied storage and room links, all six animal selections, name validation and exact odd-window canvas coverage at DPR 1/1.25/1.5/2. Windows tests use D3D11 hardware acceleration; metrics identify the GPU backend. Full gameplay, latency, 4× CPU and real-device performance tests arrive with their corresponding features.
+- Browser tests compare shared world/hazard results with Node in independent contexts and check persistent-canvas navigation, resize, graphics switches, resource bounds, denied storage, loading/error recovery, Solo pause/death/retry, all six animal selections, and exact odd-window coverage at DPR 1/1.25/1.5/2. Windows tests use D3D11 hardware acceleration. Multiplayer, latency, 4× CPU and physical-device performance validation remain scheduled for their milestones.
 - npm run build:client creates client/dist; npm run preview serves the production build locally.
 
 ## How to play (target gameplay)

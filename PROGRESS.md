@@ -4,8 +4,8 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 
 ## Status
 
-- Completed milestones: M1 (world generation/hazards), M2 (persistent-canvas architecture), M2.5 (approved Street Brawl models/Home and section 29.10 Loading).
-- Current phase: owner signed off all models on 2026-10-15 and authorized M3 after Loading. M2.5 is ready for tag m2.5-art-direction. Loading evidence: art/review/LOADING.md. Next: M3 Solo, then stop for owner playtesting.
+- Completed milestones: M1 (world generation/hazards), M2 (persistent-canvas architecture), M2.5 (approved Street Brawl models/Home and section 29.10 Loading), M3 (Solo).
+- Current phase: M2.5 tagged and pushed as m2.5-art-direction. M3 implementation is complete; STOP for owner playtesting and approval before M4. Loading evidence: art/review/LOADING.md. Solo evidence: art/review/SOLO.md.
 - Owner approved the plan and M1 on 2026-10-14. Deployment is deferred until after M13 and before M14, no later than 2026-10-26; no deployment without the owner's pre-deploy approval.
 - Read SPEC.md including sections 28 and 29; Street Brawl overrides the earlier art direction. Owner section 29 committed as 65e3131, docs(spec): add street brawl visual identity.
 - Initial commit c6ec455 (`docs: add game spec`) pushed to `origin/main` at https://github.com/zeidkazi/hop-brawl.git.
@@ -91,6 +91,21 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 - Final production samples: High 82 draws / 88,848 triangles; Medium 75 draws / 81,470 triangles. Rolling p95 16.7–16.8 ms after five seconds. No page/console errors. Evidence: art/review/browser-measurements.json and all 13 PNGs under art/previews/signoff/ (both lineups, silhouettes, four colors, three six-frame strips, other event poses, cheering crowd, logo comparison, two Home screenshots and measurements).
 - Local dev remains http://localhost:5173/ (phone: http://192.168.7.7:5173/). Production preview is http://localhost:4173/. No M3 work, deployment or M2.5 completion tag before final owner sign-off.
 
+## M2.5 Loading completed
+
+- Section 29.10 committed as docs(spec): add loading screen. Inline 12,225-byte HTML/SVG/CSS first paint, actual byte progress, rotating tips, glove tap, punch/diagonal reveal into live Home, slow/error/retry and Reduce Motion cases replace the old blurred intro.
+- Six-frame transition and error evidence: art/review/LOADING.md. At the M2.5 tag, five cold local production loads had median 1.597 s and maximum 2.532 s. M3's later asset set is measured separately in art/review/SOLO.md.
+- Tag m2.5-art-direction pushed at 753bd8c after owner model sign-off and Loading completion.
+
+## M3 completed / verification
+
+- Shared 140 ms hops, one-input buffering, obstacles/edge/top bonks, continuous fractional log carry, safe log-exit rounding, half-hop hazard-row switch, fixed collision substeps, and auto/follow camera rules.
+- Pointer movement accepts one swipe immediately at 24 px; taps/clicks hop forward. Keyboard repeat is ignored. UI clicks do not hop. Blur/hidden tab pauses Solo.
+- Approved Blender animals, traffic, trains, oak and logs reuse the warmed scene; pooled rows/particles and tiered rendering remain. Gameplay exposes the same 13 rows on phone and PC, with decorative ground beyond them.
+- Three-second initial/resume countdown, one-heart deaths with specific presentation, material desaturation, local best and BEST flag, new-best burst, Pause/Settings/Resume/Restart/Quit, and one-second Retry countdown overlapping the pooled tile flip. Canvas identity is preserved.
+- 100 unit tests, strict typecheck and production build pass. Full desktop/touch browser suite passed 24/24; targeted final Solo/architecture checks are recorded in art/review/SOLO.md. Screens and host-GPU frame/startup measurements are in that report.
+- Crates/boosts remain M9, remaining biome art M10, full audio M11 and onboarding/presentation polish M12. No multiplayer or deployment work starts before the owner approves M3.
+
 ## Setup preflight (§27)
 
 M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-specific path is stored only in gitignored `.env.local` as `BLENDER_PATH`; `npm run art:build -- --version` verifies the launcher. Blender is mandatory for all 3D assets; the former Node fallback is removed from the implementation plan.
@@ -118,7 +133,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Known bugs / unresolved checks
 
-- Models and Home are signed off. Solo remains disabled until M3; multiplayer actions remain disabled until networking milestones.
+- Models and Home are signed off. Solo is enabled; no known failing automated Solo checks. Physical-device feel and visual acceptance await owner playtesting. Multiplayer actions remain disabled until networking milestones.
 - M12 owner polish notes (do not implement early): make 1–2 combo punches visibly travel toward the gameplay camera; improve the fox tail silhouette from that camera.
 - Worker/Room implementation and wrangler dev arrive in M4. Do not add fake server endpoints just to make an unavailable server command appear to work.
 - Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only Home on the host GPU.
@@ -127,14 +142,14 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Next exact step
 
-Tag and push m2.5-art-direction, then implement M3: input, shared hop/hazard movement, camera rules, Solo countdown/death/best/pause, and tile-flip Retry. Preserve the persistent canvas and warmed approved models. Add meaningful unit/browser coverage and show desktop/phone Solo screenshots. Stop after M3 for owner playtesting. Do not implement the two M12 polish notes now.
+STOP and wait for owner M3 playtest approval. Ask them to play Solo in normal/incognito windows and on a phone using the checklist in art/review/SOLO.md. Fix only reported bugs with small verified commits. After approval, start M4 Worker + hibernating Room Durable Object, create/join/lobby/clock sync. Do not deploy or implement the M12 punch/tail polish notes now.
 
 ## Milestone plan / gates
 
 - M1: Shared config, PRNG, worldgen, hazards, unit/fuzz tests. COMPLETE.
 - M2: Persistent canvas/scene, camera stations, GSAP UI motion, pools, quality tiers, debug overlay. COMPLETE; tag m2-architecture.
-- M2.5: Blender-only pipeline and art/UI direction correction. STOP for asset-preview approval, then STOP for Home screenshot approval. Tag m2.5-art-direction only when complete.
-- M3: Responsive controls, hopping, hazards/death, camera, Solo and tile-flip retry. STOP for owner testing/approval.
+- M2.5: Blender-only pipeline and art/UI direction correction plus loading. COMPLETE; owner models/Home approved; tag m2.5-art-direction.
+- M3: Responsive controls, hopping, hazards/death, camera, Solo and tile-flip retry. COMPLETE; STOP for owner testing/approval.
 - M4: Worker + hibernating Room DO, create/join, lobby, clock sync.
 - M5: Authoritative movement, prediction, interpolation, shared camera.
 - M6: Hearts, respawn, shove, rounds/matches, results.
@@ -160,7 +175,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Tap the animal for a boxing combo; use arrows/swipe to select and watch the landing glove tap. Edit the name, open Friends/Settings/How to Play and Settings > Credits, and return using Back/Esc. The world must stay visible and animated throughout. Reload to check saved preferences; incognito should keep its own session. Try http://localhost:5173/?room=ABCD for prefilled code boxes. Gameplay/multiplayer buttons are intentionally disabled until their milestones.
+Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Choose SOLO; enter a name if needed. After HOP!, use arrow keys/WASD or tap/swipe. Dodge traffic/trains, ride logs, and keep moving ahead of the scrolling bottom. Esc/gear pauses; Resume counts down; Retry/Space/Enter restarts after death. Verify best score survives reload and incognito has separate storage. Multiplayer remains disabled until M4 onward. See art/review/SOLO.md for the full owner checklist.
 
 Open http://localhost:5173/?debug=1 for the FPS overlay. Expand the debug panel to change stations, toggle menu visibility, scroll camZ, and trigger Tile flip/Dust burst/Toast/Crowd K.O./Glove punch. In Settings switch Graphics High/Low/Auto and Reduce motion. Resize or rotate: the canvas should remain visible with smooth reframing. Next must exit left and enter right; Previous must do the reverse. Swipes follow the finger.
 

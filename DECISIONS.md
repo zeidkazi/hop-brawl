@@ -1,5 +1,9 @@
 # Hop Brawl decisions
 
+- M3 follows the section 21 milestone split: Solo movement, hazards, camera, deaths, best, pause and Retry are active. Crate pickups/boosts remain M9, remaining biome art M10, full audio M11, and the owner's two camera-angle animation notes M12. M3 hides inactive crates instead of presenting an unimplemented pickup. Approved M2.5 Blender models replace the matching old boxes; no new model revision is introduced.
+- Section 4.3's identical gameplay window is enforced in rendering as well as camera fit: only the same 13 row slots expose hazards on either aspect ratio; additional space shows decorative ground. The full 25-row simulation cache remains prepared for streaming and collision checks.
+- Retry overlaps its one-second countdown with the 300 ms tile cover/reveal, so the world resets under cover without adding another transition delay before HOP. Browser timing reports separately distinguish the reset and the end of that countdown.
+
 - 2026-10-15, owner signed off all models and authorized M3 after section 29.10 Loading. Tag m2.5-art-direction only after Loading is verified. Defer to M12: make combo punches visibly travel toward the gameplay camera, and improve the fox tail's top-down silhouette; do not revise those models now.
 - Section 29.10 Loading uses decoded file byte sizes from the exact build manifest and actual streamed response bytes, so compressed HTTP delivery does not require extra HEAD requests. Successful buffers survive Retry; failed fetch/decode buffers are retried. Current required audio is synthesized and contributes no downloaded sound bytes. New required sounds must join this same registry at M11.
 
