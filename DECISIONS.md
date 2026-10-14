@@ -1,5 +1,8 @@
 # Hop Brawl decisions
 
+- 2026-10-14, owner model review: Chicken, penguin and crate designs are approved. Revise frog, fox, pig, cat, car, oak and logo before Home work. All animals use the chicken's single-voxel eye shape and one-voxel inset below the visible face top, with a black silhouette preview for each. Approved recipes/voxel designs stay unchanged; their exports receive the same closed-part/coplanar optimization. Each model revision is a separate commit. Owner review remains the visual acceptance gate.
+- 2026-10-14, owner model review overrides earlier asset dimensions where needed: Oak trunk becomes four voxels wide/deep (twice the original two), canopy expands from 10×10 to 14×14 voxels at the same height. Logo uses padded 68×40×6 authoring bounds for individually tilted two-voxel strokes and connected letter faces, with a strict export size below 150,000 bytes. These are visual assets; no gameplay collision tunables change.
+
 - 2026-10-14, owner clarification, SPEC §4.7: At the 4:00 cap, rank by highest distance, then most hearts remaining, then earliest server time reaching that distance; draw and replay only if all three tie. The separate simultaneous-knockout rule remains as specified.
 - 2026-10-14, owner clarification, SPEC §6.1: At Match End, admit waiting spectators as players in join order up to four players for both Rematch and Back to Lobby; remaining spectators see "Room full — you'll join when a spot opens". This overrides §7's older "same players" wording for Rematch.
 - 2026-10-14, owner clarification, SPEC §6.1: Quick Play rooms remain 1v1 and reject code joins with ROOM_NOT_FOUND; the matchmaker-assigned pair must be authenticated when connecting to their assigned room.
