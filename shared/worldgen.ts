@@ -1,7 +1,7 @@
 import { CONFIG, WORLD } from './config';
-import { hash32, mulberry32, randomInt } from './rng';
+import { hash32, mulberry32, randomBetween, randomInt } from './rng';
 import type { Random } from './rng';
-import type { Biome, GrassRow, Obstacle, RowKind } from './types';
+import type { Biome, GrassRow, Obstacle, RoadRow, RowKind, Vehicle } from './types';
 
 const BIOMES: readonly Biome[] = ['meadow', 'autumn', 'snow', 'nightCity'];
 
@@ -65,4 +65,55 @@ export function generateGrassRow(seed: number, z: number): GrassRow {
     ? { id: `${z}`, column: freeColumns[randomInt(random, 0, freeColumns.length - 1)]! }
     : null;
   return { kind: 'grass', z, biome: biomeAtRow(z), obstacles, crate };
+}
+
+/** Allocate the entire ring, including its seam, with no short final gap. */
+function ringGaps(random: Random, count: number, total: number, min: number, max: number): number[] {
+  const gaps: number[] = [];
+  let remaining = total;
+  for (let i = 0; i < count; i++) {
+    const after = count - i - 1;
+    const lower = Math.max(min, remaining - after * max);
+    const upper = Math.min(max, remaining - after * min);
+    const gap = after === 0 ? remaining : randomBetween(random, lower, upper);
+    gaps.push(gap);
+    remaining -= gap;
+  }
+  return gaps;
+}
+
+export function generateRoadRow(seed: number, z: number): RoadRow {
+  const random = rowRandom(seed, z);
+  const direction = randomInt(random, 0, 1) === 0 ? -1 : 1;
+  const rawSpeed = randomBetween(random, WORLD.ROAD_SPEED_MIN, WORLD.ROAD_SPEED_MAX)
+    * (1 + WORLD.ROAD_DIFFICULTY_GAIN * difficultyAtRow(z));
+  const speed = z <= WORLD.EARLY_LAST_ROW ? Math.min(rawSpeed, WORLD.EARLY_ROAD_SPEED_CAP) : rawSpeed;
+  const span = WORLD.LOOP_MAX_X - WORLD.LOOP_MIN_X;
+  const minimumGap = Math.max(WORLD.ROAD_GAP_MIN, speed * CONFIG.MIN_ROAD_TIME_GAP_S);
+  // These bounds keep every possible 80/20 car/truck draw feasible.
+  const minimumCount = Math.ceil(span / (WORLD.CAR_LENGTH + WORLD.ROAD_GAP_MAX));
+  const maximumCount = Math.floor(span / (WORLD.TRUCK_LENGTH + minimumGap));
+  const count = randomInt(random, minimumCount, maximumCount);
+  const kinds: ('car' | 'truck')[] = [];
+  const lengths: number[] = [];
+  let occupied = 0;
+  for (let i = 0; i < count; i++) {
+    const car = random() < WORLD.CAR_CHANCE;
+    const length = car ? WORLD.CAR_LENGTH : WORLD.TRUCK_LENGTH;
+    kinds.push(car ? 'car' : 'truck');
+    lengths.push(length);
+    occupied += length;
+  }
+  const gaps = ringGaps(random, count, span - occupied, minimumGap, WORLD.ROAD_GAP_MAX);
+  const vehicles: Vehicle[] = [];
+  let start = 0;
+  for (let i = 0; i < count; i++) {
+    const length = lengths[i]!;
+    vehicles.push({ kind: kinds[i]!, length, offset: start + length / 2 });
+    start += length + gaps[i]!;
+  }
+  return {
+    kind: 'road', z, biome: biomeAtRow(z), direction, speed,
+    phase: randomBetween(random, 0, span), vehicles,
+  };
 }
