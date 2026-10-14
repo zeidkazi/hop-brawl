@@ -1,5 +1,5 @@
 import { CONFIG, SOLO, scrollSpeed } from './config';
-import { carriedOffEdge, hopHazardPosition, logAtLanding, trainHits, vehicleHits } from './hazards';
+import { carriedOffEdge, hopHazardPosition, logSlotAtLanding, logSlotX, trainHits, vehicleHits } from './hazards';
 import type { Row } from './types';
 
 export type HopDirection = 'up' | 'down' | 'left' | 'right';
@@ -13,6 +13,9 @@ export class Movement {
   fromX = this.x; fromZ = this.z; toX = this.x; toZ = this.z;
   time = 0; hopStart = 0; camZ = 0; distance = 0; hops = 0;
   firstHopAt: number | null = null;
+  logIndex = -1; slotIndex = -1;
+  private aimX = 0;
+  private readonly landing = { log: -1, slot: -1, x: 0 };
   hopping = false; onLog = false; dead: DeathCause | null = null;
   direction: HopDirection = 'up';
   buffered: HopDirection | null = null;
@@ -28,6 +31,7 @@ export class Movement {
     this.z = this.fromZ = this.toZ = SOLO.SPAWN_Z;
     this.time = this.hopStart = this.camZ = this.distance = this.hops = 0;
     this.firstHopAt = null;
+    this.logIndex = this.slotIndex = -1;
     this.hopping = this.onLog = false; this.dead = null; this.buffered = null; this.direction = 'up';
   }
   private blocked(x: number, z: number): boolean {
@@ -42,6 +46,9 @@ export class Movement {
     let x = this.x + DX[direction];
     const z = this.z + DZ[direction];
     const destination = this.rowAt(z);
+    const landsAt = this.time + CONFIG.HOP_MS / 1000;
+    if (this.onLog && destination.kind === 'river' && z === this.z && this.logIndex >= 0)
+      x = logSlotX(destination, this.logIndex, this.slotIndex + DX[direction], landsAt);
     if (this.onLog && destination.kind !== 'river') {
       const nearest = Math.round(x);
       const other = x < nearest ? Math.floor(x) : Math.ceil(x);
@@ -52,32 +59,40 @@ export class Movement {
     this.direction = direction;
     this.firstHopAt ??= this.time;
     this.fromX = this.x; this.fromZ = this.z; this.toX = x; this.toZ = z;
+    this.aimX = x;
+    if (destination.kind === 'river') {
+      logSlotAtLanding(destination, x, landsAt, this.landing);
+      if (this.landing.log >= 0) this.toX = this.landing.x;
+    }
     this.hopStart = this.time; this.hopping = true; this.onLog = false; this.buffered = null;
     this.onHop?.(); return true;
   }
   /** Fixed small collision steps, sampled from absolute round time: a long frame cannot tunnel through traffic. */
   advance(targetSeconds: number): void {
     while (!this.dead && this.time < targetSeconds) {
-      const next = Math.min(targetSeconds, this.time + SOLO.PHYSICS_STEP_MS / 1000);
+      const next = Math.min(targetSeconds, this.time + SOLO.PHYSICS_STEP_MS / 1000,
+        this.hopping ? this.hopStart + CONFIG.HOP_MS / 1000 : Infinity);
       const dt = next - this.time; this.time = next;
       if (this.hopping) {
         const elapsed = (this.time - this.hopStart) * 1000;
         const p = Math.min(1, elapsed / CONFIG.HOP_MS);
-        this.x = this.fromX + (this.toX - this.fromX) * p;
+        this.x = this.fromX + (this.aimX - this.fromX) * p + (this.toX - this.aimX) * p * p;
         this.z = this.fromZ + (this.toZ - this.fromZ) * p;
-        if (p >= 1 - Number.EPSILON * 16) {
+        if (this.time >= this.hopStart + CONFIG.HOP_MS / 1000 - Number.EPSILON * Math.max(1, this.time) * 8) {
           this.x = this.toX; this.z = this.toZ; this.hopping = false;
           const row = this.rowAt(this.z);
           if (row.kind === 'river') {
-            this.onLog = logAtLanding(row, this.x, this.time) >= 0;
+            logSlotAtLanding(row, this.aimX, this.time, this.landing);
+            this.onLog = this.landing.log >= 0;
             if (!this.onLog) { this.kill('SPLASH!'); break; }
+            this.x = this.landing.x; this.logIndex = this.landing.log; this.slotIndex = this.landing.slot;
           }
           this.distance = Math.max(this.distance, this.z); this.hops++; this.onLand?.();
         }
         hopHazardPosition(this.fromX, this.fromZ, this.toX, this.toZ, elapsed, this.hazard);
       } else {
         const row = this.rowAt(this.z);
-        if (this.onLog && row.kind === 'river') this.x += row.direction * row.speed * dt;
+        if (this.onLog && row.kind === 'river') this.x = logSlotX(row, this.logIndex, this.slotIndex, this.time);
         this.hazard.x = this.x; this.hazard.z = this.z;
       }
       const row = this.rowAt(this.hazard.z);

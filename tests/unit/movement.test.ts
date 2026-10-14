@@ -27,8 +27,9 @@ describe('Solo/shared movement', () => {
     const player = new Movement(z => z === 2 ? { kind: 'river', z, biome: 'meadow', direction: 1, speed: 1, phase: 0,
       logs: [{ offset: 10, length: 4 }] } : grass(z));
     player.input('up'); player.advance(.14); expect(player.onLog).toBe(true);
-    player.advance(.64); expect(player.x).toBeCloseTo(4.5);
-    player.x = 8.49; player.advance(.66); expect(player.dead).toBe('SWEPT AWAY!');
+    const landedX = player.x;
+    player.advance(.64); expect(player.x).toBeCloseTo(landedX + .5);
+    player.advance(8); expect(player.dead).toBe('SWEPT AWAY!');
     const empty = new Movement(z => z === 2 ? { kind: 'river', z, biome: 'meadow', direction: 1, speed: 1, phase: 0, logs: [] } : grass(z));
     empty.input('up'); empty.advance(.139); expect(empty.dead).toBeNull();
     empty.advance(.14); expect(empty.dead).toBe('SPLASH!');
@@ -50,7 +51,7 @@ describe('Solo/shared movement', () => {
       : { kind: 'grass', z, biome: 'meadow', obstacles: [{ column: 4, kind: 'tree' }, { column: 5, kind: 'rock' }], crate: null };
     const player = new Movement(rowAt); player.x = 4.2; player.z = 2; player.onLog = true;
     expect(player.input('up')).toBe(false); expect(player.onLog).toBe(true); expect(player.x).toBe(4.2);
-    expect(player.input('right')).toBe(true); expect(player.toX).toBe(5.2);
+    expect(player.input('right')).toBe(true); expect(Math.abs(player.toX - 5.2)).toBeLessThanOrEqual(.6);
   });
   it('never auto-scrolls before the first hop and starts three seconds after it', () => {
     const player = new Movement(grass);

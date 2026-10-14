@@ -1,4 +1,4 @@
-import { CONFIG, WORLD } from './config';
+import { CONFIG, SEGMENTS, WORLD } from './config';
 import type { LaneItem, Position, RailRow, RiverRow, RoadRow, SlowMoWindow } from './types';
 
 const NO_SLOW_MO: readonly SlowMoWindow[] = Object.freeze([]);
@@ -99,16 +99,31 @@ export function trainHits(
   return centre !== null && Math.abs(x - centre) <= (WORLD.TRAIN_LENGTH + CONFIG.PLAYER_HITBOX) / 2;
 }
 
-/** Returns a stable log index or -1. Water is lethal only on landing. */
+export interface LogSlot { log: number; slot: number; x: number }
+export function logSlotX(row: RiverRow, log: number, slot: number, t: number, windows: readonly SlowMoWindow[] = NO_SLOW_MO): number {
+  const item = row.logs[log]!;
+  return laneItemX(row, item, t, windows) - (item.length - SEGMENTS.LOG_SLOT_WIDTH) / 2 + slot * SEGMENTS.LOG_SLOT_WIDTH;
+}
+/** Nearest slot at actual landing time. Stable ties prefer the earlier log/slot. */
+export function logSlotAtLanding(row: RiverRow, x: number, t: number, out: LogSlot,
+  windows: readonly SlowMoWindow[] = NO_SLOW_MO): LogSlot {
+  out.log = -1; out.slot = -1; out.x = x;
+  let best = SEGMENTS.LOG_SLOT_REACH + Number.EPSILON * 8;
+  for (let i = 0; i < row.logs.length; i++) {
+    const item = row.logs[i]!;
+    for (let slot = 0; slot < item.length; slot++) {
+      const centre = logSlotX(row, i, slot, t, windows), distance = Math.abs(x - centre);
+      if (distance < best) { best = distance; out.log = i; out.slot = slot; out.x = centre; }
+    }
+  }
+  return out;
+}
+const landingSlot: LogSlot = { log: -1, slot: -1, x: 0 };
+/** Compatibility index query; support now follows section 30.6 slot reach. */
 export function logAtLanding(
   row: RiverRow, x: number, t: number, windows: readonly SlowMoWindow[] = NO_SLOW_MO,
 ): number {
-  for (let i = 0; i < row.logs.length; i++) {
-    const log = row.logs[i]!;
-    const halfExtent = log.length / 2 - CONFIG.LOG_LANDING_TRIM;
-    if (Math.abs(x - laneItemX(row, log, t, windows)) <= halfExtent) return i;
-  }
-  return -1;
+  return logSlotAtLanding(row, x, t, landingSlot, windows).log;
 }
 
 export function carriedOffEdge(x: number): boolean {

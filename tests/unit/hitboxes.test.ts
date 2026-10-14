@@ -29,11 +29,11 @@ describe('forgiving hitboxes', () => {
     expect(trainHits(rail, 0, 4)).toBe(false);
   });
 
-  it('shrinks log support by 0.15 per end and returns the carrying log', () => {
-    expect(logAtLanding(river, 0.85, 0)).toBe(0);
-    expect(logAtLanding(river, -0.85, 0)).toBe(0);
-    expect(logAtLanding(river, 0.85001, 0)).toBe(-1);
-    expect(logAtLanding(river, -0.85001, 0)).toBe(-1);
+  it('accepts landing points within 0.6 of a slot, including exact edges', () => {
+    expect(logAtLanding(river, 1.1, 0)).toBe(0);
+    expect(logAtLanding(river, -1.1, 0)).toBe(0);
+    expect(logAtLanding(river, 1.10001, 0)).toBe(-1);
+    expect(logAtLanding(river, -1.10001, 0)).toBe(-1);
     expect(logAtLanding(river, 2, 1)).toBe(0);
     expect(logAtLanding(river, 0, 1)).toBe(-1);
   });
