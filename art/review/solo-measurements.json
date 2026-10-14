@@ -1,0 +1,70 @@
+[
+  {
+    "name": "desktop",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "performance": {
+      "frames": 562,
+      "calls": 58,
+      "triangles": 47568,
+      "geometries": 155,
+      "textures": 6,
+      "delta": 16.700000000000728,
+      "tier": "high",
+      "choice": "auto",
+      "resolution": 1,
+      "pixelRatio": 1,
+      "p95": 16.80000000000109,
+      "worst": 16.80000000000109,
+      "programs": 72,
+      "rows": 25,
+      "generatedRows": 50,
+      "particles": 16,
+      "station": "gameplay",
+      "mobile": false,
+      "animal": "fox",
+      "animalOffset": 0,
+      "crowdCheering": false,
+      "move": "idle"
+    },
+    "retryResetMs": 318.5,
+    "retryPlayableMs": 1022.7000000029802,
+    "errors": []
+  },
+  {
+    "name": "mobile",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "performance": {
+      "frames": 549,
+      "calls": 47,
+      "triangles": 36242,
+      "geometries": 155,
+      "textures": 5,
+      "delta": 16.700000000000728,
+      "tier": "medium",
+      "choice": "auto",
+      "resolution": 1,
+      "pixelRatio": 1.5,
+      "p95": 16.700000000000728,
+      "worst": 16.80000000000109,
+      "programs": 72,
+      "rows": 25,
+      "generatedRows": 50,
+      "particles": 8,
+      "station": "gameplay",
+      "mobile": true,
+      "animal": "fox",
+      "animalOffset": 0,
+      "crowdCheering": false,
+      "move": "idle"
+    },
+    "retryResetMs": 301.29999999701977,
+    "retryPlayableMs": 1007.5,
+    "errors": []
+  }
+]
