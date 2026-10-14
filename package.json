@@ -9,10 +9,12 @@
   "scripts": {
     "art:build": "node scripts/build-art.mjs",
     "dev": "vite",
+    "dev:server": "wrangler dev",
+    "deploy": "npm run check && wrangler deploy",
     "build": "npm run typecheck && npm run build:client",
     "build:client": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p server/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
