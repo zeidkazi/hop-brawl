@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** M2.5 Street Brawl identity is awaiting Home visual approval before M3. All six animals wear recolorable boxing gloves/headbands; fox is the default and logo mascot. Toon outlines, saturated colors, an instanced arena crowd and corrected carousel direction follow SPEC section 29. Solo and multiplayer remain scheduled for subsequent milestones; no public deployment exists yet.
+**Status:** Street Brawl direction is approved; the final boxer/model pass awaits owner sign-off before M3. All six animals have floating cuffed gloves, no headbands, and a shared procedural move controller. See the [illustrated §29.9 checklist](art/review/SIGNOFF.md) for both lineups, silhouettes, move strips, Home screenshots and production measurements. Solo and multiplayer remain scheduled for subsequent milestones; no public deployment exists yet.
 
 ## Local development
 

@@ -1,11 +1,11 @@
 # Hop Brawl progress
 
-Last updated: 2026-10-14 (Asia/Calcutta).
+Last updated: 2026-10-15 (Asia/Calcutta).
 
 ## Status
 
 - Completed milestones: M1 (world generation/hazards) and M2 (persistent-canvas architecture).
-- Current phase: M2.5 Street Brawl identity under SPEC section 29. The previous Home was NOT approved. All five requested visual steps are implemented for the next 390x844 / 1440x900 Home review. M3 awaits approval; do not tag M2.5 complete before owner approval.
+- Current phase: M2.5 final boxer/model pass under SPEC sections 29.7–29.9. Street Brawl direction is approved; final model sign-off remains pending. Illustrated evidence: art/review/SIGNOFF.md. M3 has not started; do not tag M2.5 complete before sign-off.
 - Owner approved the plan and M1 on 2026-10-14. Deployment is deferred until after M13 and before M14, no later than 2026-10-26; no deployment without the owner's pre-deploy approval.
 - Read SPEC.md including sections 28 and 29; Street Brawl overrides the earlier art direction. Owner section 29 committed as 65e3131, docs(spec): add street brawl visual identity.
 - Initial commit c6ec455 (`docs: add game spec`) pushed to `origin/main` at https://github.com/zeidkazi/hop-brawl.git.
@@ -79,6 +79,18 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 - Final screenshots: output/playwright/home-review/desktop.png at 1440x900; mobile.png at a 390x844 CSS viewport and DPR 2. Five-second host-GPU samples: desktop High 82 calls / 97,846 triangles, mobile Medium 73 calls / 89,122 triangles (below the Medium <80 target); rolling p95 16.7–16.8 ms. These are Intel Iris Xe browser measurements, not a real-phone or full-match performance certification. Menus remain at full tier resolution (Medium pixel ratio capped at 1.5).
 - Runtime GLBs total 790,228 bytes, below 3 MB; main production JS is about 208 KB gzip, below 400 KB. Vite still emits its default uncompressed-chunk advisory. Dev server remains at http://localhost:5173/ and http://192.168.7.7:5173/ for the same-Wi-Fi phone review. No M2.5 completion tag until owner acceptance.
 
+## M2.5 final boxer/model sign-off checkpoint
+
+- Owner's sections 29.7–29.9 committed as 4267315, `docs(spec): add boxer moves and model sign-off`. All six final gear revisions are separately committed. Headbands removed; closed chamfered fist/thumb/highlight/ridge geometry, untinted white cuffs and independent wrist handles replace the former gloves. Original anatomy and gameplay hitboxes are preserved.
+- Shared Boxer controller implements idle 2 Hz bounce, random 3–5 s tap/combo/shake flourishes, hop follow-through, side-selected 0.4-tile shove punch, stun/wobble/stars, countdown guard/HOP tap, victory/cheer, selection landing tap and lobby-join tap. Home tap now performs the 350 ms combo; arrows/swipes select. Reduce Motion disables automatic flourishes and halves bounce. Original synthesized contact/whoosh/hit feedback respects SFX volume and gesture unlock. Actual authoritative event sources remain in their gameplay milestones.
+- Logo: 155,500 bytes, unlit/fog-free vertex colors matching the Blender preview, visible Ink backing on every tier, fox scaled 2.5x. Geometric audit found and fixed uncapped contours in the Text backing. Arrow-only controls remove 150,296 bytes of unused sign/text geometry; the animal name is outlined Lilita One UI text below the animal.
+- Arena: inward-facing chunky spectators (1.5x former height) raise both arms and jump using shared shader uniforms. Bleacher bounds are 2.15 tiles outside the playfield; nearby structures reach at most 0.917 tile (<1.5); towers are 16 rows apart at Z=10/26, outside the top Home rows. The selection stage leaves room for victory gloves and dizzy stars below the logo.
+- `npm run check` passes 87 tests in 17 files, strict typecheck and production build. `npm run test:e2e` passes all 12 desktop/touch checks. A first-use spark geometry upload was detected by the persistent-resource test and fixed by warming it during Loading, including portrait views. Resource counts now remain stable through navigation and tier changes.
+- All 18 runtime GLBs pass `node scripts/audit-models.mjs`: zero open boundary segments, zero flat meshes, 643,416 bytes total (<2,000,000). Runtime plus archived variant GLBs total 1,144,068 bytes. Raw results: art/review/geometry-audit.json.
+- Production preview cold-cache desktop TTI: 1.470 / 0.688 / 0.935 / 1.080 / 1.052 seconds; maximum 1.470 s, median 1.052 s (<3 s). All 15 Home models load before interactivity. HTTP cache is cleared/disabled and each run uses a new browser context. This is local production preview on Intel Iris Xe, not deployed-network or real-phone certification.
+- Final production samples: High 82 draws / 88,848 triangles; Medium 75 draws / 81,470 triangles. Rolling p95 16.7–16.8 ms after five seconds. No page/console errors. Evidence: art/review/browser-measurements.json and all 13 PNGs under art/previews/signoff/ (both lineups, silhouettes, four colors, three six-frame strips, other event poses, cheering crowd, logo comparison, two Home screenshots and measurements).
+- Local dev remains http://localhost:5173/ (phone: http://192.168.7.7:5173/). Production preview is http://localhost:4173/. No M3 work, deployment or M2.5 completion tag before final owner sign-off.
+
 ## Setup preflight (§27)
 
 M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-specific path is stored only in gitignored `.env.local` as `BLENDER_PATH`; `npm run art:build -- --version` verifies the launcher. Blender is mandatory for all 3D assets; the former Node fallback is removed from the implementation plan.
@@ -106,7 +118,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Known bugs / unresolved checks
 
-- The Street Brawl Home is awaiting owner visual approval; the previous Home was rejected. Solo remains disabled until M3; multiplayer actions remain disabled until networking milestones.
+- Street Brawl direction is approved; final boxer/model sign-off under sections 29.7–29.9 is pending. Solo remains disabled until M3; multiplayer actions remain disabled until networking milestones.
 - Worker/Room implementation and wrangler dev arrive in M4. Do not add fake server endpoints just to make an unavailable server command appear to work.
 - Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only Home on the host GPU.
 - Cloudflare and Vercel authentication and free-account plan verification remain required before deployment.
@@ -114,7 +126,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Next exact step
 
-WAIT for the owner's approval of the Street Brawl Home screenshots at 390x844 and 1440x900. Section 29 supersedes the former chicken/pastel Home and logo. After approval, record acceptance, complete/tag/push m2.5-art-direction, then begin M3 Solo. Preserve the persistent canvas, full menu resolution, warmed models, brawler gear and tiered outlines. Stop after M3 for owner playtesting.
+WAIT for the owner's final model sign-off using art/review/SIGNOFF.md and every section 29.9 evidence image. After sign-off, record acceptance, complete/tag/push m2.5-art-direction, then begin M3 Solo. Preserve the persistent canvas, full menu resolution, warmed models/effects, floating glove handles and shared Boxer controller. Connect its presentation adapters to actual gameplay events as those milestones are implemented. Stop after M3 for owner playtesting.
 
 ## Milestone plan / gates
 
@@ -147,7 +159,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Tap the top-left name pill, change animals by tapping the animal or using arrows/swipe, open Friends/Settings/How to Play and Settings > Credits, and return using Back/Esc. The world must stay visible and animated throughout. Reload to check saved preferences; incognito should keep its own session. Try http://localhost:5173/?room=ABCD for prefilled code boxes. Gameplay/multiplayer buttons are intentionally disabled at M2.
+Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Tap the animal for a boxing combo; use arrows/swipe to select and watch the landing glove tap. Edit the name, open Friends/Settings/How to Play and Settings > Credits, and return using Back/Esc. The world must stay visible and animated throughout. Reload to check saved preferences; incognito should keep its own session. Try http://localhost:5173/?room=ABCD for prefilled code boxes. Gameplay/multiplayer buttons are intentionally disabled until their milestones.
 
 Open http://localhost:5173/?debug=1 for the FPS overlay. Expand the debug panel to change stations, toggle menu visibility, scroll camZ, and trigger Tile flip/Dust burst/Toast/Crowd K.O./Glove punch. In Settings switch Graphics High/Low/Auto and Reduce motion. Resize or rotate: the canvas should remain visible with smooth reframing. Next must exit left and enter right; Previous must do the reverse. Swipes follow the finger.
 

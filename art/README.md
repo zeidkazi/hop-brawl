@@ -25,7 +25,7 @@ The Blender builder removes faces inside each solid part and greedily merges adj
 
 Deliverables per asset: `art/voxels/<name>.json`, editable `art/<name>.blend`, `client/public/models/<name>.glb`, and transparent three-quarter `art/previews/<name>.png`. Preview lights/camera are excluded from GLB export. `--silhouette-only` opens the saved Blender scene and renders the same camera with black emission geometry on white, saving `<name>-silhouette.png` without changing the approved model, scene or color preview.
 
-M2.5 approval gate: the previous Home was rejected. Section 29 boxing gear, arena roadside and gloved-fox logo now supersede its appearance. The Street Brawl Home screenshots await approval before M3. The `m2.5-art-direction` tag is reserved for completed, approved Home screenshots.
+M2.5 approval gate: Street Brawl direction is approved. The final boxer/model pass under sections 29.7–29.9 awaits sign-off using art/review/SIGNOFF.md. The `m2.5-art-direction` tag is reserved for final acceptance before M3. Earlier contact sheets outside the signoff folder are historical review snapshots.
 
 ## Lilita One logo candidates
 
@@ -53,13 +53,17 @@ The owner originally selected A; section 29 subsequently replaced its mascot and
 
 ## Home scene controls
 
-`--menu-props` builds `art/home_controls.blend`, `client/public/models/home_controls.glb` and `art/previews/home_controls.png`. The voxel arrow is `home_controls_arrow`; the closed wooden sign/post is `home_controls_sign`. Six separate `home_label_<animal>` meshes use the packed Lilita One font. The runtime shows only the selected label and reuses the arrow geometry twice. Export only the combined baked color layer as COLOR_0; exporting every Blender layer puts raw AO ahead of the intended wood/text colors. These original assets and their font provenance are listed in CREDITS.md.
+`--menu-props` builds `art/home_controls.blend`, `client/public/models/home_controls.glb` and `art/previews/home_controls.png`. Section 29.8 removes the wooden sign and labels; only the closed voxel `home_controls_arrow` ships, reused twice with Ink hulls. The animal name is screen-space Lilita One. Export only the combined baked color layer as COLOR_0. These original assets are listed in CREDITS.md.
 
 
 ## Street Brawl active assets
 
-Animal `--author` builds apply art/brawler_gear.py after the anatomy recipe. `glove_left`, `glove_right` and `headband_stripe` carry player_color=true; their neutral vertex colors contain AO and are multiplied by player color at runtime. `headband` stays white. Glove meshes pivot at the wrist. Previews use coral, and fox additionally renders all four colors from the same geometry. Source bounds include oversized gear but do not change collision dimensions.
+Animal `--author` builds apply art/brawler_gear.py after the anatomy recipe. Section 29.7 removes all headbands. The anatomy is preserved on a doubled authoring grid (`voxel_scale: 2`), allowing one-cell chamfers, thumb bumps and top-front highlights. `glove_left` and `glove_right` carry player_color=true; neutral AO colors are multiplied by player color. `cuff_left` and `cuff_right` stay white. Each fist/cuff pair belongs to a separate `glove_<side>_handle` at the wrist. Previews use coral; fox also renders all four colors from the same geometry. Source bounds include gear but do not change collision dimensions.
 
 `--arena` exports art/arena.blend, client/public/models/arena.glb and art/previews/arena.png. Mesh arena_kind metadata identifies the instancing category. Every component is a closed voxel volume. Separate assets occupy separate spaces during AO baking; the exported meshes return to bottom-center before the preview layout is applied. Per-biome models include hay/pumpkin, snowy bleacher/scarf, and neon sign/spotlight.
 
-`--street-logo` keeps smooth Lilita One, uses an 11% Ink backing, and perches the gloved fox on O. The active mascot handle is logo_fox, with logo_fox_body/eyes/tail/glove_left/glove_right/headband/headband_stripe children. Letter handles retain the table above. The runtime merges each letter's face/backing once into one draw on High/Medium, retaining face-only geometry for Low. This preserves the individual drop/squash animations while limiting draws. Copy art/variants/logo_street.glb to client/public/models/logo.glb after verification. Font licensing is unchanged.
+`--street-logo` keeps smooth Lilita One, uses an 11% Ink backing, and perches the gloved fox on O at 2.5 times its former scale. The active mascot handle is logo_fox, with body/eyes/tail/glove_left/glove_right/cuff_left/cuff_right children. Letter handles retain the table above. Runtime face/backing pairs merge once per letter, retaining independent drop/squash animations. Section 29.8 keeps the backing visible on every tier. The preview uses emission from the same baked vertex colors as the unlit, fog-free runtime. Copy art/variants/logo_street.glb to client/public/models/logo.glb after verification. Font licensing is unchanged.
+
+## Final sign-off evidence
+
+`node scripts/audit-models.mjs` audits all runtime GLB surfaces and the 2 MB budget. `npm run build` then `npm run preview -- --port 4173` serves the production build; `node scripts/review-models.mjs` records five cache-cleared desktop loads and captures native camera lineups, six-frame move strips, both requested viewports and the logo comparison. Run it after regenerating all six `--silhouette-only` previews. Evidence is in art/review/ and art/previews/signoff/. The review script uses actual loaded models and the runtime move sampler, not mockups.
