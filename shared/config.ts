@@ -172,5 +172,6 @@ export const ART = Object.freeze({
   KEY_ENERGY: 450, FILL_ENERGY: 180, RIM_ENERGY: 260,
   KEY_SIZE: 4, PREVIEW_FOCAL_LENGTH: 50,
   TOTAL_GLB_BUDGET: 3000000,
+  LOGO_GLB_BUDGET: 150000,
 } as const);
 export const ANIMAL_SIZES = [[8, 11, 8], [9, 7, 9], [8, 10, 10], [8, 11, 8], [9, 9, 10], [8, 10, 9]] as const;

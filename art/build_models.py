@@ -262,6 +262,8 @@ def build(name, config, author=False):
         export_yup=True, export_texcoords=False, export_normals=True, export_materials='EXPORT',
         export_animations=False, export_extras=True, export_apply=True,
         export_all_vertex_colors=False, export_vertex_color='NAME', export_vertex_color_name='COLOR_0')
+    if name == 'logo' and output.stat().st_size >= config['LOGO_GLB_BUDGET']:
+        raise ValueError('Logo must remain below its shared byte budget')
     preview(objects, name, config)
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(ROOT / 'art' / f'{name}.blend'), compress=True)
