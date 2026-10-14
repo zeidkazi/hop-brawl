@@ -51,7 +51,7 @@ def mesh_parts(name, source, config):
     for i, (x, h, d, color) in enumerate(voxels):
         groups.setdefault(assignments.get(i, 'body'), []).append((x, d, h, color))
     palette = [linear(color) for color in source['palette']]
-    unit = 1 / config['VOXELS_PER_TILE']
+    unit = 1 / (config['VOXELS_PER_TILE'] * source.get('voxel_scale', 1))
     objects = []
     for part, cells in groups.items():
         vertices, faces, colors = [], [], []
@@ -111,7 +111,7 @@ def group_parts(objects, name, source, config):
     """Named animation handles keep component meshes and eye toggles independent."""
     by_part = {obj['part']: obj for obj in objects}
     parents = []
-    unit = 1 / config['VOXELS_PER_TILE']
+    unit = 1 / (config['VOXELS_PER_TILE'] * source.get('voxel_scale', 1))
     for group, parts in source.get('groups', {}).items():
         parent = bpy.data.objects.new(f'{name}_{group}', None)
         bpy.context.collection.objects.link(parent)
@@ -271,7 +271,7 @@ def build(name, config, author=False):
         recipe = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(recipe)
         from brawler_gear import equip
-        source_path.write_text(json.dumps(equip(name, recipe.create()).data(), separators=(',', ':')) + '\n', encoding='utf-8')
+        source_path.write_text(json.dumps(equip(name, recipe.create(), config).data(), separators=(',', ':')) + '\n', encoding='utf-8')
     source = json.loads(source_path.read_text(encoding='utf-8'))
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.context.scene.world = bpy.data.worlds.new('PreviewWorld')

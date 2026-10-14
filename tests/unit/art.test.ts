@@ -33,7 +33,8 @@ describe('Blender deliverables', () => {
     expect(doc.extensionsUsed ?? []).not.toContain('KHR_draco_mesh_compression');
     expect(doc.materials).toHaveLength(1);
     expect(doc.materials[0]!.doubleSided ?? false).toBe(false);
-    const source = JSON.parse(readFileSync(join('art/voxels', `${name}.json`), 'utf8')) as { size: number[]; parts: Record<string, number[]>; voxels: number[][] };
+    const source = JSON.parse(readFileSync(join('art/voxels', `${name}.json`), 'utf8')) as { size: number[]; parts: Record<string, number[]>; voxels: number[][]; voxel_scale?: number };
+    const units = VIEW.VOXELS_PER_TILE * (source.voxel_scale ?? 1);
     const binaryStart = 20 + bytes.readUInt32LE(12) + 8;
     const component = (accessorId: number, index: number, axis = 0, vector = false) => {
       const accessor = doc.accessors[accessorId]!;
@@ -81,10 +82,10 @@ describe('Blender deliverables', () => {
       }
       const voxelCount = source.parts[node.extras!.part]?.length
         ?? source.voxels.length - Object.values(source.parts).reduce((sum, indices) => sum + indices.length, 0);
-      expect(volume6 / 6).toBeCloseTo(voxelCount / VIEW.VOXELS_PER_TILE ** 3, 5);
+      expect(volume6 / 6).toBeCloseTo(voxelCount / units ** 3, 5);
     }
     expect(lo[1]).toBeCloseTo(0, 5);
-    for (let axis = 0; axis < 3; axis++) expect(hi[axis]! - lo[axis]!).toBeLessThanOrEqual(source.size[axis]! / VIEW.VOXELS_PER_TILE + 0.00001);
+    for (let axis = 0; axis < 3; axis++) expect(hi[axis]! - lo[axis]!).toBeLessThanOrEqual(source.size[axis]! / units + 0.00001);
     for (const part of Object.keys(source.parts)) expect(doc.nodes.some(node => node.extras?.part === part)).toBe(true);
     expect(statSync(join('art', `${name}.blend`)).size).toBeGreaterThan(0);
     const png = readFileSync(join('art/previews', `${name}.png`));
@@ -95,8 +96,9 @@ describe('Blender deliverables', () => {
   it.each([
     ['chicken', 9], ['penguin', 9], ['frog', 6], ['fox', 6], ['pig', 7], ['cat', 6],
   ] as const)('%s uses two single-voxel eyes one voxel below the face top', (name, faceTop) => {
-    const source = JSON.parse(readFileSync(join('art/voxels', `${name}.json`), 'utf8')) as { voxels: number[][]; parts: { eyes: number[] } };
-    expect(source.parts.eyes).toHaveLength(2);
-    for (const index of source.parts.eyes) expect(source.voxels[index]![1]).toBe(faceTop - 1);
+    const source = JSON.parse(readFileSync(join('art/voxels', `${name}.json`), 'utf8')) as { voxels: number[][]; parts: { eyes: number[] }; voxel_scale?: number };
+    const scale = source.voxel_scale ?? 1;
+    expect(source.parts.eyes).toHaveLength(2 * scale ** 3);
+    for (const index of source.parts.eyes) expect(Math.floor(source.voxels[index]![1]! / scale)).toBe(faceTop - 1);
   });
 });
