@@ -45,4 +45,17 @@ describe('Solo/shared movement', () => {
     const cam = player.camZ; player.z = 1; player.advance(4.1); expect(player.camZ).toBeGreaterThanOrEqual(cam);
     player.advance(20); expect(player.dead).toBe('LEFT BEHIND!');
   });
+  it('blocks both occupied log-exit neighbours and preserves fractional lateral hops', () => {
+    const rowAt = (z: number): Row => z === 2 ? { kind: 'river', z, biome: 'meadow', direction: 1, speed: 1, phase: 0, logs: [{ offset: 10, length: 4 }] }
+      : { kind: 'grass', z, biome: 'meadow', obstacles: [{ column: 4, kind: 'tree' }, { column: 5, kind: 'rock' }], crate: null };
+    const player = new Movement(rowAt); player.x = 4.2; player.z = 2; player.onLog = true;
+    expect(player.input('up')).toBe(false); expect(player.onLog).toBe(true); expect(player.x).toBe(4.2);
+    expect(player.input('right')).toBe(true); expect(player.toX).toBe(5.2);
+  });
+  it('catches a vehicle passing completely through during a long frame and uses full train length', () => {
+    const car = new Movement(z => ({ kind: 'road', z, biome: 'meadow', direction: 1, speed: 10, phase: 0, vehicles: [{ offset: 4, length: 1, kind: 'car' }] }));
+    car.advance(1); expect(car.dead).toBe('FLATTENED!'); expect(car.time).toBeLessThan(1);
+    const train = new Movement(z => ({ kind: 'rail', z, biome: 'meadow', direction: 1, phase: .58, period: 8 }));
+    train.advance(.01); expect(train.dead).toBe('DERAILED!');
+  });
 });

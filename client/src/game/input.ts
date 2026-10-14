@@ -2,7 +2,7 @@ import { CONFIG } from '../../../shared/config';
 import type { HopDirection } from '../../../shared/movement';
 
 export function swipeDirection(dx: number, dy: number): HopDirection | null {
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < CONFIG.SWIPE_THRESHOLD_PX) return null;
+  if (dx * dx + dy * dy < CONFIG.SWIPE_THRESHOLD_PX * CONFIG.SWIPE_THRESHOLD_PX) return null;
   return Math.abs(dx) > Math.abs(dy) ? dx > 0 ? 'right' : 'left' : dy > 0 ? 'down' : 'up';
 }
 const KEYS: Readonly<Record<string, HopDirection>> = {
@@ -19,7 +19,7 @@ export class HopInput {
     canvas.addEventListener('pointerdown', this.down);
     canvas.addEventListener('pointermove', this.move);
     canvas.addEventListener('pointerup', this.up);
-    canvas.addEventListener('pointercancel', this.clear);
+    canvas.addEventListener('pointercancel', event => { if (event.pointerId === this.pointer) this.clear(); });
     canvas.addEventListener('contextmenu', event => { if (this.enabled) event.preventDefault(); });
     window.addEventListener('keydown', this.key);
     window.addEventListener('blur', this.clear);
@@ -37,9 +37,9 @@ export class HopInput {
   };
   private readonly up = (event: PointerEvent): void => {
     if (event.pointerId !== this.pointer) return;
-    if (this.enabled && !this.consumed && event.timeStamp - this.downAt <= CONFIG.TAP_MAX_MS) {
+    if (this.enabled && !this.consumed) {
       const direction = swipeDirection(event.clientX - this.x, event.clientY - this.y);
-      this.hop(direction ?? 'up');
+      if (direction || event.timeStamp - this.downAt <= CONFIG.TAP_MAX_MS) this.hop(direction ?? 'up');
     }
     this.clear();
   };
