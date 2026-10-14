@@ -6,14 +6,19 @@ import { ANIMALS } from '../../shared/config';
 import { Outlines, outlinedAt } from '../../client/src/game/outlines';
 
 describe('Street Brawl assets and outlines', () => {
-  it.each(ANIMALS)('%s exposes separate tintable gloves and headband stripe', async name => {
+  it.each(ANIMALS)('%s exposes independently tintable gear', async name => {
     const bytes = readFileSync(`client/public/models/${name}.glb`);
     const { scene } = await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
-    for (const part of ['glove_left', 'glove_right', 'headband_stripe', 'headband']) {
+    const finalGear = !!scene.getObjectByName(`${name}_glove_left_handle`);
+    for (const part of finalGear ? ['glove_left', 'glove_right', 'cuff_left', 'cuff_right'] : ['glove_left', 'glove_right', 'headband_stripe', 'headband']) {
       const mesh = scene.getObjectByName(`${name}_${part}`) as Mesh;
       expect(mesh.isMesh).toBe(true);
-      expect(mesh.userData.player_color === true).toBe(part !== 'headband');
+      expect(mesh.userData.player_color === true).toBe(part.startsWith('glove_') || part === 'headband_stripe');
       expect(mesh.geometry.getAttribute('color')).toBeDefined();
+    }
+    if (finalGear) {
+      expect(scene.getObjectByName(`${name}_headband`)).toBeUndefined();
+      for (const side of ['left', 'right']) expect(scene.getObjectByName(`${name}_glove_${side}_handle`)!.children).toHaveLength(2);
     }
   });
   it('limits outline categories at each quality tier', () => {
