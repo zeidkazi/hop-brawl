@@ -1,5 +1,5 @@
 import { CONFIG, WORLD } from './config';
-import type { LaneItem, RailRow, RiverRow, RoadRow, SlowMoWindow } from './types';
+import type { LaneItem, Position, RailRow, RiverRow, RoadRow, SlowMoWindow } from './types';
 
 const NO_SLOW_MO: readonly SlowMoWindow[] = Object.freeze([]);
 
@@ -78,4 +78,49 @@ export function trainX(
   return row.direction === 1
     ? WORLD.LOOP_MIN_X - WORLD.TRAIN_LENGTH / 2 + distance
     : WORLD.LOOP_MAX_X + WORLD.TRAIN_LENGTH / 2 - distance;
+}
+
+/** Call with the player's effective hazard row (§4.2a). */
+export function vehicleHits(
+  row: RoadRow, x: number, t: number, windows: readonly SlowMoWindow[] = NO_SLOW_MO,
+): boolean {
+  for (let i = 0; i < row.vehicles.length; i++) {
+    const vehicle = row.vehicles[i]!;
+    const reach = vehicle.length / 2 - CONFIG.VEHICLE_HITBOX_TRIM + CONFIG.PLAYER_HITBOX / 2;
+    if (Math.abs(x - laneItemX(row, vehicle, t, windows)) <= reach) return true;
+  }
+  return false;
+}
+
+export function trainHits(
+  row: RailRow, x: number, t: number, windows: readonly SlowMoWindow[] = NO_SLOW_MO,
+): boolean {
+  const centre = trainX(row, t, windows);
+  return centre !== null && Math.abs(x - centre) <= (WORLD.TRAIN_LENGTH + CONFIG.PLAYER_HITBOX) / 2;
+}
+
+/** Returns a stable log index or -1. Water is lethal only on landing. */
+export function logAtLanding(
+  row: RiverRow, x: number, t: number, windows: readonly SlowMoWindow[] = NO_SLOW_MO,
+): number {
+  for (let i = 0; i < row.logs.length; i++) {
+    const log = row.logs[i]!;
+    const halfExtent = log.length / 2 - CONFIG.LOG_LANDING_TRIM;
+    if (Math.abs(x - laneItemX(row, log, t, windows)) <= halfExtent) return i;
+  }
+  return -1;
+}
+
+export function carriedOffEdge(x: number): boolean {
+  return x < -WORLD.CARRY_EDGE_MARGIN || x > CONFIG.COLUMNS - 1 + WORLD.CARRY_EDGE_MARGIN;
+}
+
+/** Reuse out; visual hop height and movement validation belong to M3. */
+export function hopHazardPosition(
+  fromX: number, fromZ: number, toX: number, toZ: number, elapsedMs: number, out: Position,
+): Position {
+  const progress = Math.max(0, Math.min(1, elapsedMs / CONFIG.HOP_MS));
+  out.x = fromX + (toX - fromX) * progress;
+  out.z = progress < WORLD.HOP_ROW_SWITCH ? fromZ : toZ;
+  return out;
 }
