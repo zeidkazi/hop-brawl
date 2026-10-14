@@ -4,7 +4,8 @@ import type { RowKind } from './types';
 
 export interface Segment { readonly kind: RowKind; readonly start: number; readonly end: number; readonly rest: boolean }
 export function tierAt(z: number) {
-  return SEGMENTS.TIERS[z < 25 ? 0 : z < 60 ? 1 : z < 120 ? 2 : 3]!;
+  for (let i = SEGMENTS.TIERS.length - 1; i > 0; i--) if (z >= SEGMENTS.TIERS[i]!.start) return SEGMENTS.TIERS[i]!;
+  return SEGMENTS.TIERS[0];
 }
 let cachedSeed = NaN, cachedAnchor = NaN;
 let cached: Segment[] = [];
@@ -13,16 +14,15 @@ let cached: Segment[] = [];
 export function segmentAt(seed: number, z: number): Segment {
   if (!Number.isSafeInteger(z)) throw new RangeError('Row must be a safe integer');
   if (z < 0) return { kind: 'grass', start: z, end: z + 1, rest: false };
-  const anchor = z < 20 ? 0 : z < 25 ? 20 : z < 40 ? 25 : Math.floor(z / SEGMENTS.REST_EVERY) * SEGMENTS.REST_EVERY;
+  const intro = SEGMENTS.INTRO_CHAPTERS.find(chapter => z >= chapter.start && z < chapter.end);
+  const anchor = intro?.start ?? Math.floor(z / SEGMENTS.REST_EVERY) * SEGMENTS.REST_EVERY;
   if (cachedSeed !== seed || cachedAnchor !== anchor) {
     const random = mulberry32(hash32(seed, anchor));
-    const end = anchor === 20 ? 25 : anchor === 25 ? 40 : anchor + SEGMENTS.REST_EVERY;
+    const end = intro?.end ?? anchor + SEGMENTS.REST_EVERY;
     const segments: Segment[] = [];
     let cursor = anchor;
     const add = (kind: RowKind, length: number, rest = false) => { segments.push({ kind, start: cursor, end: cursor + length, rest }); cursor += length; };
-    if (anchor === 0) { add('grass', 5); add('road', 1); add('grass', 2); add('road', 1); }
-    else if (anchor === 20) { add('grass', 3, true); add('road', 2); }
-    else if (anchor === 25) { add('grass', 1); add('road', 2); add('grass', 2); add('rail', 1); }
+    if (intro) for (const [kind, length, rest] of intro.prefix) add(kind, length, rest);
     else add('grass', SEGMENTS.REST_ROWS, true);
     // Solve the small chapter exactly: it always ends in a hazard before the next rest stop.
     const fill = (at: number, grass: boolean): boolean => {

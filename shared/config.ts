@@ -49,7 +49,7 @@ export const CONFIG = Object.freeze({
   VEHICLE_HITBOX_TRIM: 0.1,
   LOG_LANDING_TRIM: 0.15,
   MIN_ROAD_TIME_GAP_S: 0.6,
-  MAX_LOG_WAIT_S: 2.5,
+  MAX_LOG_WAIT_S: 2,
   EMOTE_COOLDOWN_MS: 2000,
   SPEEDUP_TOAST_EVERY_S: 30,
   LEADER_TOAST_MIN_GAP_S: 5,
@@ -95,7 +95,7 @@ export const WORLD = Object.freeze({
   RIVER_GAP_MAX: 3,
   LOOP_MIN_X: -6,
   LOOP_MAX_X: 15,
-  TRAIN_PERIOD_MIN_S: 6,
+  TRAIN_PERIOD_MIN_S: 7,
   TRAIN_PERIOD_MAX_S: 10,
   TRAIN_WARNING_S: 1.5,
   TRAIN_LENGTH: 12,
@@ -113,6 +113,12 @@ export const SEGMENTS = Object.freeze({
   FIRST_RAIL_ROW: 30, FIRST_ROAD_ROW: 5, EARLY_END: 10,
   LOG_SLOT_REACH: .6, LOG_SLOT_WIDTH: 1, LOG_GAP_MIN: .2, LOG_WAIT_S: 2,
   OVERLAP_WINDOW_S: .5, OVERLAP_PERIOD_S: 3, TRAIN_PERIOD_MIN_S: 7,
+  // Fixed onboarding chapters preserve the first single lane and two grass rows before rail.
+  INTRO_CHAPTERS: [
+    { start: 0, end: 20, prefix: [['grass', 5, false], ['road', 1, false], ['grass', 2, false], ['road', 1, false]] },
+    { start: 20, end: 25, prefix: [['grass', 3, true], ['road', 2, false]] },
+    { start: 25, end: 40, prefix: [['grass', 1, false], ['road', 2, false], ['grass', 2, false], ['rail', 1, false]] },
+  ],
   TIERS: [
     { start: 0, road: [1, 2], car: [1.2, 2], river: [1, 1], log: [.6, .9], length: [3, 4], rail: [0, 0], grass: [2, 3], obstacles: 2, warning: 0 },
     { start: 25, road: [2, 3], car: [1.5, 2.6], river: [1, 2], log: [.7, 1.1], length: [3, 4], rail: [1, 1], grass: [1, 2], obstacles: 2, warning: 2 },
@@ -121,7 +127,7 @@ export const SEGMENTS = Object.freeze({
   ],
 } as const);
 
-/** t is round time since HOP!, including the initial scroll delay (§4.3). */
+/** t is time since the first accepted hop, including its initial scroll delay (§30.5). */
 export function scrollSpeed(t: number): number {
   if (t < CONFIG.SCROLL_START_DELAY_S) return 0;
   return Math.min(

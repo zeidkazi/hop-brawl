@@ -3,7 +3,8 @@ import { Vector3 } from 'three';
 import { CameraRig } from '../../client/src/game/camera';
 import { Pool } from '../../client/src/game/pool';
 import { WorldView } from '../../client/src/game/world-view';
-import { CONFIG } from '../../shared/config';
+import { CONFIG, RAIL, VIEW } from '../../shared/config';
+import { trainWarning, trainX } from '../../shared/hazards';
 
 describe('bounded pools', () => {
   it('reuses slots, refuses overflow and tolerates duplicate releases', () => {
@@ -41,6 +42,15 @@ describe('bounded pools', () => {
 });
 
 describe('camera stations', () => {
+  it('train shake is bounded, disappears on Reduce Motion and cannot offset a retry', () => {
+    const rig = new CameraRig(1.6); rig.go('gameplay'); rig.update(.7, 0);
+    const x = rig.camera.position.x;
+    rig.shake = RAIL.SHAKE_AMPLITUDE; rig.update(1 / 60, 1 / (4 * RAIL.SHAKE_HZ));
+    expect(rig.camera.position.x - x).toBeCloseTo(RAIL.SHAKE_AMPLITUDE);
+    rig.reducedMotion = true; rig.update(1 / 60, 0);
+    expect(rig.camera.position.x).toBeCloseTo(x);
+    rig.resetScroll(true); rig.update(0, 0); expect(rig.camera.position.x).toBeCloseTo(x);
+  });
   it.each([390 / 844, 1440 / 900, 844 / 390])('anchors the logical bottom to the rendered bottom at aspect %s', aspect => {
     const rig = new CameraRig(aspect);
     rig.go('gameplay');
@@ -72,4 +82,20 @@ describe('camera stations', () => {
     rig.update(0.7, 1);
     expect(rig.camera).toBe(camera);
   });
+});
+
+it('rail rows render two posts, alternate warning lamps, pulse the bed and show train headlights', () => {
+  const view = new WorldView(); view.reset(42); view.requestWindow(28); view.prepareWindow(28);
+  const rails = view.rows.filter(slot => slot.z >= 28 && slot.z < 28 + CONFIG.VIEW_ROWS && slot.row?.kind === 'rail');
+  expect(rails.length).toBeGreaterThan(0);
+  for (let time = 0; time < 12; time += .125) {
+    view.update(time);
+    const warningRows = rails.filter(slot => slot.row?.kind === 'rail' && trainWarning(slot.row, time));
+    const trains = rails.filter(slot => slot.row?.kind === 'rail' && trainX(slot.row, time) !== null);
+    expect(view.railPosts.count).toBe(rails.length * 2);
+    expect(view.railLights.count).toBe(warningRows.length * 2);
+    expect(view.headlights.count).toBe(trains.length);
+    expect(view.carriages.count).toBe(trains.length * 3);
+    expect(view.markings.count).toBeLessThan(VIEW.POOL_ROWS * (VIEW.DECOR_MAX_X - VIEW.DECOR_MIN_X + 1) * 4);
+  }
 });
