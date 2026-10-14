@@ -1,7 +1,7 @@
 import { CONFIG, WORLD } from './config';
 import { hash32, mulberry32, randomBetween, randomInt } from './rng';
 import type { Random } from './rng';
-import type { Biome, GrassRow, Obstacle, RoadRow, RowKind, Vehicle } from './types';
+import type { Biome, GrassRow, LaneItem, Obstacle, RiverRow, RoadRow, RowKind, Vehicle } from './types';
 
 const BIOMES: readonly Biome[] = ['meadow', 'autumn', 'snow', 'nightCity'];
 
@@ -115,5 +115,45 @@ export function generateRoadRow(seed: number, z: number): RoadRow {
   return {
     kind: 'road', z, biome: biomeAtRow(z), direction, speed,
     phase: randomBetween(random, 0, span), vehicles,
+  };
+}
+
+export function generateRiverRow(seed: number, z: number): RiverRow {
+  const random = rowRandom(seed, z);
+  const span = WORLD.LOOP_MAX_X - WORLD.LOOP_MIN_X;
+  const gain = 1 + WORLD.RIVER_DIFFICULTY_GAIN * difficultyAtRow(z);
+  const speedMaximum = WORLD.RIVER_SPEED_MAX * gain;
+  const options: { length: number; count: number; pitch: number; minimumSpeed: number }[] = [];
+  for (let length = WORLD.LOG_LENGTH_MIN; length <= WORLD.LOG_LENGTH_MAX; length++) {
+    const fewest = Math.ceil(span / (length + WORLD.RIVER_GAP_MAX));
+    const most = Math.floor(span / (length + WORLD.RIVER_GAP_MIN));
+    for (let count = fewest; count <= most; count++) {
+      const pitch = span / count;
+      const minimumSpeed = Math.max(WORLD.RIVER_SPEED_MIN * gain, pitch / CONFIG.MAX_LOG_WAIT_S);
+      if (minimumSpeed <= speedMaximum) options.push({ length, count, pitch, minimumSpeed });
+    }
+  }
+  // Pick only ring schedules that satisfy both spatial gaps and arrival times.
+  const option = options[randomInt(random, 0, options.length - 1)];
+  if (!option) throw new RangeError('River tunables have no solvable repeating schedule');
+  let speed = randomBetween(random, option.minimumSpeed, speedMaximum);
+  let direction: -1 | 1 = randomInt(random, 0, 1) === 0 ? -1 : 1;
+  if (rowKind(seed, z - 1) === 'river') {
+    // Recursion is bounded by MAX_CONSECUTIVE_RIVER, never by world distance.
+    const previous = generateRiverRow(seed, z - 1);
+    direction = previous.direction === 1 ? -1 : 1;
+    if (speed === previous.speed) {
+      speed = speed > option.minimumSpeed
+        ? (speed + option.minimumSpeed) / 2
+        : (speed + speedMaximum) / 2;
+    }
+  }
+  const logs: LaneItem[] = [];
+  for (let i = 0; i < option.count; i++) {
+    logs.push({ offset: i * option.pitch + option.length / 2, length: option.length });
+  }
+  return {
+    kind: 'river', z, biome: biomeAtRow(z), direction, speed,
+    phase: randomBetween(random, 0, span), logs,
   };
 }
