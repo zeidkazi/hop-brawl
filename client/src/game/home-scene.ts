@@ -113,7 +113,7 @@ export class HomeScene {
     for (let i = 0; i < trees.count; i++) {
       const hero = HOME.HERO_TREES[i];
       let z = hero?.[1] ?? Math.floor(-20 + random() * 40);
-      while (HOME.ROAD_ROWS.includes(-Math.round(z) as never) || HOME.RIVER_ROWS.includes(-Math.round(z) as never)) z++;
+      while (Math.abs(z) < 6 || HOME.ROAD_ROWS.includes(-Math.round(z) as never) || HOME.RIVER_ROWS.includes(-Math.round(z) as never)) z--;
       this.place(trees, i, hero?.[0] ?? random() * 8, 0, z, 1 + random() * 0.35);
     }
     for (const [kind, name] of ['car', 'hatchback', 'taxi', 'truck'].entries()) {
@@ -154,6 +154,7 @@ export class HomeScene {
     const geometry = mergeGeometries(pieces)!;
     for (const piece of pieces) piece.dispose();
     const mesh = new InstancedMesh(geometry, this.standard, count);
+    mesh.userData.shadowKind = 'prop';
     mesh.boundingSphere = new Sphere(new Vector3(4, 0, 0), HOME.GROUND_WIDTH);
     mesh.castShadow = mesh.receiveShadow = true;
     this.root.add(mesh);
@@ -231,7 +232,7 @@ export class HomeScene {
     for (const mesh of this.meshes) {
       if (mesh === this.blobs) continue;
       mesh.material = mesh.userData.player_color ? (tier === 'high' ? this.gloveStandard : this.gloveLambert) : (tier === 'high' ? this.standard : this.lambert);
-      mesh.castShadow = mesh.userData.shadowKind !== 'logo' && (tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string)));
+      mesh.castShadow = ['animal', 'vehicle', 'prop', 'log'].includes(mesh.userData.shadowKind as string) && (tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string)));
     }
     if (this.blobs) this.blobs.visible = tier === 'low';
     if (this.water) this.water.material = tier === 'low' ? this.flatWater : this.waterMaterials[tier === 'high' ? 0 : 1]!;

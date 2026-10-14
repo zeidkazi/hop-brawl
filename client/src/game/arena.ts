@@ -52,10 +52,10 @@ export class Arena {
       this.place(this.batches.get('neon_sign')!, i, x, 1.1, z - 1.4, rotation);
       for (let j = 0; j < 2; j++) this.place(this.batches.get('cone')!, i * 2 + j, x, 0, z + 1.3 + j * 1.5);
       for (let j = 0; j < 6; j++) {
-        const tier = Math.floor(j / 2), localX = (j % 2 ? 0.65 : -0.65), localZ = tier * 0.5 - 0.5;
+        const tier = Math.floor(j / 2), localX = (j % 2 ? 0.65 : -0.65), localZ = 0.5 - tier * 0.5;
         const px = x + Math.cos(rotation) * localX + Math.sin(rotation) * localZ;
         const pz = z - Math.sin(rotation) * localX + Math.cos(rotation) * localZ;
-        const y = (2 - tier) / 3 + 0.18;
+        const y = (2 - tier) / 3 + 0.25;
         this.place(spectators, i * 6 + j, px, y, pz, rotation, 0.68);
         spectators.setColorAt(i * 6 + j, this.color.set(COLORS.players[(i + j) % 4]!));
         this.place(this.batches.get('scarf')!, i * 6 + j, px, y + 0.32, pz, rotation, 0.68);
