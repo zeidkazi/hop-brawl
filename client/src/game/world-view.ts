@@ -114,6 +114,9 @@ export class WorldView {
       this.root.add(ground);
       this.grounds.push(ground);
       const outside = new InstancedMesh(outsideGeometry, this.standard, VIEW.POOL_ROWS);
+      for (let slot = 0; slot < VIEW.POOL_ROWS; slot++) {
+        outside.setColorAt(slot, this.color.set('#FFFFFF')); ground.setColorAt(slot, this.color);
+      }
       outside.instanceMatrix.setUsage(DynamicDrawUsage); outside.receiveShadow = true;
       outside.boundingSphere = ground.boundingSphere.clone(); outside.count = 0;
       this.root.add(outside); this.outsideGrounds.push(outside);
