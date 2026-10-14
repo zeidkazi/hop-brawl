@@ -89,7 +89,7 @@ describe('Blender deliverables', () => {
     const png = readFileSync(join('art/previews', `${name}.png`));
     expect(png.subarray(1, 4).toString()).toBe('PNG');
     expect(png[25]).toBe(6); // RGBA, including transparent background.
-    expect(png.readUInt32BE(16)).toBe(name === 'logo' ? ART.LOGO_PREVIEW_WIDTH : ART.PREVIEW_SIZE);
+    expect(png.readUInt32BE(16)).toBe(ART.PREVIEW_SIZE);
   });
   it.each([
     ['chicken', 9], ['penguin', 9], ['frog', 6], ['fox', 6], ['pig', 7], ['cat', 6],

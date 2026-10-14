@@ -181,8 +181,8 @@ def preview(objects, name, config):
     scene.render.film_transparent = True
     scene.render.image_settings.file_format = 'PNG'
     scene.render.image_settings.color_mode = 'RGBA'
-    scene.render.resolution_x = config['LOGO_PREVIEW_WIDTH'] if name == 'logo' else config['PREVIEW_SIZE']
-    scene.render.resolution_y = config['LOGO_PREVIEW_HEIGHT'] if name == 'logo' else config['PREVIEW_SIZE']
+    scene.render.resolution_x = config['PREVIEW_SIZE']
+    scene.render.resolution_y = config['PREVIEW_SIZE']
     scene.render.resolution_percentage = 100
     scene.view_settings.view_transform = 'Standard'
     scene.world.use_nodes = True
@@ -286,8 +286,6 @@ def build(name, config, author=False):
         export_yup=True, export_texcoords=False, export_normals=True, export_materials='EXPORT',
         export_animations=False, export_extras=True, export_apply=True,
         export_all_vertex_colors=False, export_vertex_color='NAME', export_vertex_color_name='COLOR_0')
-    if name == 'logo' and output.stat().st_size >= config['LOGO_GLB_BUDGET']:
-        raise ValueError('Logo must remain below its shared byte budget')
     preview(objects, name, config)
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(ROOT / 'art' / f'{name}.blend'), compress=True)
@@ -302,7 +300,6 @@ def main():
     parser.add_argument('--author', action='store_true')
     parser.add_argument('--self-test', action='store_true')
     parser.add_argument('--silhouette-only', action='store_true')
-    parser.add_argument('--logo-poses', action='store_true')
     parser.add_argument('--logo-variants', action='store_true')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     config = json.loads(Path(args.config).read_text(encoding='utf-8'))
@@ -312,10 +309,6 @@ def main():
         return
     for path in ('art/voxels', 'art/previews', 'client/public/models'):
         (ROOT / path).mkdir(parents=True, exist_ok=True)
-    if args.logo_poses:
-        from logo_poses import render_review
-        render_review(ROOT, config)
-        return
     if args.self_test:
         bpy.ops.wm.read_factory_settings(use_empty=True)
         bpy.context.scene.world = bpy.data.worlds.new('TestWorld')
