@@ -5,7 +5,7 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 ## Status
 
 - Completed milestones: M1 (world generation/hazards) and M2 (persistent-canvas architecture).
-- Current phase: M2.5 art-direction correction, before M3. M1 is owner-verified; the owner rejected M2's menu appearance and added §28.
+- Current phase: M2.5 asset-preview checkpoint — awaiting owner approval before Home changes. M1 is owner-verified; the owner rejected M2's menu appearance and added §28.
 - Owner approved the plan and M1 on 2026-10-14. Deployment is deferred until after M13 and before M14, no later than 2026-10-26; no deployment without the owner's pre-deploy approval.
 - Read SPEC.md including the complete new §28, which overrides earlier art/UI/fallback directions where they conflict.
 - Initial commit c6ec455 (`docs: add game spec`) pushed to `origin/main` at https://github.com/zeidkazi/hop-brawl.git.
@@ -38,6 +38,16 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 - Main production JS approximately 179 KB gzip (below 400 KB), debug-only chunk approximately 10 KB gzip; three font files total approximately 41 KB. Vite emits its default 500 KB uncompressed-chunk advisory; the specified compressed budget passes. First interactive frame on actual 4G remains unverified.
 - Desktop/mobile screenshots and JSON metrics are in ignored output/playwright/. Reviewed portrait framing: selected placeholder is above the mobile menu, and desktop leaves it visible beside the menu.
 
+## M2.5 asset-preview checkpoint (not complete)
+
+- Owner's full §28 committed as ac54a49, `docs(spec): add art and UI direction correction`.
+- Verified Blender 5.2.2 LTS (`--version`, build hash d13f752e3b9c). `scripts/build-art.mjs` reads BLENDER_PATH from the environment / gitignored .env.local and invokes the mandatory headless Python pipeline. No machine-specific executable path is tracked; no Node meshing/export fallback exists.
+- `art/build_models.py` builds only exposed voxel faces, bakes actual Cycles AO at 64 samples into corner colors, combines it with palette colors, and exports one-sided, texture-free GLBs with one material. Body origin bottom-center, 12 voxels/tile, glTF +Y up / forward -Z. Eyes and fox/cat/pig tails remain separate parts with tail attachment pivots.
+- Ten original models ready for owner review: logo, chicken, frog, fox, penguin, pig, cat, car, oak, crate. Each has a recipe, voxel JSON, editable .blend, GLB and transparent three-quarter PNG in art/previews/. Logo/crate lettering was visually checked and corrected to read from the front.
+- All ten model exports total 1,312,112 bytes (1.31 MB), below the 3 MB library budget. Sources and previews are not runtime downloads. Each file is logged in CREDITS.md with its original recipe URL; generated asset files are CC0 under art/LICENSE.md.
+- Blender self-test passes (interior-face removal and finite baked color output). npm run check passes: 56 tests in 13 files, typecheck and production build. New tests validate GLB headers, Blender provenance, vertex colors/normals, no textures or Draco, one-sided materials, AO metadata, dimensions, animation parts, .blend presence and RGBA previews. All six existing desktop/mobile browser regression checks pass at this checkpoint.
+- Home and runtime font/quality/layout remain the M2 version pending asset approval, as requested. Lilita One replacement, no menu dynamic resolution, DPR 1.25/odd-size edge fixes, biome sky/scenery fill, in-world logo/select/sign/arrows and the §28.4 layout are the second half of M2.5. No M3 work started; m2.5-art-direction tag is reserved until the corrected Home is approved.
+
 ## Setup preflight (§27)
 
 M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-specific path is stored only in gitignored `.env.local` as `BLENDER_PATH`; `npm run art:build -- --version` verifies the launcher. Blender is mandatory for all 3D assets; the former Node fallback is removed from the implementation plan.
@@ -65,7 +75,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Known bugs / unresolved checks
 
-- No known failing M1/M2 checks. Solo input, hopping, death, pause and retry are M3 work; the visible Solo button is deliberately disabled until then. Placeholder boxes and basic cards are intentional until their art/presentation milestones.
+- M2's visual direction is rejected and must be replaced under §28 after the current model-preview approval. The unchanged Home still has Pixelify Sans, boxed menus and menu dynamic resolution; these are explicitly pending M2.5 fixes, not accepted final visuals. Solo remains disabled until M3.
 - Worker/Room implementation and wrangler dev arrive in M4. Do not add fake server endpoints just to make an unavailable server command appear to work.
 - Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only the placeholder diorama on the host GPU.
 - Cloudflare and Vercel authentication and free-account plan verification remain required before deployment.
@@ -73,7 +83,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Next exact step
 
-Complete M2.5's Blender asset batch: 3D logo, six animals, car, oak and crate with baked AO, GLBs, editable .blend sources and transparent 3/4 PNGs. Show those previews and WAIT for owner approval before rebuilding Home. After asset approval, implement §28.2–28.4 (Lilita One, full menu resolution, precise canvas sizing/sky/scenery, in-world logo/animal select, minimal bottom actions and icon buttons). Then show Home screenshots at 390×844 and 1440×900 and WAIT for approval before M3. Do not tag M2.5 complete at the asset-preview checkpoint.
+WAIT for owner feedback on the ten art/previews/*.png assets. If revisions are requested, change only the named model recipe/source, rebuild it with Blender, validate and show its new preview. After asset approval, implement §28.2–28.4 (Lilita One, full menu resolution, precise canvas sizing/sky/scenery, in-world logo/animal select, minimal bottom actions and icon buttons). Preserve persistent-canvas/pooling architecture. Then show Home screenshots at 390×844 and 1440×900 and WAIT for approval before M3. Do not tag M2.5 complete at the asset-preview checkpoint.
 
 ## Milestone plan / gates
 
@@ -96,6 +106,8 @@ Complete M2.5's Blender asset batch: 3D logo, six animals, car, oak and crate wi
 §28 supersedes the blanket placeholder-until-M10 instruction: the M2.5 batch is built now and replaces its placeholders after approval. Run applicable tests and local play checks at each milestone, provide exact owner test steps and localhost URL once an app exists, update this file, commit, push and tag. Deploy server before frontend once hosting is established. Never add §17a non-features.
 
 ## How to run
+
+Blender pipeline (local executable already configured in ignored .env.local): `npm run art:build -- --version`, `npm run art:build -- --self-test`, `npm run art:build -- --model chicken`, or `npm run art:build` for all voxel sources. Add `--author` when regenerating a model's voxel JSON from its edited recipe. See art/README.md. Review PNGs directly from art/previews/; the current game does not load these models yet.
 
 From C:\Users\zeidk\Desktop\game_challenge:
 

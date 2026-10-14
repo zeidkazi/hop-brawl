@@ -4,11 +4,15 @@ Blender is mandatory. Set `BLENDER_PATH` to its executable in the environment or
 
 ```powershell
 npm run art:build -- --version
+npm run art:build -- --self-test
 npm run art:build -- --model chicken
+npm run art:build -- --model chicken --author
 npm run art:build
 ```
 
 The launcher invokes `blender -b --factory-startup --python-exit-code 1 -P art/build_models.py -- --config tmp/art-config.json`. Bake and render tunables are read from `shared/config.ts`; `tmp` is ignored.
+
+Normal builds read committed voxel JSON. `--author` regenerates that JSON from `art/recipes/<name>.py` first; use it after changing a recipe. Both paths use Blender for all meshing, AO, exporting and PNG rendering. The self-test verifies internal-face removal and a real Cycles vertex-color bake without writing a production asset.
 
 Voxel source coordinates use width, height, depth. One tile is 12 voxels; model origin is bottom-center, forward is Blender +Y / glTF -Z. Optional `parts` maps part names to voxel indices so eyes and tails can animate independently. These parts still share the one opaque vertex-color material.
 

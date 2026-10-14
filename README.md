@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** milestones 1–2 complete. The local frontend has a persistent animated 3D diorama, menu layers, camera stations, pooled objects and adaptive graphics quality. Models are colored-box placeholders; playable Solo arrives in M3. No public deployment or cover image exists yet.
+**Status:** M2.5 art-direction correction is at the model-preview approval checkpoint, before M3. Ten Blender assets are ready in `art/previews/`; the current Home still uses M2 placeholders and will be rebuilt under SPEC §28 after owner approval. The persistent-canvas/pooling architecture remains. No public deployment or cover image exists yet.
 
 ## Local development
 
@@ -20,6 +20,8 @@ Open http://localhost:5173/. For a clean install from the committed lockfile, us
 Try the animal carousel, Friends sheet, Settings, How to Play and Credits. Solo and multiplayer buttons are disabled until their implementation milestones. Add `?debug=1` for FPS/draw/pool metrics and camera/quality/tile-flip controls. For phone testing on the same Wi-Fi, start with `npm run dev -- --host 0.0.0.0` and open the PC's LAN address on port 5173.
 
 ## Tests and build
+
+Blender 5.2.2 LTS is verified locally. Set `BLENDER_PATH` in the environment or gitignored `.env.local`, then run `npm run art:build` for all models or `npm run art:build -- --model chicken` for one. Blender is mandatory; no Node fallback. See [art/README.md](art/README.md) for source, bake, export and preview details.
 
 ```powershell
 npm run check
