@@ -13,7 +13,7 @@ const SCREENS: readonly Screen[] = ['home', 'friends', 'settings', 'how', 'credi
 const CARDS = [
   ['Hop forward. Survive.', "Tap or swipe on phone · Arrow keys / WASD on PC. Dodge cars and trains, ride logs, and don't fall off the bottom of the screen."],
   ['Shove to win.', "Hop into your opponent to shove them one tile — into traffic, if you're lucky. Shoving has a short cooldown."],
-  ['Last one hopping.', "You have 2 hearts per round. Last one standing wins the round. First to 2 rounds wins. Grab ? crates for a Shield, Super Hop or Slow-Mo — the leader can't grab them."],
+  ['Last one hopping.', "You have 2 hearts per round. Last one standing wins the round. First to 2 rounds wins. Share a room code with up to three friends, or practice in Solo."],
 ] as const;
 
 // Denied access to the localStorage getter is handled as well as failed reads/writes.
@@ -56,7 +56,7 @@ export class Screens {
         </div>
         <div class="home-actions">
           <div class="mode-buttons">
-            <button class="yellow primary" data-mode="play" disabled>PLAY</button>
+            <button class="yellow primary" data-mode="play">PLAY</button>
             <button class="green" data-screen="friends">FRIENDS</button>
             <button class="blue" data-mode="solo" aria-label="SOLO">SOLO</button>
           </div>
@@ -147,6 +147,7 @@ export class Screens {
       if (!button) return;
       this.game.home.sound.unlock();
       if (button.dataset.screen) this.navigate(button.dataset.screen as Screen);
+      else if (button.dataset.mode === 'play') this.navigate('friends');
       else if (button.dataset.mode === 'solo') this.navigate('solo');
       else if (button.hasAttribute('data-back')) this.back();
       else if (button.dataset.animal) this.changeAnimal(Number(button.dataset.animal));

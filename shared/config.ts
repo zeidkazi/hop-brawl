@@ -215,7 +215,7 @@ export const LOADING = Object.freeze({
   INLINE_BUDGET: 15000, FAST_MS: 400, TAP_MS: 600, TIP_MS: 2500, SLOW_MS: 8000,
   PUNCH_MS: 180, REVEAL_MS: 300, FADE_MS: 200, EASE_MS: 160,
   TIPS: ['Hop into a friend to shove them', 'Last one hopping wins the round',
-    "The leader can't grab ? crates", 'Fall off the bottom and you lose a heart'],
+    'Share a room code to brawl with friends', 'Fall off the bottom and you lose a heart'],
 } as const);
 /** Section 29 saturation direction; gameplay biome blending remains in M10. */
 export const BIOME_PALETTES = Object.freeze({
