@@ -28,6 +28,7 @@ export class Screens {
   private card = 0;
   private carousel: gsap.core.Timeline | null = null;
   private pointerX = 0;
+  private afterName: Screen | null = null;
 
   constructor(readonly root: HTMLElement, readonly game: GameRenderer) {
     // Static trusted markup only; persisted names and URL values use value/textContent.
@@ -142,7 +143,12 @@ export class Screens {
     this.game.home.layout(this.game.rig.camera);
     root.querySelector('#name form')!.addEventListener('submit', event => {
       event.preventDefault(); this.preferences.name = this.preferences.name.trim();
-      this.names.forEach(input => { input.value = this.preferences.name; }); this.updateName(); this.save(); this.back();
+      if (this.afterName && !this.preferences.name) { this.focusName(); return; }
+      this.names.forEach(input => { input.value = this.preferences.name; }); this.updateName(); this.save();
+      if (this.afterName) {
+        const next = this.afterName; this.afterName = null;
+        history.replaceState({ screen: next }, '', location.href); this.show(next);
+      } else this.back();
     });
     this.swipe(root.querySelector('.animal-hit')!, direction => this.changeAnimal(direction));
     this.swipe(root.querySelector('#how-card')!, direction => this.changeCard(direction));
@@ -169,9 +175,11 @@ export class Screens {
     return SCREENS.includes(value as Screen) ? value as Screen : new URL(location.href).searchParams.has('room') ? 'friends' : 'home';
   }
   navigate(screen: Screen): void {
+    if (screen === 'friends' && !this.preferences.name.trim()) { this.afterName = screen; screen = 'name'; }
     if (screen === this.screen) return;
     history.pushState({ screen }, '', screen === 'friends' ? location.href : '/');
     this.show(screen);
+    if (screen === 'name' && this.afterName) this.focusName();
   }
   private back(): void {
     // Deep-linked sheets have no in-app entry behind them.
@@ -180,12 +188,17 @@ export class Screens {
     } else history.back();
   }
   private show(screen: Screen): void {
+    if (screen !== 'name') this.afterName = null;
     this.screen = screen;
     this.motion.show(this.panels[screen]);
     if (this.game.rig.station !== 'home') this.game.go('home');
     this.panels[screen].querySelector<HTMLElement>('input, button, a')?.focus({ preventScroll: true });
   }
   private save(): void { savePreferences(storage, this.preferences); }
+  private focusName(): void {
+    const input = this.names[0]!; input.focus({ preventScroll: true });
+    if (!this.preferences.reducedMotion) gsap.fromTo(input, { x: -VIEW.NAME_SHAKE_PX }, { x: VIEW.NAME_SHAKE_PX, repeat: 3, yoyo: true, duration: VIEW.NAME_SHAKE_MS / 1000, onComplete: () => { gsap.set(input, { x: 0 }); } });
+  }
   private applyPreferences(): void {
     this.motion.reduced = this.preferences.reducedMotion;
     this.game.setReducedMotion(this.preferences.reducedMotion);

@@ -17,7 +17,8 @@ const models = existsSync(modelDir) ? readdirSync(modelDir).filter(file => file.
 
 describe('Blender deliverables', () => {
   it('keeps the complete model library below the shared byte budget', () => {
-    expect(models.reduce((sum, file) => sum + statSync(join(modelDir, file)).size, 0)).toBeLessThan(ART.TOTAL_GLB_BUDGET);
+    const runtimeModels = readdirSync(modelDir).filter(file => file.endsWith('.glb'));
+    expect(runtimeModels.reduce((sum, file) => sum + statSync(join(modelDir, file)).size, 0)).toBeLessThan(ART.TOTAL_GLB_BUDGET);
   });
   it.each(models)('%s contains baked vertex colors, correctly scaled geometry and editable sources', file => {
     const name = file.slice(0, -4);
