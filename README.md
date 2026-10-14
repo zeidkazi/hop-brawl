@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** M2.5 is at the revised-model approval checkpoint, before M3. Chicken, penguin and crate designs are approved; seven revised Blender assets and all six animal silhouettes are ready in `art/previews/`. Optimized GLBs total 238.7 KB; the logo is 54.6 KB. Home still uses M2 placeholders and will be rebuilt under SPEC §28 after owner approval. The persistent-canvas/pooling architecture remains. No public deployment or cover image exists yet.
+**Status:** M2.5 is at the vehicle/composed-logo approval checkpoint, before M3. All six animals, oak and crate are approved. The lowered sedan, six new vehicle/log models, composed logo and four intro poses are ready in `art/previews/`. Sixteen optimized GLBs total 412.4 KB; the logo is 111.6 KB with separate animation nodes. Home still uses M2 placeholders and will be rebuilt under SPEC §28 after owner approval. No public deployment or cover image exists yet.
 
 ## Local development
 

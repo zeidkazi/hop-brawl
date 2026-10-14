@@ -31,8 +31,15 @@ All assets below are original project creations, authored as voxel data and buil
 | `art/voxels/car.json`, `art/car.blend`, `client/public/models/car.glb`, `art/previews/car.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/car.py |
 | `art/voxels/oak.json`, `art/oak.blend`, `client/public/models/oak.glb`, `art/previews/oak.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/oak.py |
 | `art/voxels/crate.json`, `art/crate.blend`, `client/public/models/crate.glb`, `art/previews/crate.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/crate.py |
+| `art/voxels/hatchback.json`, `art/hatchback.blend`, `client/public/models/hatchback.glb`, `art/previews/hatchback.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/hatchback.py |
+| `art/voxels/taxi.json`, `art/taxi.blend`, `client/public/models/taxi.glb`, `art/previews/taxi.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/taxi.py |
+| `art/voxels/truck.json`, `art/truck.blend`, `client/public/models/truck.glb`, `art/previews/truck.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/truck.py |
+| `art/voxels/train_engine.json`, `art/train_engine.blend`, `client/public/models/train_engine.glb`, `art/previews/train_engine.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/train_engine.py |
+| `art/voxels/train_carriage.json`, `art/train_carriage.blend`, `client/public/models/train_carriage.glb`, `art/previews/train_carriage.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/train_carriage.py |
+| `art/voxels/log.json`, `art/log.blend`, `client/public/models/log.glb`, `art/previews/log.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/log.py |
+| `art/previews/logo-intro.png` (four original Blender renders) | https://github.com/zeidkazi/hop-brawl/blob/main/art/logo_poses.py ; models from https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/logo.py |
 
-The owner approved the chicken, penguin and crate designs. Their voxel sources are unchanged; exports use the same closed-part/coplanar optimization as the revised models. Frog, fox, pig, cat, car, oak and logo revisions await approval. The runtime imports these only after the M2.5 preview approval gate. Remaining models arrive in M10 using the same mandatory Blender pipeline.
+The owner approved all six animals, oak and crate. The lowered sedan, six new vehicle/log models, composed logo and intro pose strip await approval. The logo reuses the approved original chicken geometry with a forward viewing pitch. The runtime imports these only after the M2.5 preview approval gate. Remaining props arrive in M10 using the same mandatory Blender pipeline.
 
 The following silhouette previews are original Blender renders of the same animal geometry, with black material on white. Each is also **CC0 1.0 Universal**, with the same license above.
 
