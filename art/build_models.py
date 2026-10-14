@@ -303,8 +303,13 @@ def main():
     parser.add_argument('--self-test', action='store_true')
     parser.add_argument('--silhouette-only', action='store_true')
     parser.add_argument('--logo-poses', action='store_true')
+    parser.add_argument('--logo-variants', action='store_true')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     config = json.loads(Path(args.config).read_text(encoding='utf-8'))
+    if args.logo_variants:
+        from build_logo import build_variants
+        build_variants(ROOT, config)
+        return
     for path in ('art/voxels', 'art/previews', 'client/public/models'):
         (ROOT / path).mkdir(parents=True, exist_ok=True)
     if args.logo_poses:
