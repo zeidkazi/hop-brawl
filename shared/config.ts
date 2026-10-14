@@ -178,13 +178,22 @@ export const COLORS = Object.freeze({
   yellow: '#FFD23F', red: '#EE4266', green: '#3BCEAC', blue: '#4EA8DE', ink: '#1B1B2F', cream: '#FFF6E5',
   grass: '#6CCB5F', grassAlt: '#5DBB52', road: '#3A3540', water: '#2EC4D6',
   sky: '#FFE9C7', skyTop: '#7FD3FF', sun: '#FFF0CB', tree: '#397D46', rock: '#909CA6',
-  log: '#99633E', rail: '#A8ACB5', crate: '#CC944C', groundSide: '#597D44',
+  log: '#99633E', rail: '#84796B', steel: '#BDC9D0', sleeper: '#72503A', crate: '#CC944C', groundSide: '#597D44',
   players: ['#FF6B6B', '#4D96FF', '#6BCB77', '#C77DFF'],
   animals: ['#FFF6E5', '#6BCB77', '#E98E3D', '#354050', '#F5A3B9', '#929CAB'],
 } as const);
 
 export const ANIMALS = ['chicken', 'frog', 'fox', 'penguin', 'pig', 'cat'] as const;
-export const HOME_MODELS = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls', 'arena', 'crate', 'train_engine', 'train_carriage'] as const;
+export const HOME_MODELS = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls', 'arena', 'crate', 'train_engine', 'train_carriage', 'rail_post'] as const;
+export const RAIL = Object.freeze({
+  SLEEPER_SPACING: .5, SLEEPER_WIDTH: .13, SLEEPER_HEIGHT: .04, SLEEPER_LENGTH: .85,
+  RAIL_OFFSET: .29, RAIL_WIDTH: .05, RAIL_HEIGHT: .07,
+  POST_X: [-.75, 8.75], POST_WIDTH: 8 / 12, POST_HEIGHT: 20 / 12, POST_DEPTH: 5 / 12,
+  LAMP_X: .17, LAMP_Y: 15 / 12, LAMP_Z: .22, LAMP_SIZE: .18,
+  GLOW_ALPHA: .65, HEADLIGHT_SIZE: .3, HEADLIGHT_Y: .55, HEADLIGHT_LENGTH: .65,
+  WARNING_TINT: .65, BELL_HZ: 1200, BELL_S: .35, BELL_INTERVAL_S: .45,
+  SHAKE_DISTANCE: 2, SHAKE_AMPLITUDE: .025, SHAKE_HZ: 30,
+} as const);
 export const LOADING = Object.freeze({
   INLINE_BUDGET: 15000, FAST_MS: 400, TAP_MS: 600, TIP_MS: 2500, SLOW_MS: 8000,
   PUNCH_MS: 180, REVEAL_MS: 300, FADE_MS: 200, EASE_MS: 160,

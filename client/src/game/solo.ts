@@ -1,7 +1,7 @@
 import { Vector3 } from 'three';
-import { COLORS, CONFIG, HOME, SOLO, VIEW } from '../../../shared/config';
+import { COLORS, CONFIG, HOME, RAIL, SOLO, VIEW, WORLD } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
-import { trainWarning } from '../../../shared/hazards';
+import { trainWarning, trainX } from '../../../shared/hazards';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
 import type { GameRenderer } from './renderer';
 import { HopInput } from './input';
@@ -32,6 +32,7 @@ export class Solo {
   private countdownEnd = 0; private previousWall = 0; private roundTime = 0; private poseTime = 0;
   private countdownDuration: number = SOLO.COUNTDOWN_MS;
   private warned = false;
+  private nextBell = 0;
   private arenaRow = NaN;
   private readonly sceneryRow = (z: number) => this.game.world.rows.find(slot => slot.z === z)?.row ?? undefined;
   private deathAt = 0; private bonkAt = -Infinity; private bonkDirection: HopDirection = 'up';
@@ -105,7 +106,7 @@ export class Solo {
     game.rig.resetScroll(retry); game.go('gameplay'); game.desaturation.value = 0;
     game.home.setActorOpacity(1); game.world.deathCause = null;
     this.roundTime = this.poseTime = 0; this.runBest = this.best ?? 0; this.newBest = false; this.lastScore = -1;
-    this.warned = false; this.arenaRow = NaN;
+    this.warned = false; this.nextBell = 0; this.arenaRow = NaN;
     this.heading = 0; this.bonkAt = -Infinity; this.cause.hidden = true;
     this.name.textContent = this.preferences.name; this.bestLabel.textContent = `BEST ${this.runBest}`;
     this.flag.hidden = this.runBest === 0; this.heart.style.opacity = '1'; this.heart.style.transform = '';
@@ -181,6 +182,7 @@ export class Solo {
   private readonly frame = (now: number, dt: number): void => {
     if (!this.active) return;
     const elapsed = Math.max(0, now - this.previousWall) / 1000; this.previousWall = now;
+    this.game.rig.shake = 0;
     if (this.phase !== 'paused') this.poseTime += dt;
     if (this.phase === 'countdown') {
       const remaining = this.countdownEnd - now;
@@ -193,9 +195,15 @@ export class Solo {
     } else if (this.phase === 'playing') {
       this.roundTime += elapsed; this.movement.advance(this.roundTime);
       let warning = false;
-      for (const slot of this.game.world.rows) if (slot.row?.kind === 'rail' && slot.z >= this.movement.camZ
-        && slot.z <= this.movement.camZ + CONFIG.VIEW_ROWS && trainWarning(slot.row, this.movement.time)) warning = true;
-      if (warning && !this.warned) this.game.home.sound.play('tock');
+      for (const slot of this.game.world.rows) if (slot.row?.kind === 'rail' && slot.z >= this.movement.camZ && slot.z <= this.movement.camZ + CONFIG.VIEW_ROWS) {
+        if (trainWarning(slot.row, this.movement.time)) warning = true;
+        const train = trainX(slot.row, this.movement.time);
+        if (train !== null && Math.abs(train - this.movement.x) < WORLD.TRAIN_LENGTH / 2 + CONFIG.COLUMNS
+          && Math.abs(slot.z - this.movement.z) <= RAIL.SHAKE_DISTANCE) this.game.rig.shake = RAIL.SHAKE_AMPLITUDE;
+      }
+      if (warning && (!this.warned || this.movement.time >= this.nextBell)) {
+        this.game.home.sound.play('bell'); this.nextBell = this.movement.time + RAIL.BELL_INTERVAL_S;
+      }
       this.warned = warning;
       if (now - this.countdownEnd > SOLO.HOP_BANNER_MS) this.countdown.hidden = true;
     } else if (this.phase === 'dying' || this.phase === 'over') {

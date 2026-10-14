@@ -1,5 +1,5 @@
 import { Group, Mesh, MeshBasicMaterial, Shape, ShapeGeometry, Vector3 } from 'three';
-import { BOXER, COLORS } from '../../../shared/config';
+import { BOXER, COLORS, RAIL } from '../../../shared/config';
 import type { BoxerCue, BoxerMove } from './boxer';
 
 /** Original synthesized one-shots: no download or API key, obey the SFX setting. */
@@ -10,18 +10,19 @@ export class BoxingSound {
     this.context ??= new AudioContext();
     if (this.context.state === 'suspended') void this.context.resume();
   }
-  play(cue: BoxerCue): void {
+  play(cue: BoxerCue | 'bell'): void {
     const context = this.context;
     if (!context || context.state !== 'running' || this.volume === 0 || cue === 'win') return;
     const oscillator = context.createOscillator(), gain = context.createGain();
     oscillator.type = cue === 'whoosh' ? 'triangle' : 'sine';
-    const hz = cue === 'whoosh' ? BOXER.WHOOSH_HZ : cue === 'hit' ? BOXER.HIT_HZ : BOXER.TOCK_HZ;
+    const hz = cue === 'bell' ? RAIL.BELL_HZ : cue === 'whoosh' ? BOXER.WHOOSH_HZ : cue === 'hit' ? BOXER.HIT_HZ : BOXER.TOCK_HZ;
+    const duration = cue === 'bell' ? RAIL.BELL_S : BOXER.SFX_S;
     oscillator.frequency.setValueAtTime(hz, context.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(hz / 4, context.currentTime + BOXER.SFX_S);
+    if (cue !== 'bell') oscillator.frequency.exponentialRampToValueAtTime(hz / 4, context.currentTime + duration);
     gain.gain.setValueAtTime(this.volume * BOXER.SFX_GAIN, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + BOXER.SFX_S);
+    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
     oscillator.connect(gain); gain.connect(context.destination);
-    oscillator.start(); oscillator.stop(context.currentTime + BOXER.SFX_S);
+    oscillator.start(); oscillator.stop(context.currentTime + duration);
     oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
   }
 }

@@ -1,5 +1,5 @@
 import { CatmullRomCurve3, MathUtils, PerspectiveCamera, Vector3 } from 'three';
-import { CONFIG, HOME, VIEW } from '../../../shared/config';
+import { CONFIG, HOME, RAIL, VIEW } from '../../../shared/config';
 
 export type Station = 'home' | 'lobby' | 'search' | 'vs' | 'gameplay' | 'roundEnd' | 'matchEnd' | 'soloEnd';
 export const STATIONS: readonly Station[] = ['home', 'lobby', 'search', 'vs', 'gameplay', 'roundEnd', 'matchEnd', 'soloEnd'];
@@ -23,6 +23,8 @@ export class CameraRig {
   reducedMotion = false;
   camZ = 0;
   targetCamZ = 0;
+  shake = 0;
+  private shakeOffset = 0;
   private velocity = 0;
   private aspect = 1;
   private readonly focus = new Vector3();
@@ -57,6 +59,7 @@ export class CameraRig {
   }
 
   go(station: Station): void {
+    this.camera.position.x -= this.shakeOffset; this.shakeOffset = 0;
     this.station = station;
     this.drift = 0;
     if (station === 'soloEnd') { this.flight = 1; return; }
@@ -71,6 +74,7 @@ export class CameraRig {
   }
 
   resetScroll(snap = false): void {
+    this.camera.position.x -= this.shakeOffset; this.shakeOffset = 0; this.shake = 0;
     this.camZ = this.targetCamZ = this.velocity = 0;
     if (snap) {
       this.station = 'gameplay'; this.destination(); this.camera.position.copy(this.goal);
@@ -92,6 +96,7 @@ export class CameraRig {
   }
 
   update(dt: number, time: number): void {
+    this.camera.position.x -= this.shakeOffset; this.shakeOffset = 0;
     // Analytic critically damped spring: no overshoot or frame-rate-dependent lerp.
     const error = this.camZ - this.targetCamZ;
     const omega = VIEW.RESIZE_SPRING;
@@ -127,6 +132,10 @@ export class CameraRig {
       this.projected.set(4, 0, -this.camZ).project(this.camera);
       this.camera.projectionMatrix.elements[9] = this.projected.y + 1;
       this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
+    }
+    if (this.station === 'gameplay' && !this.reducedMotion && this.shake) {
+      this.shakeOffset = Math.sin(time * Math.PI * 2 * RAIL.SHAKE_HZ) * this.shake;
+      this.camera.position.x += this.shakeOffset; this.camera.updateMatrixWorld();
     }
   }
   screenY(x: number, z: number, camZ = this.camZ): number {

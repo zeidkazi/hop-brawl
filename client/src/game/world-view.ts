@@ -5,7 +5,7 @@ import {
 } from 'three';
 import type { Camera } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { ANIMAL_SIZES, COLORS, CONFIG, HOME, SOLO, STREET, VIEW, WORLD } from '../../../shared/config';
+import { ANIMAL_SIZES, COLORS, CONFIG, HOME, RAIL, SOLO, STREET, VIEW, WORLD } from '../../../shared/config';
 import type { DeathCause } from '../../../shared/movement';
 import { laneItemX, trainWarning, trainX } from '../../../shared/hazards';
 import { hash32, mulberry32 } from '../../../shared/rng';
@@ -51,6 +51,9 @@ export class WorldView {
   readonly grounds: InstancedMesh[] = [];
   readonly outsideGrounds: InstancedMesh[] = [];
   readonly boundaryPulse: InstancedMesh;
+  readonly railPosts: InstancedMesh;
+  readonly railLights: InstancedMesh;
+  readonly headlights: InstancedMesh;
   boundarySide = 0; boundaryUntil = 0; boundaryWarning = 0;
   readonly obstacles: InstancedMesh;
   readonly vehicles: InstancedMesh;
@@ -123,6 +126,12 @@ export class WorldView {
     }
     this.boundaryPulse = new InstancedMesh(this.cube, new MeshBasicMaterial({ color: COLORS.red, transparent: true, opacity: VIEW.BOUNDARY_PULSE_ALPHA, depthWrite: false }), 2);
     this.boundaryPulse.count = 0; this.boundaryPulse.frustumCulled = false; this.root.add(this.boundaryPulse);
+    this.railPosts = this.batch(VIEW.POOL_ROWS * 2);
+    this.railLights = this.batch(VIEW.POOL_ROWS * 4); this.headlights = this.batch(VIEW.POOL_ROWS);
+    for (const glow of [this.railLights, this.headlights]) {
+      glow.material = new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: RAIL.GLOW_ALPHA, toneMapped: false, depthWrite: false });
+      glow.castShadow = false; glow.frustumCulled = false;
+    }
     this.obstacles = this.batch(capacity);
     this.vehicles = this.batch(capacity);
     this.trucks = this.batch(capacity); this.trees = this.batch(capacity);
@@ -132,7 +141,7 @@ export class WorldView {
     this.animals = this.batch(CONFIG.MAX_PLAYERS_PRIVATE);
     this.podium = this.batch(CONFIG.MAX_PLAYERS_PRIVATE);
     this.backdrop = this.batch(1); this.backdrop.castShadow = false;
-    this.markings = this.batch(VIEW.POOL_ROWS * CONFIG.COLUMNS * 3); this.markings.castShadow = false;
+    this.markings = this.batch(VIEW.POOL_ROWS * (VIEW.DECOR_MAX_X - VIEW.DECOR_MIN_X + 1) * 4); this.markings.castShadow = false;
     const circle = new CircleGeometry(1, VIEW.BLOB_SEGMENTS);
     circle.rotateX(-Math.PI / 2);
     this.blobs = new InstancedMesh(circle, new MeshBasicMaterial({ color: 0, transparent: true, opacity: VIEW.BLOB_OPACITY, depthWrite: false }), capacity);
@@ -161,7 +170,7 @@ export class WorldView {
   installModels(models: ReadonlyMap<string, Group>): void {
     if (this.modelsReady) return;
     for (const [mesh, name] of [[this.vehicles, 'car'], [this.trucks, 'truck'], [this.trees, 'oak'],
-      [this.logs, 'log'], [this.crates, 'crate'], [this.trains, 'train_engine'], [this.carriages, 'train_carriage']] as const) {
+      [this.logs, 'log'], [this.crates, 'crate'], [this.trains, 'train_engine'], [this.carriages, 'train_carriage'], [this.railPosts, 'rail_post']] as const) {
       mesh.geometry = normalizedModel(models.get(name)!);
     }
     // Hulls share their source geometry; refresh their references after replacing the placeholders.
@@ -227,7 +236,7 @@ export class WorldView {
       outside.instanceMatrix.needsUpdate = true; outside.instanceColor!.needsUpdate = true;
     }
     // Batch bounds follow the recycled window even thousands of rows from home.
-    for (const mesh of [...this.grounds, ...this.outsideGrounds, this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.logs, this.crates, this.blobs, this.markings]) {
+    for (const mesh of [...this.grounds, ...this.outsideGrounds, this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.railPosts, this.logs, this.crates, this.blobs, this.markings]) {
       mesh.boundingSphere!.center.set(4, 0, -camZ - CONFIG.VIEW_ROWS / 2);
       mesh.boundingSphere!.radius = VIEW.POOL_ROWS;
     }
@@ -254,7 +263,7 @@ export class WorldView {
     this.outlines.applyTier(tier);
     const material = tier === 'high' ? this.standard : this.lambert;
     for (const mesh of [...this.grounds, ...this.outsideGrounds]) mesh.material = material;
-    for (const mesh of [this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.logs, this.crates, this.animals, this.podium, this.backdrop, this.markings]) mesh.material = material;
+    for (const mesh of [this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.railPosts, this.logs, this.crates, this.animals, this.podium, this.backdrop, this.markings]) mesh.material = material;
     this.grounds[2]!.material = tier === 'low' ? this.lambert : this.waterMaterials[tier === 'high' ? 0 : 1]!;
     this.obstacles.castShadow = this.logs.castShadow = this.crates.castShadow = this.podium.castShadow = tier === 'high';
     this.vehicles.castShadow = this.animals.castShadow = tier !== 'low';
@@ -297,6 +306,7 @@ export class WorldView {
     this.waterUniform.value = time;
     this.obstacles.count = this.vehicles.count = this.logs.count = this.crates.count = this.animals.count = this.blobs.count = this.podium.count = 0;
     this.trucks.count = this.trees.count = this.trains.count = this.carriages.count = 0;
+    this.railPosts.count = this.railLights.count = this.headlights.count = 0;
     this.markings.count = 0; this.boundaryPulse.count = 0;
     this.backdrop.count = 0;
     this.put(this.backdrop, 4, -VIEW.GROUND_DEPTH * 2, this.requestedBottom, VIEW.FAR, VIEW.GROUND_DEPTH, VIEW.FAR, COLORS.grass);
@@ -353,15 +363,36 @@ export class WorldView {
           this.put(this.logs, laneItemX(row, log, time), -0.1 - (row.z === this.logDipRow && time < this.logDipUntil ? SOLO.LOG_DIP : 0), row.z, log.length, 5 / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.log);
         }
       } else {
+        for (let x = VIEW.DECOR_MIN_X; x <= VIEW.DECOR_MAX_X; x += RAIL.SLEEPER_SPACING)
+          this.put(this.markings, x, x < 0 || x > CONFIG.COLUMNS - 1 ? -VIEW.OUTSIDE_DROP : 0,
+            row.z, RAIL.SLEEPER_WIDTH, RAIL.SLEEPER_HEIGHT, RAIL.SLEEPER_LENGTH, COLORS.sleeper);
+        for (let side = -1; side <= 1; side += 2) {
+          this.put(this.markings, 4, RAIL.SLEEPER_HEIGHT, row.z + side * RAIL.RAIL_OFFSET,
+            CONFIG.COLUMNS, RAIL.RAIL_HEIGHT, RAIL.RAIL_WIDTH, COLORS.steel);
+          for (let edge = -1; edge <= 1; edge += 2) {
+            const start = edge < 0 ? VIEW.DECOR_MIN_X - .5 : CONFIG.COLUMNS - .5;
+            const end = edge < 0 ? -.5 : VIEW.DECOR_MAX_X + .5;
+            this.put(this.markings, (start + end) / 2, RAIL.SLEEPER_HEIGHT - VIEW.OUTSIDE_DROP,
+              row.z + side * RAIL.RAIL_OFFSET, end - start, RAIL.RAIL_HEIGHT, RAIL.RAIL_WIDTH, COLORS.steel);
+          }
+          this.put(this.railPosts, RAIL.POST_X[side < 0 ? 0 : 1], 0, row.z, RAIL.POST_WIDTH, RAIL.POST_HEIGHT, RAIL.POST_DEPTH, '#FFFFFF', Math.PI);
+        }
         const x = trainX(row, time);
         if (x !== null) {
+          this.put(this.headlights, x + row.direction * WORLD.TRAIN_LENGTH / 2, RAIL.HEADLIGHT_Y, row.z,
+            RAIL.HEADLIGHT_LENGTH, RAIL.HEADLIGHT_SIZE, RAIL.HEADLIGHT_SIZE, COLORS.cream);
           this.put(this.trains, x + row.direction * 4.5, 0, row.z, 3, 16 / 12, 11 / 12, this.modelsReady ? '#FFFFFF' : COLORS.red, row.direction < 0 ? Math.PI : 0);
           for (let j = 0; j < 3; j++) this.put(this.carriages, x + row.direction * (1.5 - j * 3), 0, row.z, 3, 14 / 12, 11 / 12, this.modelsReady ? '#FFFFFF' : COLORS.blue);
         }
         const warning = trainWarning(row, time), flash = Math.floor(time * SOLO.WARNING_FLASH_HZ * 2) % 2;
-        if (warning) this.put(this.obstacles, -0.8, 0.3, row.z, 0.25, 0.5, 0.25, flash ? COLORS.red : COLORS.yellow);
-        this.grounds[3]!.setColorAt(this.rows[i]!.groundIndex, this.color.set(warning && flash ? COLORS.red : COLORS.rail));
-        this.grounds[3]!.instanceColor!.needsUpdate = true;
+        if (warning) for (const px of RAIL.POST_X) {
+          this.put(this.railLights, px + (flash ? RAIL.LAMP_X : -RAIL.LAMP_X), RAIL.LAMP_Y, row.z - RAIL.LAMP_Z,
+            RAIL.LAMP_SIZE, RAIL.LAMP_SIZE, RAIL.LAMP_SIZE, COLORS.red);
+        }
+        this.color.set(COLORS.rail).lerp(this.palette.get(COLORS.red)!, warning ? RAIL.WARNING_TINT * (.5 + .5 * Math.sin(time * Math.PI * 2 * SOLO.WARNING_FLASH_HZ)) : 0);
+        this.grounds[3]!.setColorAt(this.rows[i]!.groundIndex, this.color);
+        this.darkenOutside(); this.outsideGrounds[3]!.setColorAt(this.rows[i]!.groundIndex, this.color);
+        this.grounds[3]!.instanceColor!.needsUpdate = this.outsideGrounds[3]!.instanceColor!.needsUpdate = true;
       }
       // Decorative scenery uses stable row hashes and cannot be stood on.
       if (row.kind === 'grass') this.put(this.trees, (hash32(this.seed, row.z) & 1) ? -3 : 11, 0, row.z, 14 / 12, 20 / 12, 1, this.modelsReady ? '#FFFFFF' : COLORS.tree);
@@ -406,6 +437,8 @@ export class WorldView {
       for (let i = 0; i < water.count; i++) water.setColorAt(i, this.color);
       if (water.instanceColor) water.instanceColor.needsUpdate = true;
     }
+    this.railPosts.instanceMatrix.needsUpdate = this.railLights.instanceMatrix.needsUpdate = this.headlights.instanceMatrix.needsUpdate = true;
+    this.railPosts.instanceColor!.needsUpdate = this.railLights.instanceColor!.needsUpdate = this.headlights.instanceColor!.needsUpdate = true;
     this.outlines.sync();
   }
 }
