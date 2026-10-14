@@ -18,11 +18,13 @@ Font license text verified from the pinned packages. Fonts are bundled locally; 
 
 ## M2.5 Blender assets — partial owner approval
 
-All assets below are original project creations, authored as voxel data and built in Blender 5.2.2 LTS. No downloaded art, font outlines or other game assets were used. Each row lists the editable source, game export and transparent rendered preview. License for every file: **CC0 1.0 Universal**, no attribution required; see `art/LICENSE.md` and https://creativecommons.org/publicdomain/zero/1.0/legalcode .
+The animals, vehicles and props below are original voxel creations built in Blender 5.2.2 LTS. The two logo candidates use the licensed Lilita One font listed above, converted from Blender Text objects; they are rendered artwork, not redistributed font software. Original artwork and arrangements: **CC0 1.0 Universal**, no attribution required; see `art/LICENSE.md` and https://creativecommons.org/publicdomain/zero/1.0/legalcode . The font itself retains OFL 1.1. Preview files are transparent except the logo review on the owner-requested sky-blue background.
 
 | Files | Source URL / original recipe |
 |---|---|
-| `art/voxels/logo.json`, `art/logo.blend`, `client/public/models/logo.glb`, `art/previews/logo.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/logo.py |
+| `art/logo_smooth.blend`, `art/variants/logo_smooth.glb`, `art/variants/logo_smooth.json`, `art/previews/logo_smooth.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; Lilita One font source above |
+| `art/logo_blocks.blend`, `art/variants/logo_blocks.glb`, `art/variants/logo_blocks.json`, `art/previews/logo_blocks.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; actual Blender Blocks remesh of the same Lilita One text |
+| `art/previews/logo-comparison.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; side-by-side native Blender renders |
 | `art/voxels/chicken.json`, `art/chicken.blend`, `client/public/models/chicken.glb`, `art/previews/chicken.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/chicken.py |
 | `art/voxels/frog.json`, `art/frog.blend`, `client/public/models/frog.glb`, `art/previews/frog.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/frog.py |
 | `art/voxels/fox.json`, `art/fox.blend`, `client/public/models/fox.glb`, `art/previews/fox.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/fox.py |
@@ -38,7 +40,6 @@ All assets below are original project creations, authored as voxel data and buil
 | `art/voxels/train_engine.json`, `art/train_engine.blend`, `client/public/models/train_engine.glb`, `art/previews/train_engine.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/train_engine.py |
 | `art/voxels/train_carriage.json`, `art/train_carriage.blend`, `client/public/models/train_carriage.glb`, `art/previews/train_carriage.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/train_carriage.py |
 | `art/voxels/log.json`, `art/log.blend`, `client/public/models/log.glb`, `art/previews/log.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/log.py |
-| `art/previews/logo-intro.png` (four original Blender renders) | https://github.com/zeidkazi/hop-brawl/blob/main/art/logo_poses.py ; models from https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/logo.py |
 
 The owner approved all six animals, oak and crate. The lowered sedan, six new vehicle/log models, composed logo and intro pose strip await approval. The logo reuses the approved original chicken geometry with a forward viewing pitch. The runtime imports these only after the M2.5 preview approval gate. Remaining props arrive in M10 using the same mandatory Blender pipeline.
 

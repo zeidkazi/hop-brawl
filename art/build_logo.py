@@ -36,6 +36,16 @@ def text_mesh(font, char, height, backing, config, sources):
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
+    if backing:
+        # A backing plate is solid behind counters. Expanding tiny inner font
+        # contours can invert them; keep the outer contour before meshing.
+        bpy.ops.object.convert(target='CURVE')
+        def area(spline):
+            pts = [p.co for p in spline.bezier_points]
+            return abs(sum(a.x * b.y - b.x * a.y for a, b in zip(pts, pts[1:] + pts[:1])))
+        outer = max(obj.data.splines, key=area)
+        for spline in list(obj.data.splines):
+            if spline != outer: obj.data.splines.remove(spline)
     bpy.ops.object.convert(target='MESH')
     return obj, source
 
