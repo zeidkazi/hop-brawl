@@ -69,3 +69,35 @@ test('Home fills odd viewports at 100, 125, 150 and 200 percent DPR', async ({ b
     } finally { await context.close(); }
   }
 });
+
+test('carousel follows arrows and finger direction; crowd cheers without replacing the scene', async ({ page }) => {
+  await page.goto('/?debug=1');
+  await expect.poll(() => page.evaluate(() => !!window.__HOP_DEBUG__)).toBe(true);
+  for (const [label, outgoing, incoming] of [['Next animal', -1, 1], ['Previous animal', 1, -1]] as const) {
+    const samples = await page.evaluate(async label => {
+      document.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!.click();
+      const values: { animal: string; offset: number }[] = [];
+      const start = performance.now();
+      while (performance.now() - start < 350) {
+        const snap = window.__HOP_DEBUG__!.snapshot(); values.push({ animal: snap.animal, offset: snap.animalOffset });
+        await new Promise(requestAnimationFrame);
+      }
+      return values;
+    }, label);
+    const first = samples[0]!.animal;
+    expect(samples.some(sample => sample.animal === first && sample.offset * outgoing > 0.1)).toBe(true);
+    expect(samples.some(sample => sample.animal !== first && sample.offset * incoming > 0.1)).toBe(true);
+    expect(Math.abs(samples.at(-1)!.offset)).toBeLessThan(0.01);
+  }
+  const hit = page.getByRole('button', { name: 'Change animal', exact: true });
+  await hit.dispatchEvent('pointerdown', { clientX: 200 });
+  await hit.dispatchEvent('pointerup', { clientX: 150 });
+  await expect(page.locator('#animal-label')).toHaveText('penguin');
+  await hit.dispatchEvent('pointerdown', { clientX: 150 });
+  await hit.dispatchEvent('pointerup', { clientX: 200 });
+  await expect(page.locator('#animal-label')).toHaveText('fox');
+  await page.evaluate(() => { window.__HOP_DEBUG__!.cheer(); window.__HOP_DEBUG__!.punch(); });
+  await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().crowdCheering)).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().crowdCheering)).toBe(false);
+  await expect(page.locator('#game-canvas')).toHaveCount(1);
+});
