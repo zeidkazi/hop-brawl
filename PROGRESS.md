@@ -5,9 +5,9 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 ## Status
 
 - Completed milestones: M1 (world generation/hazards) and M2 (persistent-canvas architecture).
-- Current phase: M2 complete; next is M3 Solo gameplay. M1 is owner-verified.
+- Current phase: M2.5 art-direction correction, before M3. M1 is owner-verified; the owner rejected M2's menu appearance and added §28.
 - Owner approved the plan and M1 on 2026-10-14. Deployment is deferred until after M13 and before M14, no later than 2026-10-26; no deployment without the owner's pre-deploy approval.
-- Read the complete SPEC.md (all 27 sections); reread the owner's updated cap and spectator rules and recorded them in DECISIONS.md.
+- Read SPEC.md including the complete new §28, which overrides earlier art/UI/fallback directions where they conflict.
 - Initial commit c6ec455 (`docs: add game spec`) pushed to `origin/main` at https://github.com/zeidkazi/hop-brawl.git.
 - Owner's SPEC change committed as 7b4041c (`docs(spec): defer deployment milestone`).
 
@@ -40,6 +40,8 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 
 ## Setup preflight (§27)
 
+M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-specific path is stored only in gitignored `.env.local` as `BLENDER_PATH`; `npm run art:build -- --version` verifies the launcher. Blender is mandatory for all 3D assets; the former Node fallback is removed from the implementation plan.
+
 1. PASS: Node v24.21.0 (24 LTS line), npm 11.19.0.
 2. PASS: Git 2.51.0.windows.1 installed.
 3. PASS: Global Git name and email configured; no email value written to project files.
@@ -56,7 +58,7 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 
 - Yes: terminal, Git (including push), project file writes, local dev servers, npm package downloads/execution, browser automation, internet downloads.
 - Browser automation: Playwright 1.64.0 and Chromium installed; M1 browser parity checks pass. Full-match, latency, performance and transition tests remain for the relevant milestones.
-- No Blender/MCP found: use §25 Node model pipeline at M10.
+- Yes: Blender 5.2.2 LTS, driven headlessly through the terminal under §28.1. No Node voxel fallback.
 - No usable TTS: at M11 search for one consistent energetic voice with all seven owner-requested lines, licensed CC0 or no-attribution-required; log every file URL/license in CREDITS.md. Report missing same-voice lines so the owner can record them. Use text + SFX until then.
 - Installed official skills: playwright, playwright-interactive, screenshot, cloudflare-deploy, vercel-deploy, speech, security-best-practices. Playwright skill used for M1; read applicable instructions before using the others.
 - Restricted-shell network/localhost operations and Git index writes required approved elevated execution and then succeeded.
@@ -71,26 +73,27 @@ Last updated: 2026-10-14 (Asia/Calcutta).
 
 ## Next exact step
 
-Reread SPEC.md, this file, and DECISIONS.md. Start M3 with the normalized keyboard/touch/mouse input layer and allocation-free local player/hop state, using §9 thresholds and §4 hitbox/forgiveness rules from shared/config.ts. Connect the existing Solo button to countdown → local run using the persistent GameRenderer/CameraRig/WorldView; reuse Motion.tileFlip for retry. Add hazards, death, auto-scroll/follow, score/best, Solo pause/resume and auto-pause, with focused tests. Avoid rebuilding the canvas or creating geometry during play. No new approval is required before M3; STOP after Solo is playable and M3 tests pass for owner testing/approval.
+Complete M2.5's Blender asset batch: 3D logo, six animals, car, oak and crate with baked AO, GLBs, editable .blend sources and transparent 3/4 PNGs. Show those previews and WAIT for owner approval before rebuilding Home. After asset approval, implement §28.2–28.4 (Lilita One, full menu resolution, precise canvas sizing/sky/scenery, in-world logo/animal select, minimal bottom actions and icon buttons). Then show Home screenshots at 390×844 and 1440×900 and WAIT for approval before M3. Do not tag M2.5 complete at the asset-preview checkpoint.
 
 ## Milestone plan / gates
 
 - M1: Shared config, PRNG, worldgen, hazards, unit/fuzz tests. COMPLETE.
 - M2: Persistent canvas/scene, camera stations, GSAP UI motion, pools, quality tiers, debug overlay. COMPLETE; tag m2-architecture.
+- M2.5: Blender-only pipeline and art/UI direction correction. STOP for asset-preview approval, then STOP for Home screenshot approval. Tag m2.5-art-direction only when complete.
 - M3: Responsive controls, hopping, hazards/death, camera, Solo and tile-flip retry. STOP for owner testing/approval.
 - M4: Worker + hibernating Room DO, create/join, lobby, clock sync.
 - M5: Authoritative movement, prediction, interpolation, shared camera.
 - M6: Hearts, respawn, shove, rounds/matches, results.
 - M8: Hibernating Quick Play matchmaker, timeout prompts, rematch.
 - M9: Crates/boosts, awards, session scoreboard, emotes.
-- M10: Node-built voxel models, biomes, lighting, particles; repeat performance checks. STOP for owner testing/approval.
+- M10: Remaining Blender voxel models, biomes, lighting, particles; repeat performance checks. STOP for owner testing/approval.
 - M11: Audio assets, crossfades, SFX, licensed same-voice announcer clips or owner recordings for missing lines.
 - M12: Fighting-game presentation, camera-flight polish, onboarding, How to Play, settings.
 - M13: Edge cases, reconnect/versioning, accessibility, adaptive-quality tuning.
 - M7: AFTER M13, BEFORE M14, no later than 2026-10-26. STOP BEFORE DEPLOYING; supply exact server-first Cloudflare/Vercel-GitHub/env/Hostinger DNS instructions and wait for owner confirmation. Verify real devices and automated performance.
 - M14: Metadata/OG, cover export, gamepad, result sharing.
 
-Use colored boxes until M10. Run applicable tests and local play checks at each milestone, provide exact owner test steps and localhost URL once an app exists, update this file, commit, push and tag. Deploy server before frontend once hosting is established. Never add §17a non-features.
+§28 supersedes the blanket placeholder-until-M10 instruction: the M2.5 batch is built now and replaces its placeholders after approval. Run applicable tests and local play checks at each milestone, provide exact owner test steps and localhost URL once an app exists, update this file, commit, push and tag. Deploy server before frontend once hosting is established. Never add §17a non-features.
 
 ## How to run
 

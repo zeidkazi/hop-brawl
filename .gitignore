@@ -17,3 +17,5 @@ playwright-report/
 test-results/
 tmp/
 output/playwright/
+__pycache__/
+*.pyc
