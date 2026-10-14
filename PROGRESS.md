@@ -6,8 +6,11 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 
 - Latest owner instruction (2026-10-15): complete steps 1–4 and cover step 7, verify everything locally including owner phone on Wi-Fi, then STOP. Do not deploy or wait for Cloudflare login. Keep the single-Worker static-assets/SQLite DO setup ready in wrangler.toml; the owner will log in and deploy afterward. No submission tag until there is a deployed commit.
 - Step 1 complete: 64 recycled rows cover the angled camera frustum, lower-third player, 1.0-tile log-slot assist and T2–T4 log speeds. Painted boundaries remain. Desktop playfield 48.6%; phone 92.1%; player anchor 65% from top. Rows 5/35/70/150 have zero missing ground and at least seven rows ahead on both viewports. No screenshot sets generated.
-- Step 2 implemented, verification underway: private-room authority, lobby, unique animal picks, player-colored gloves, clock sync, predicted local hops, 100 ms remote interpolation, hearts/respawn/protection/shove, three-round matches, rematch, host handoff and forfeit. 131 unit tests and both client/server typechecks pass. Local Worker runs on 8787; Vite proxies API/WebSocket requests on 5173.
-- Steps 2–4 implemented and checked: a complete three-round match, rematch, host handoff, forfeit and Back to lobby passed between independent desktop/phone-sized browser contexts. PLAY opens Friends. Original procedural sounds cover bell/horn/hop/splash/squash/bonk/punch/round win. Remaining: expanded local verification, owner phone test and 1800×1200 cover. Deployment and the final tag are deferred by the latest instruction.
+- Step 2 complete locally: private-room authority, lobby, unique animal picks, player-colored gloves, clock sync, predicted local hops, 100 ms remote interpolation, hearts/respawn/protection/shove, three-round matches, rematch, host handoff and forfeit. 133 unit tests in 27 files and both client/server typechecks pass. Local Worker runs on 8787; Vite proxies API/WebSocket requests on 5173.
+- Steps 2–4 checked: a complete three-round match, rematch, shove, host handoff, forfeit and Back to lobby passed between independent desktop/phone-sized browser contexts. Four-client admission, fifth-client ROOM_FULL, ROOM_NOT_FOUND, foreign-Origin rejection and first-time invite/name flow pass. PLAY opens Friends. Original procedural sounds cover bell/horn/hop/splash/squash/bonk/punch/round win.
+- Camera/Solo/menu regressions: 16 targeted browser cases have passing results across desktop and mobile. Two old forced-death fixtures were updated for the new frustum and rerun successfully. No screenshot sets were exported. Desktop animal height is 76.9 px; real rendered Left Behind deaths remain below the visible screen and camera lag stays within 0.05 tile.
+- Step 7 complete: art/cover/hop-brawl-1800x1200.png (1800×1200, 833,904 bytes), inspected after capture from two real local Worker clients. Both animals and gloves, traffic and the logo-free HUD are visible. Capture script/metadata and CREDITS entry are committed.
+- Production-packaged local verification: all three multiplayer browser tests pass against http://127.0.0.1:8787, including the full three-round match and rematch. Frontend and room API are served by the same local Worker. This was local verification only, not a public deployment.
 - Physical-phone live testing requires the owner's device. Automated touch/mobile tests are reported separately.
 
 ## Historical status (superseded by section 32)
@@ -151,16 +154,15 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Known bugs / unresolved checks
 
-- Models and Home are signed off. Solo is enabled; no known failing automated Solo checks. Physical-device feel and visual acceptance await owner playtesting. Multiplayer actions remain disabled until networking milestones.
+- Models/Home are signed off. Solo and Private Rooms are enabled. Physical-phone verification on the owner's Wi-Fi is still pending; automated mobile viewports do not certify actual device performance.
 - M12 owner polish notes (do not implement early): make 1–2 combo punches visibly travel toward the gameplay camera; improve the fox tail silhouette from that camera.
-- Worker/Room implementation and wrangler dev arrive in M4. Do not add fake server endpoints just to make an unavailable server command appear to work.
+- On Windows, a production rebuild can invalidate Wrangler's asset-directory watcher. Restart npm run dev:server after rebuilding client/dist. This is a local tooling limitation; the Vite frontend stays current without production rebuilds.
 - Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only Home on the host GPU.
-- Cloudflare and Vercel authentication and free-account plan verification remain required before deployment.
-- Real Android/iPhone checks remain owner-assisted at the relevant milestones.
+- No deployment was performed and v0.9-submission was not tagged. The owner will handle Cloudflare login/deployment later; Vercel/DNS are outside today's scope. Worker packaging dry-run succeeds with static assets and the SQLite DO binding.
 
 ## Next exact step
 
-Finish local verification and cover; ask the owner to test the phone on the same Wi-Fi; STOP with local URLs, test results and known issues. Do not deploy. Do not implement deferred M12 punch/tail polish. Current scope is at the top of this file.
+Await the owner's full match/rematch check from a normal window, incognito and phone at http://192.168.7.7:5173/ on the same Wi-Fi. Local implementation, automated verification and cover are complete. STOP; do not deploy. Fix only any reported bugs, with focused checks and commits. Do not implement deferred M12 punch/tail polish.
 
 ## Milestone plan / gates
 
@@ -195,7 +197,7 @@ npm run dev
 npm run dev:server
 ```
 
-Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Choose SOLO; enter a name if needed. After HOP!, use arrow keys/WASD or tap/swipe. Dodge traffic/trains, ride logs, and keep moving ahead of the scrolling bottom. Esc/gear pauses; Resume counts down; Retry/Space/Enter restarts after death. Verify best score survives reload and incognito has separate storage. Multiplayer remains disabled until M4 onward. See art/review/SOLO.md for the full owner checklist.
+Open http://localhost:5173/ in a normal and an incognito window. PLAY → Create Room in one; PLAY → Join with the code in the other. A phone on the same Wi-Fi can join at http://192.168.7.7:5173/. Pick animals, host START, complete a match and Rematch. Test arrow keys/WASD, taps/swipes, shoves, two-heart respawns and sounds. SOLO remains available with one heart, pause, Retry and local best score. Keep both the Vite and local Wrangler processes running.
 
 Open http://localhost:5173/?debug=1 for the FPS overlay. Expand the debug panel to change stations, toggle menu visibility, scroll camZ, and trigger Tile flip/Dust burst/Toast/Crowd K.O./Glove punch. In Settings switch Graphics High/Low/Auto and Reduce motion. Resize or rotate: the canvas should remain visible with smooth reframing. Next must exit left and enter right; Previous must do the reverse. Swipes follow the finger.
 
@@ -206,4 +208,4 @@ npm run check
 npm run test:e2e
 ```
 
-On a new machine, first install the Playwright browser with npx playwright install chromium. npm ci is available for a clean lockfile-based dependency install. npm run build:client writes client/dist; npm run dev:server runs Wrangler on 8787 and serves that production build as well as the room API. During development use 5173 with both processes running. `npm run deploy` validates tests/build before deploying the single Worker. Section 32 authorizes deployment today.
+On a new machine, first install the Playwright browser with npx playwright install chromium. npm ci is available for a clean lockfile-based dependency install. npm run build:client writes client/dist; npm run dev:server runs Wrangler on 8787 and serves that production build as well as the room API. During development use 5173 with both processes running. `npm run deploy` validates tests/build before deploying the single Worker, but the latest owner instruction defers deployment.
