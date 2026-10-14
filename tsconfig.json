@@ -14,7 +14,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "outDir": "dist"
+    "noEmit": true
   },
-  "include": ["shared", "client/src", "tests", "vite.config.ts"]
+  "include": ["shared", "client/src", "tests", "*.config.ts"]
 }
