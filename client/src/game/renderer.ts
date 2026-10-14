@@ -11,6 +11,7 @@ import { QualityController } from './quality';
 import type { GraphicsChoice, Tier } from './quality';
 import { WorldView } from './world-view';
 import { HomeScene } from './home-scene';
+import { createSky } from './sky';
 
 export class GameRenderer {
   readonly scene = new Scene();
@@ -18,6 +19,7 @@ export class GameRenderer {
   readonly rig: CameraRig;
   readonly world = new WorldView();
   readonly home = new HomeScene();
+  readonly sky = createSky();
   readonly particles = new Particles();
   readonly quality: QualityController;
   readonly sun = new DirectionalLight(COLORS.sun, VIEW.SUN_INTENSITY);
@@ -51,7 +53,7 @@ export class GameRenderer {
     this.rig = new CameraRig(this.width / this.height);
     this.scene.background = new Color(COLORS.sky);
     this.scene.fog = new Fog(COLORS.sky, VIEW.LOBBY_DISTANCE, VIEW.FAR / 2);
-    this.scene.add(this.world.root, this.particles.mesh, new HemisphereLight(COLORS.sky, COLORS.groundSide, VIEW.HEMISPHERE_INTENSITY), this.sun, this.sun.target);
+    this.scene.add(this.sky, this.world.root, this.particles.mesh, new HemisphereLight(COLORS.sky, COLORS.groundSide, VIEW.HEMISPHERE_INTENSITY), this.sun, this.sun.target);
     this.sun.castShadow = true;
     this.sun.shadow.bias = VIEW.SHADOW_BIAS;
     this.sun.shadow.normalBias = VIEW.SHADOW_NORMAL_BIAS;
@@ -133,6 +135,7 @@ export class GameRenderer {
   }
 
   private draw(): void {
+    this.sky.position.copy(this.rig.camera.position);
     const z = this.rig.camZ;
     this.sun.position.set(-3, 14, -z + 6);
     this.sun.target.position.set(4, 0, -z - 6);

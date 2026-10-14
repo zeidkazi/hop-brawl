@@ -1,7 +1,7 @@
 import { gsap } from 'gsap';
 import {
-  Box3, BoxGeometry, BufferGeometry, Color, Float32BufferAttribute, Group, InstancedMesh,
-  Mesh, MeshLambertMaterial, MeshStandardMaterial, Object3D, Vector3,
+  Box3, BoxGeometry, BufferGeometry, CircleGeometry, Color, Float32BufferAttribute, Group, InstancedMesh,
+  Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, Sphere, Vector3,
 } from 'three';
 import type { PerspectiveCamera } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -19,6 +19,7 @@ export class HomeScene {
   readonly animalRoot = new Group();
   readonly standard = new MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
   readonly lambert = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  private readonly flatWater = this.lambert.clone();
   readonly animals: Group[] = [];
   readonly eyes: Object3D[][] = [];
   readonly tails: Object3D[][] = [];
@@ -35,7 +36,12 @@ export class HomeScene {
   private readonly targets = new Float64Array(6);
   private readonly logoEyes: Object3D[] = [];
   private intro: gsap.core.Timeline | null = null;
+  private blobs: InstancedMesh | null = null;
+  private water: Mesh | null = null;
+  private readonly waterTime = { value: 0 };
+  private readonly waterMaterials: (MeshStandardMaterial | MeshLambertMaterial)[] = [];
   private selected = 0;
+  private logoWidth = 1;
   private reduced = false;
   swap = 0;
   onTargets: ((points: Float64Array) => void) | null = null;
@@ -67,10 +73,12 @@ export class HomeScene {
     this.animalRoot.scale.setScalar(HOME.ANIMAL_SCALE);
     this.root.add(this.animalRoot);
     const logo = assets.get('logo')!;
-    const center = new Box3().setFromObject(logo).getCenter(new Vector3());
+    const logoBounds = new Box3().setFromObject(logo);
+    const center = logoBounds.getCenter(new Vector3());
+    this.logoWidth = logoBounds.max.x - logoBounds.min.x;
     logo.position.sub(center);
     this.logo.add(logo); this.root.add(this.logo);
-    logo.traverse(obj => { if (obj.name === 'logo_chicken_eyes') this.logoEyes.push(obj); });
+    logo.traverse(obj => { if (obj.name === 'logo_chicken_eyes') this.logoEyes.push(obj); obj.userData.shadowKind = 'logo'; });
 
     const controls = assets.get('home_controls')!;
     const sign = new Group();
@@ -85,7 +93,7 @@ export class HomeScene {
     // Center the exported arrow geometry before making two shared-geometry copies.
     sourceArrow.geometry = sourceArrow.geometry.clone(); sourceArrow.geometry.center();
     for (const direction of [-1, 1]) {
-      const arrow = sourceArrow.clone(); arrow.scale.set(HOME.ARROW_SCALE * direction, HOME.ARROW_SCALE, HOME.ARROW_SCALE);
+      const arrow = sourceArrow.clone(); arrow.scale.set(-HOME.ARROW_SCALE * direction, HOME.ARROW_SCALE, HOME.ARROW_SCALE);
       this.arrows.push(arrow); this.root.add(arrow);
     }
     this.buildGround();
@@ -93,7 +101,10 @@ export class HomeScene {
     const trees = this.batch(assets.get('oak')!, HOME.TREE_COUNT);
     for (let i = 0; i < trees.count; i++) {
       const side = i % 2 ? 1 : -1;
-      this.place(trees, i, 4 + side * (4 + random() * 11), 0, -20 + random() * 40, 1 + random() * 0.35);
+      const hero = HOME.HERO_TREES[i];
+      let z = hero?.[1] ?? Math.floor(-20 + random() * 40);
+      while (HOME.ROAD_ROWS.includes(-Math.round(z) as never) || HOME.RIVER_ROWS.includes(-Math.round(z) as never)) z++;
+      this.place(trees, i, hero?.[0] ?? 4 + side * (5 + random() * 11), 0, z, 1 + random() * 0.35);
     }
     for (const [kind, name] of ['car', 'hatchback', 'taxi', 'truck'].entries()) {
       const cars = this.batch(assets.get(name)!, HOME.VEHICLE_COUNT / 4);
@@ -107,6 +118,10 @@ export class HomeScene {
     const logs = this.batch(assets.get('log')!, HOME.LOG_COUNT);
     for (let i = 0; i < logs.count; i++) this.moving.push({ batch: logs, index: i, x: HOME.LOOP_LEFT + Math.floor(i / 3) * 8,
       z: -HOME.RIVER_ROWS[i % 3]!, speed: HOME.LOG_SPEED * (i % 3 === 1 ? -1 : 1), scale: 3 });
+    const circle = new CircleGeometry(1, VIEW.BLOB_SEGMENTS); circle.rotateX(-Math.PI / 2);
+    this.blobs = new InstancedMesh(circle, new MeshBasicMaterial({ color: 0, transparent: true, opacity: VIEW.BLOB_OPACITY, depthWrite: false }), HOME.VEHICLE_COUNT + 1);
+    this.blobs.boundingSphere = new Sphere(new Vector3(4, 0, 0), HOME.GROUND_WIDTH);
+    this.root.add(this.blobs);
     this.root.traverse(obj => { if (obj instanceof Mesh) this.meshes.push(obj); });
     this.select(0); this.update(0);
   }
@@ -124,6 +139,7 @@ export class HomeScene {
     const geometry = mergeGeometries(pieces)!;
     for (const piece of pieces) piece.dispose();
     const mesh = new InstancedMesh(geometry, this.standard, count);
+    mesh.boundingSphere = new Sphere(new Vector3(4, 0, 0), HOME.GROUND_WIDTH);
     mesh.castShadow = mesh.receiveShadow = true;
     this.root.add(mesh);
     return mesh;
@@ -143,7 +159,7 @@ export class HomeScene {
       const road = HOME.ROAD_ROWS.includes(z as never), river = HOME.RIVER_ROWS.includes(z as never);
       for (let x = -HOME.GROUND_WIDTH / 2; x < HOME.GROUND_WIDTH / 2; x++) {
         const cube = new BoxGeometry(1, VIEW.GROUND_DEPTH, 1);
-        cube.translate(x + 4, -VIEW.GROUND_DEPTH / 2 - (river ? 0.08 : 0), -z);
+        cube.translate(x + 4, -VIEW.GROUND_DEPTH / 2 - (river ? VIEW.GROUND_DEPTH : 0), -z);
         color.set(road ? COLORS.road : river ? COLORS.water : z % 2 ? COLORS.grass : COLORS.grassAlt);
         color.multiplyScalar(1 - VIEW.TILE_NOISE + random() * VIEW.TILE_NOISE * 2);
         const data = new Float32Array(cube.attributes.position!.count * 3);
@@ -160,6 +176,22 @@ export class HomeScene {
     const dashes = new InstancedMesh(geometry, this.standard, HOME.GROUND_WIDTH * 2);
     for (let i = 0; i < dashes.count; i++) this.place(dashes, i, -HOME.GROUND_WIDTH / 2 + (i % HOME.GROUND_WIDTH) * 2, 0, i < HOME.GROUND_WIDTH ? 3.5 : -4.5);
     this.root.add(dashes);
+    const waterGeometry = new PlaneGeometry(HOME.GROUND_WIDTH, HOME.RIVER_ROWS.length, HOME.GROUND_WIDTH, HOME.RIVER_ROWS.length);
+    waterGeometry.rotateX(-Math.PI / 2); waterGeometry.translate(4, -VIEW.WATER_AMPLITUDE, -HOME.RIVER_ROWS[1]);
+    const waterColors = new Float32Array(waterGeometry.attributes.position!.count * 3);
+    color.set(COLORS.water);
+    for (let i = 0; i < waterColors.length; i += 3) color.toArray(waterColors, i);
+    waterGeometry.setAttribute('color', new Float32BufferAttribute(waterColors, 3));
+    for (const base of [this.standard, this.lambert]) {
+      const material = base.clone();
+      material.onBeforeCompile = shader => {
+        shader.uniforms.uTime = this.waterTime;
+        shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\ntransformed.y += sin(position.x * ${VIEW.WATER_FREQUENCY.toFixed(1)} + uTime * ${VIEW.WATER_SPEED.toFixed(1)}) * ${VIEW.WATER_AMPLITUDE};`);
+      };
+      material.customProgramCacheKey = () => 'home-water'; this.waterMaterials.push(material);
+    }
+    this.water = new Mesh(waterGeometry, this.waterMaterials[0]); this.water.receiveShadow = true; this.root.add(this.water);
   }
 
   select(index: number): void {
@@ -169,14 +201,21 @@ export class HomeScene {
 
   applyTier(tier: Tier): void {
     for (const mesh of this.meshes) {
+      if (mesh === this.blobs) continue;
       mesh.material = tier === 'high' ? this.standard : this.lambert;
-      mesh.castShadow = tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string));
+      mesh.castShadow = mesh.userData.shadowKind !== 'logo' && (tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string)));
     }
+    if (this.blobs) this.blobs.visible = tier === 'low';
+    if (this.water) this.water.material = tier === 'low' ? this.flatWater : this.waterMaterials[tier === 'high' ? 0 : 1]!;
   }
 
   warmAll(value: boolean): void {
     for (const animal of this.animals) animal.visible = value;
     for (const label of this.labels) label.visible = value;
+    if (value) {
+      for (const eyes of this.eyes) for (const eye of eyes) eye.visible = true;
+      for (const eye of this.logoEyes) eye.visible = true;
+    }
     if (!value) this.select(this.selected);
   }
 
@@ -190,9 +229,7 @@ export class HomeScene {
     this.logoBase.copy(camera.position).addScaledVector(this.forward, distance).addScaledVector(this.up, height * HOME.LOGO_NDC_Y / 2);
     this.logo.position.copy(this.logoBase); this.logo.quaternion.copy(camera.quaternion);
     this.logo.rotateX(HOME.LOGO_TILT_X); this.logo.rotateY(HOME.LOGO_TILT_Y);
-    this.logo.scale.setScalar(1);
-    const width = new Box3().setFromObject(this.logo.children[0]!).getSize(new Vector3()).x;
-    this.logo.scale.setScalar(Math.min(height * camera.aspect * HOME.LOGO_WIDTH_RATIO, height * HOME.LOGO_HEIGHT_RATIO) / width);
+    this.logo.scale.setScalar(Math.min(height * camera.aspect * HOME.LOGO_WIDTH_RATIO, height * HOME.LOGO_HEIGHT_RATIO) / this.logoWidth);
     for (let i = 0; i < this.arrows.length; i++) {
       const arrow = this.arrows[i]!;
       arrow.position.set(4, HOME.ARROW_HEIGHT, -1).addScaledVector(this.right, (i ? 1 : -1) * HOME.ARROW_OFFSET);
@@ -221,19 +258,31 @@ export class HomeScene {
   setReduced(value: boolean): void { this.reduced = value; if (value) this.intro?.progress(1); }
 
   update(time: number): void {
+    this.waterTime.value = time;
+    this.flatWater.color.setScalar(1 + Math.sin(time * VIEW.WATER_SPEED) * VIEW.WATER_AMPLITUDE);
+    let blob = 1;
     for (const item of this.moving) {
       const x = HOME.LOOP_LEFT + ((item.x - HOME.LOOP_LEFT + time * item.speed) % HOME.LOOP_WIDTH + HOME.LOOP_WIDTH) % HOME.LOOP_WIDTH;
       this.place(item.batch, item.index, x, 0, item.z, 1, item.speed < 0 ? Math.PI : 0, item.scale);
       item.batch.instanceMatrix.needsUpdate = true;
+      if (this.blobs && item.scale === 1) {
+        this.transform.position.set(x, VIEW.BLOB_Y, item.z); this.transform.rotation.set(0, 0, 0);
+        this.transform.scale.set(0.5, 1, 0.4); this.transform.updateMatrix(); this.blobs.setMatrixAt(blob++, this.transform.matrix);
+      }
     }
     const phase = time % HOME.HOP_PERIOD_S;
     const hop = !this.reduced && phase < HOME.HOP_DURATION_S ? Math.sin(phase / HOME.HOP_DURATION_S * Math.PI) * HOME.HOP_HEIGHT : 0;
     const bob = this.reduced ? 0 : Math.sin(time * Math.PI * 2 / VIEW.IDLE_PERIOD_S) * VIEW.IDLE_BOB;
     this.animalRoot.position.set(4 + this.swap, hop + bob + Math.abs(this.swap) / 2, -1);
+    if (this.blobs) {
+      this.transform.position.set(4 + this.swap, VIEW.BLOB_Y, -1); this.transform.rotation.set(0, 0, 0);
+      this.transform.scale.set(0.6, 1, 0.5); this.transform.updateMatrix(); this.blobs.setMatrixAt(0, this.transform.matrix);
+      this.blobs.instanceMatrix.needsUpdate = true;
+    }
     const blink = time % HOME.BLINK_PERIOD_S < HOME.BLINK_S;
-    for (const eye of this.eyes[this.selected] ?? []) eye.visible = !blink;
+    for (const eye of this.eyes[this.selected]!) eye.visible = !blink;
     for (const eye of this.logoEyes) eye.visible = !blink;
-    for (const tail of this.tails[this.selected] ?? []) tail.rotation.y = this.reduced ? 0 : Math.sin(time * HOME.TAIL_SPEED) * HOME.TAIL_WAG;
+    for (const tail of this.tails[this.selected]!) tail.rotation.y = this.reduced ? 0 : Math.sin(time * HOME.TAIL_SPEED) * HOME.TAIL_WAG;
     this.logo.position.copy(this.logoBase).addScaledVector(this.up, this.reduced ? 0 : Math.sin(time) * HOME.LOGO_BOB);
   }
 }
