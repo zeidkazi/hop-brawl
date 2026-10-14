@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Vector3 } from 'three';
 import { CameraRig } from '../../client/src/game/camera';
 import { Pool } from '../../client/src/game/pool';
+import { WorldView } from '../../client/src/game/world-view';
 
 describe('bounded pools', () => {
   it('reuses slots, refuses overflow and tolerates duplicate releases', () => {
@@ -15,6 +16,26 @@ describe('bounded pools', () => {
     expect(pool.count).toBe(1);
     expect(pool.items[pool.acquire()]).toBe(item);
     expect(pool.count).toBe(2);
+  });
+  it('recycles distant row windows without losing bounds or allocating new meshes', () => {
+    const view = new WorldView();
+    const geometry = view.grounds[0]!.geometry;
+    const slots = [...view.rows];
+    view.prepareWindow(1000);
+    expect(view.rows).toEqual(slots);
+    expect(view.grounds[0]!.geometry).toBe(geometry);
+    for (const mesh of view.grounds) expect(mesh.boundingSphere!.center.z).toBeLessThan(-1000);
+    const generated = view.generatedRows;
+    view.animalZ = 1001;
+    view.update(20);
+    expect(view.animals.boundingSphere!.center.z).toBe(-1001);
+    expect(view.generatedRows).toBe(generated);
+    view.applyTier('medium');
+    expect(view.podium.castShadow).toBe(false);
+    expect(view.vehicles.castShadow).toBe(true);
+    view.applyTier('low');
+    expect(view.vehicles.castShadow).toBe(false);
+    expect(view.blobs.visible).toBe(true);
   });
 });
 

@@ -191,7 +191,7 @@ export class WorldView {
     for (const mesh of this.grounds) mesh.material = material;
     for (const mesh of [this.obstacles, this.vehicles, this.logs, this.crates, this.animals, this.podium]) mesh.material = material;
     this.grounds[2]!.material = tier === 'low' ? this.lambert : this.waterMaterials[tier === 'high' ? 0 : 1]!;
-    this.obstacles.castShadow = this.logs.castShadow = this.crates.castShadow = tier === 'high';
+    this.obstacles.castShadow = this.logs.castShadow = this.crates.castShadow = this.podium.castShadow = tier === 'high';
     this.vehicles.castShadow = this.animals.castShadow = tier !== 'low';
     this.blobs.visible = tier === 'low';
   }
@@ -255,6 +255,8 @@ export class WorldView {
       this.put(this.obstacles, (hash32(this.seed, row.z) & 1) ? -3 : 11, 0, row.z, 10 / 12, 20 / 12, 10 / 12, COLORS.tree);
     }
     const size = ANIMAL_SIZES[this.animal]!;
+    this.animals.boundingSphere!.center.set(this.animalX, 0, -this.animalZ);
+    this.animals.boundingSphere!.radius = VIEW.POOL_ROWS;
     const bob = Math.sin(time * Math.PI * 2 / VIEW.IDLE_PERIOD_S) * VIEW.IDLE_BOB;
     this.put(this.animals, this.animalX + this.animalSwap, Math.abs(this.animalSwap) / 2 + bob, this.animalZ,
       size[0] / 12, size[1] / 12, size[2] / 12, COLORS.animals[this.animal]!);

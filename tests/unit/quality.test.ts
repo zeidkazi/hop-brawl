@@ -32,4 +32,13 @@ describe('frame pacing and quality', () => {
     for (let t = 0; t < 10_000; t += 30) quality.sample(t, 30, true);
     expect(quality.tier).toBe('high');
   });
+  it('keeps an automatically lowered tier during play, then permits menu recovery', () => {
+    const quality = new QualityController(true);
+    for (let t = 0; t < 4000; t += 30) quality.sample(t, 30, true);
+    expect(quality.tier).toBe('low');
+    for (let t = 4000; t < 12000; t += 10) quality.sample(t, 10, true);
+    expect(quality.tier).toBe('low');
+    for (let t = 12000; t < 16000; t += 10) quality.sample(t, 10, false);
+    expect(quality.tier).toBe('medium');
+  });
 });

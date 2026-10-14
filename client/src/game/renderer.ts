@@ -155,6 +155,8 @@ export class GameRenderer {
     this.world.requestWindow(this.rig.camZ);
     this.world.setView(this.rig.camera);
     this.world.update(time);
+    this.particles.mesh.boundingSphere!.center.set(4, 0, -this.rig.camZ);
+    this.particles.mesh.boundingSphere!.radius = VIEW.POOL_ROWS;
     this.particles.update(dt);
     this.draw();
     this.metrics.frames++;
