@@ -3,8 +3,9 @@ import { Matrix4, Vector3 } from 'three';
 import { CameraRig } from '../../client/src/game/camera';
 import { Pool } from '../../client/src/game/pool';
 import { WorldView } from '../../client/src/game/world-view';
-import { CONFIG, RAIL, VIEW } from '../../shared/config';
+import { RAIL, VIEW } from '../../shared/config';
 import { trainWarning, trainX } from '../../shared/hazards';
+import { gameplayScreenY } from '../../shared/camera';
 
 describe('bounded pools', () => {
   it('keeps obstacle and roadside tree canopies within their grass-row footprint', () => {
@@ -62,25 +63,23 @@ describe('camera stations', () => {
     expect(rig.camera.position.x).toBeCloseTo(x);
     rig.resetScroll(true); rig.update(0, 0); expect(rig.camera.position.x).toBeCloseTo(x);
   });
-  it.each([390 / 844, 1440 / 900, 844 / 390])('anchors the logical bottom to the rendered bottom at aspect %s', aspect => {
+  it.each([390 / 844, 1440 / 900, 844 / 390])('frames the leader in the lower third and matches server projection at aspect %s', aspect => {
     const rig = new CameraRig(aspect);
     rig.go('gameplay');
     rig.update(0.7, 0.7);
     rig.camera.updateMatrixWorld();
-    expect(rig.screenY(4, 0)).toBeCloseTo(1, 8);
-    for (const x of [-0.5, 8.5]) for (const z of [0, -CONFIG.VIEW_ROWS]) {
-      const projected = new Vector3(x, 0, z).project(rig.camera);
-      expect(Math.abs(projected.x)).toBeLessThan(1);
-    }
+    expect(rig.screenY(4, 1)).toBeCloseTo(.65, 8);
+    expect(rig.screenY(4, 8)).toBeGreaterThan(0);
+    for (const x of [0, 4, 8]) for (const z of [-5, 0, 1, 8, 15])
+      expect(rig.screenY(x, z)).toBeCloseTo(gameplayScreenY(x, z, 0, 1, aspect), 8);
     rig.targetCamZ = 10; rig.update(1 / 60, 1);
-    expect(rig.camZ).toBe(10); expect(rig.screenY(4, 10)).toBeCloseTo(1, 8);
+    expect(rig.camZ).toBe(10); expect(rig.screenY(4, 11)).toBeCloseTo(.65, 8);
   });
-  it.each([390 / 844, 1440 / 900])('meets section 30 width framing at %s', aspect => {
+  it.each([390 / 844, 1440 / 900])('meets section 31 width framing at %s', aspect => {
     const rig = new CameraRig(aspect); rig.go('gameplay'); rig.update(.7, .7);
-    const margin = aspect < 1 ? .5 : 0;
-    const left = new Vector3(-.5 - margin, 0, -CONFIG.VIEW_ROWS / 2).project(rig.camera);
-    const right = new Vector3(8.5 + margin, 0, -CONFIG.VIEW_ROWS / 2).project(rig.camera);
-    expect((right.x - left.x) / 2).toBeGreaterThanOrEqual(aspect < 1 ? .92 : .45);
+    const left = new Vector3(-.5, 0, -1).project(rig.camera);
+    const right = new Vector3(8.5, 0, -1).project(rig.camera);
+    expect((right.x - left.x) / 2).toBeGreaterThanOrEqual(aspect < 1 ? .88 : .45);
   });
   it('redirects flights from the current position without resetting the camera', () => {
     const rig = new CameraRig(1.6);

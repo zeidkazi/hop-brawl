@@ -138,6 +138,7 @@ export function scrollSpeed(t: number): number {
 
 /** Presentation/quality numbers from §8.3, §12.4 and §19b; implementation sizing. */
 export const VIEW = Object.freeze({
+  GAME_PITCH_DEG: 52, GAME_YAW_DEG: 18, GAME_DISTANCE: 17.5, GAME_PLAYER_Y: .65, GAME_WIDTH_RATIO: .92,
   FOV: 35, PITCH_DEG: 55, YAW_DEG: 15, FIT_MARGIN: 1.08,
   PLAY_WIDTH_RATIO: .94, PLAY_HEIGHT_RATIO: .94, PLAY_MARGIN: .5,
   OUTSIDE_BRIGHTNESS: .7, OUTSIDE_DESATURATION: .25, OUTSIDE_DROP: .1,

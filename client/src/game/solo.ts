@@ -168,6 +168,7 @@ export class Solo {
   };
   private readonly died = (cause: DeathCause): void => {
     this.game.rig.targetCamZ = this.movement.camZ;
+    this.game.rig.leaderZ = Math.max(SOLO.SPAWN_Z, this.movement.distance);
     this.game.rig.update(0, this.poseTime);
     this.phase = 'dying'; this.deathAt = this.poseTime; this.input.enabled = false; this.game.playing = false;
     this.game.go('soloEnd'); this.cause.textContent = cause; this.cause.hidden = false; this.countdown.hidden = true;
@@ -220,6 +221,7 @@ export class Solo {
     }
     this.game.worldTime = this.movement.time;
     this.game.rig.targetCamZ = this.movement.camZ;
+    this.game.rig.leaderZ = Math.max(SOLO.SPAWN_Z, this.movement.distance);
     this.game.world.animalX = this.movement.x; this.game.world.animalZ = this.movement.z;
     this.renderPose(dt);
     if (this.lastScore !== this.movement.distance) { this.lastScore = this.movement.distance; this.score.textContent = String(this.lastScore); }

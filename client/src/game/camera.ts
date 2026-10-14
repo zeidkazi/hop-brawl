@@ -1,21 +1,15 @@
 import { CatmullRomCurve3, MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import { CONFIG, HOME, RAIL, VIEW } from '../../../shared/config';
+import { gameplayAnchor, gameplayDistance } from '../../../shared/camera';
+export { gameplayDistance } from '../../../shared/camera';
 
 export type Station = 'home' | 'lobby' | 'search' | 'vs' | 'gameplay' | 'roundEnd' | 'matchEnd' | 'soloEnd';
 export const STATIONS: readonly Station[] = ['home', 'lobby', 'search', 'vs', 'gameplay', 'roundEnd', 'matchEnd', 'soloEnd'];
 const pitch = MathUtils.degToRad(VIEW.PITCH_DEG);
 const yaw = MathUtils.degToRad(VIEW.YAW_DEG);
 const back = new Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
-const gameplayBack = new Vector3(0, Math.sin(pitch), Math.cos(pitch));
-
-/** Exact perspective fit of the four gameplay corners at the fixed viewing angle. */
-export function gameplayDistance(aspect: number): number {
-  const tangent = Math.tan(MathUtils.degToRad(VIEW.FOV / 2));
-  const half = CONFIG.VIEW_ROWS / 2;
-  const b = Math.sin(pitch) * CONFIG.VIEW_ROWS / (2 * tangent * VIEW.PLAY_HEIGHT_RATIO);
-  const heightFit = (b + Math.sqrt(b * b + 4 * (half * Math.cos(pitch)) ** 2)) / 2;
-  return aspect < 1 ? (CONFIG.COLUMNS + 2 * VIEW.PLAY_MARGIN) / (2 * tangent * aspect * VIEW.PLAY_WIDTH_RATIO) : heightFit;
-}
+const gamePitch = MathUtils.degToRad(VIEW.GAME_PITCH_DEG), gameYaw = MathUtils.degToRad(VIEW.GAME_YAW_DEG);
+const gameplayBack = new Vector3(Math.sin(gameYaw) * Math.cos(gamePitch), Math.sin(gamePitch), Math.cos(gameYaw) * Math.cos(gamePitch));
 
 export class CameraRig {
   readonly camera = new PerspectiveCamera(VIEW.FOV, 1, VIEW.NEAR, VIEW.FAR);
@@ -23,6 +17,7 @@ export class CameraRig {
   reducedMotion = false;
   camZ = 0;
   targetCamZ = 0;
+  leaderZ = 1;
   shake = 0;
   private shakeOffset = 0;
   private velocity = 0;
@@ -76,6 +71,7 @@ export class CameraRig {
   resetScroll(snap = false): void {
     this.camera.position.x -= this.shakeOffset; this.shakeOffset = 0; this.shake = 0;
     this.camZ = this.targetCamZ = this.velocity = 0;
+    this.leaderZ = 1;
     if (snap) {
       this.station = 'gameplay'; this.destination(); this.camera.position.copy(this.goal);
       this.focus.copy(this.goalFocus); this.camera.lookAt(this.focus); this.flight = 1;
@@ -91,7 +87,7 @@ export class CameraRig {
     const distance = this.station === 'gameplay' ? baseDistance : baseDistance * Math.max(1, HOME.PORTRAIT_FIT / this.aspect);
     this.goalFocus.set(this.station === 'matchEnd' ? VIEW.PODIUM_X : 4,
       this.station === 'home' ? HOME.FOCUS_Y : 0,
-      this.station === 'gameplay' ? -this.camZ - CONFIG.VIEW_ROWS / 2 : -1);
+      this.station === 'gameplay' ? -gameplayAnchor(this.camZ, this.leaderZ) : -1);
     this.goal.copy(this.station === 'gameplay' ? gameplayBack : back).multiplyScalar(distance).add(this.goalFocus);
   }
 
@@ -124,13 +120,13 @@ export class CameraRig {
       this.camera.position.x += drift - this.drift;
       this.drift = drift;
     }
+    if (this.station === 'gameplay' && this.flight === 1) {
+      this.destination(); this.camera.position.copy(this.goal); this.focus.copy(this.goalFocus);
+    }
     this.camera.lookAt(this.focus);
     this.camera.updateMatrixWorld();
     if (this.station === 'gameplay' && this.flight === 1) {
-      // Shift the frustum, not the world: logical bottom is the actual screen bottom.
-      this.camera.projectionMatrix.elements[9] = 0;
-      this.projected.set(4, 0, -this.camZ).project(this.camera);
-      this.camera.projectionMatrix.elements[9] = this.projected.y + 1;
+      this.camera.projectionMatrix.elements[9] = VIEW.GAME_PLAYER_Y * 2 - 1;
       this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
     }
     if (this.station === 'gameplay' && !this.reducedMotion && this.shake) {
