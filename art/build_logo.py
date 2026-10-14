@@ -55,6 +55,10 @@ def simplify(obj):
     bm.from_mesh(obj.data)
     bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=0.00001)
     bmesh.ops.dissolve_limit(bm, angle_limit=0.001, verts=list(bm.verts), edges=list(bm.edges))
+    # Expanded Text offsets can leave tiny uncapped contours at narrow inlets.
+    # Seal their boundary loops before coloring/exporting the solid backing.
+    boundary = [edge for edge in bm.edges if edge.is_boundary]
+    if boundary: bmesh.ops.holes_fill(bm, edges=boundary, sides=0)
     bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
     bm.to_mesh(obj.data)
     bm.free()
