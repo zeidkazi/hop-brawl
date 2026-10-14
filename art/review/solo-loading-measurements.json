@@ -1,0 +1,39 @@
+{
+  "production": true,
+  "coldCache": true,
+  "runs": [
+    {
+      "milliseconds": 1666.5999999940395,
+      "firstPaint": 64,
+      "bytes": "686836",
+      "total": "686836"
+    },
+    {
+      "milliseconds": 1596.5999999940395,
+      "firstPaint": 52,
+      "bytes": "686836",
+      "total": "686836"
+    },
+    {
+      "milliseconds": 1591.5,
+      "firstPaint": 44,
+      "bytes": "686836",
+      "total": "686836"
+    },
+    {
+      "milliseconds": 1543.3999999985099,
+      "firstPaint": 44,
+      "bytes": "686836",
+      "total": "686836"
+    },
+    {
+      "milliseconds": 1660.1999999955297,
+      "firstPaint": 48,
+      "bytes": "686836",
+      "total": "686836"
+    }
+  ],
+  "htmlBytes": 12225,
+  "maxMs": 1666.5999999940395,
+  "medianMs": 1596.5999999940395
+}
