@@ -37,7 +37,7 @@ export class Motion {
       gsap.killTweensOf(panel);
       gsap.killTweensOf(this.items.get(panel)!);
       panel.inert = panel !== next;
-      if (panel !== next && panel !== previous) panel.hidden = true;
+      if (panel !== next && panel !== previous) { panel.hidden = true; gsap.set(panel, { opacity: 0 }); }
     }
     const fresh = next.hidden;
     next.hidden = false;
@@ -46,7 +46,10 @@ export class Motion {
       gsap.set(next, { opacity: 0, y: this.reduced ? 0 : VIEW.PANEL_ENTER_PX });
       gsap.set(enterItems, { opacity: 0, y: this.reduced ? 0 : VIEW.PANEL_ENTER_PX });
     }
-    const timeline = gsap.timeline();
+    gsap.ticker.tick();
+    const timeline = gsap.timeline({ onComplete: () => {
+      for (const panel of this.panels) if (panel !== this.current) { panel.hidden = true; gsap.set(panel, { opacity: 0 }); }
+    } });
     this.transition = timeline;
     if (previous) timeline.to(previous, { opacity: 0, y: this.reduced ? 0 : -VIEW.PANEL_EXIT_PX,
       duration: VIEW.PANEL_EXIT_MS / 1000, ease: 'power2.in', overwrite: 'auto', onComplete: () => { previous.hidden = true; } }, 0);
@@ -55,6 +58,14 @@ export class Motion {
     timeline.to(enterItems, { opacity: 1, y: 0, duration: VIEW.PANEL_ENTER_MS / 1000,
       stagger: this.reduced ? 0 : VIEW.STAGGER_MS / 1000,
       ease: this.reduced ? 'none' : `back.out(${VIEW.PANEL_OVERSHOOT})`, overwrite: 'auto' }, previous ? VIEW.PANEL_EXIT_MS * VIEW.PANEL_OVERLAP / 1000 : 0);
+  }
+
+  settle(): void {
+    this.transition?.progress(1); this.flip?.progress(1);
+    for (const panel of this.panels) {
+      gsap.killTweensOf(panel); panel.hidden = panel !== this.current;
+      gsap.set(panel, { opacity: panel === this.current ? 1 : 0, y: 0 });
+    }
   }
 
   private press(event: Event, down: boolean): void {

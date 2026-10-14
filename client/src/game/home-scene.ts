@@ -63,6 +63,7 @@ export class HomeScene {
   private readonly logoEyes: Object3D[] = [];
   private readonly logoLetters: { mesh: Mesh; face: BufferGeometry; outlined: BufferGeometry }[] = [];
   private intro: gsap.core.Timeline | null = null;
+  private readonly introPoses = new Map<Object3D, { position: Vector3; scale: Vector3 }>();
   private blobs: InstancedMesh | null = null;
   private water: Mesh | null = null;
   private readonly waterTime = { value: 0 };
@@ -347,17 +348,24 @@ export class HomeScene {
   }
 
   playIntro(): void {
+    this.finishIntro();
     if (this.reduced) return;
-    this.intro?.kill(); this.intro = gsap.timeline();
+    gsap.ticker.tick(); this.intro = gsap.timeline();
     let i = 0;
     for (const line of ['HOP', 'BRAWL']) for (const letter of line) {
       const node = this.logo.getObjectByName(`logo_${line}_${letter}`)!;
+      if (!this.introPoses.has(node)) this.introPoses.set(node, { position: node.position.clone(), scale: node.scale.clone() });
       const y = node.position.y;
       this.intro.fromTo(node.position, { y: y + HOME.LOGO_DROP }, { y, duration: HOME.LOGO_DROP_S, ease: 'bounce.out' }, i * HOME.LOGO_STAGGER_S);
       this.intro.fromTo(node.scale, { x: 0.85, y: 1.2 }, { x: 1, y: 1, duration: HOME.LOGO_DROP_S, ease: 'back.out(2)' }, i++ * HOME.LOGO_STAGGER_S);
     }
     const chicken = this.logo.getObjectByName('logo_fox') ?? this.logo.getObjectByName('logo_chicken')!;
+    if (!this.introPoses.has(chicken)) this.introPoses.set(chicken, { position: chicken.position.clone(), scale: chicken.scale.clone() });
     this.intro.from(chicken.position, { y: chicken.position.y + HOME.LOGO_DROP, duration: HOME.CHICKEN_LAND_S, ease: 'bounce.out' });
+  }
+  finishIntro(): void {
+    this.intro?.progress(1); this.intro?.kill(); this.intro = null;
+    for (const [node, pose] of this.introPoses) { node.position.copy(pose.position); node.scale.copy(pose.scale); }
   }
 
   setReduced(value: boolean): void { this.reduced = value; this.arena?.setReduced(value); for (const boxer of this.boxers) boxer.reduced = value; if (value) this.intro?.progress(1); }

@@ -45,6 +45,7 @@ export class GameRenderer {
   playing = false;
   onFrame: ((now: number) => void) | null = null;
   beforeFrame: ((now: number, dt: number) => void) | null = null;
+  onDiscontinuity: (() => void) | null = null;
   worldTime: number | null = null;
 
   constructor(readonly canvas: HTMLCanvasElement) {
@@ -96,6 +97,7 @@ export class GameRenderer {
     this.applyQuality();
   };
   private readonly visibility = (): void => {
+    if (!document.hidden) { this.home.finishIntro(); this.onDiscontinuity?.(); }
     this.previous = 0; this.nextFrame = 0;
     this.quality.reset();
   };
@@ -187,6 +189,7 @@ export class GameRenderer {
     const step = 1000 / VIEW.FPS_CAP;
     this.nextFrame = now + step - (this.nextFrame ? Math.max(0, now - this.nextFrame) % step : 0);
     const delta = this.previous ? now - this.previous : step;
+    if (delta > VIEW.PAUSE_GAP_MS) { this.home.finishIntro(); this.onDiscontinuity?.(); }
     this.previous = now;
     this.metrics.delta = delta;
     const dt = Math.min(VIEW.MAX_DELTA_MS, delta) / 1000;

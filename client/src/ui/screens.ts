@@ -105,6 +105,9 @@ export class Screens {
     this.solo = new Solo(root, game, this.preferences, this.motion, screen => {
       history.replaceState({ screen }, '', '/'); this.show(screen);
     });
+    game.onDiscontinuity = () => {
+      this.solo.pause(); this.carousel?.progress(1); this.motion.settle();
+    };
     this.names = Array.from(root.querySelectorAll<HTMLInputElement>('.name'));
     this.animalLabel = root.querySelector('#animal-label')!;
     this.names.forEach(input => {
