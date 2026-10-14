@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { COLORS, CONFIG, HOME, SOLO } from '../../../shared/config';
+import { COLORS, CONFIG, HOME, SOLO, VIEW } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
 import { trainWarning } from '../../../shared/hazards';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
@@ -55,7 +55,13 @@ export class Solo {
     this.movement.belowScreen = (x, z, camZ) => game.rig.screenY(x, z, camZ) >= 1;
     this.input = new HopInput(game.canvas, this.hop);
     this.movement.onHop = this.hopped; this.movement.onLand = this.landed; this.movement.onDeath = this.died;
-    this.movement.onBonk = direction => { this.bonkAt = this.poseTime; this.bonkDirection = direction; game.home.sound.play('hit'); };
+    this.movement.onBonk = direction => {
+      this.bonkAt = this.poseTime; this.bonkDirection = direction; game.home.sound.play('hit');
+      if ((direction === 'left' && this.movement.x < 1) || (direction === 'right' && this.movement.x > 7)) {
+        game.world.boundarySide = direction === 'left' ? -1 : 1;
+        game.world.boundaryUntil = this.movement.time + VIEW.BOUNDARY_PULSE_MS / 1000;
+      }
+    };
     game.beforeFrame = this.frame;
     root.addEventListener('click', event => {
       const button = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-solo]') : null;
@@ -209,9 +215,11 @@ export class Solo {
     this.game.world.animalX = this.movement.x; this.game.world.animalZ = this.movement.z;
     this.renderPose(dt);
     if (this.lastScore !== this.movement.distance) { this.lastScore = this.movement.distance; this.score.textContent = String(this.lastScore); }
-    this.danger.style.opacity = this.phase === 'playing' && this.game.rig.screenY(this.movement.x, this.movement.z) > .85
+    this.game.world.boundaryWarning = this.movement.onLog ? (this.movement.x < VIEW.LOG_EDGE_WARNING - .5 ? -1 : this.movement.x > 8.5 - VIEW.LOG_EDGE_WARNING ? 1 : 0) : 0;
+    this.marker.textContent = this.game.world.boundaryWarning ? '!' : 'YOU ▼';
+    this.danger.style.opacity = this.phase === 'playing' && this.game.rig.screenY(this.movement.x, this.movement.z) > VIEW.DANGER_SCREEN_Y
       ? String(SOLO.DANGER_OPACITY + (this.preferences.reducedMotion ? 0 : Math.sin(this.poseTime * SOLO.DANGER_RATE) * SOLO.DANGER_PULSE)) : '0';
-    this.marker.hidden = this.roundTime * 1000 > SOLO.MARKER_MS || this.phase === 'dying' || this.phase === 'over';
+    this.marker.hidden = (this.roundTime * 1000 > SOLO.MARKER_MS && !this.game.world.boundaryWarning) || this.phase === 'dying' || this.phase === 'over';
     this.name.hidden = this.phase === 'over' || (this.phase === 'dying' && this.movement.dead === 'LEFT BEHIND!');
     this.flag.hidden = this.runBest === 0 || this.runBest < this.movement.camZ || this.runBest >= this.movement.camZ + CONFIG.VIEW_ROWS;
     this.project(this.marker, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z, -SOLO.MARKER_GAP_PX);

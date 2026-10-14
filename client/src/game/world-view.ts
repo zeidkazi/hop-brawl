@@ -25,10 +25,11 @@ function whiteVertices(geometry: BoxGeometry | CircleGeometry): void {
   geometry.setAttribute('color', new Float32BufferAttribute(data, 3));
 }
 
-function groundGeometry(): ReturnType<typeof mergeGeometries> {
+function groundGeometry(outside = false): ReturnType<typeof mergeGeometries> {
   const tiles: BoxGeometry[] = [];
   const random = mulberry32(CONFIG.HOME_DIORAMA_SEED);
   for (let x = VIEW.DECOR_MIN_X; x <= VIEW.DECOR_MAX_X; x++) {
+    if ((x < 0 || x >= CONFIG.COLUMNS) !== outside) continue;
     const tile = new BoxGeometry(1, VIEW.GROUND_DEPTH, 1);
     tile.translate(x, -VIEW.GROUND_DEPTH / 2, 0);
     const data = new Float32Array(tile.getAttribute('position').count * 3);
@@ -48,6 +49,9 @@ export class WorldView {
   readonly standard = new MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 });
   readonly lambert = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
   readonly grounds: InstancedMesh[] = [];
+  readonly outsideGrounds: InstancedMesh[] = [];
+  readonly boundaryPulse: InstancedMesh;
+  boundarySide = 0; boundaryUntil = 0; boundaryWarning = 0;
   readonly obstacles: InstancedMesh;
   readonly vehicles: InstancedMesh;
   readonly trucks: InstancedMesh;
@@ -100,6 +104,7 @@ export class WorldView {
     whiteVertices(this.cube);
     this.palette.set('#FFFFFF', new Color('#FFFFFF'));
     const geometry = groundGeometry()!;
+    const outsideGeometry = groundGeometry(true)!;
     for (let i = 0; i < KINDS.length; i++) {
       const ground = new InstancedMesh(geometry, this.standard, VIEW.POOL_ROWS);
       ground.instanceMatrix.setUsage(DynamicDrawUsage);
@@ -108,7 +113,13 @@ export class WorldView {
       ground.count = 0;
       this.root.add(ground);
       this.grounds.push(ground);
+      const outside = new InstancedMesh(outsideGeometry, this.standard, VIEW.POOL_ROWS);
+      outside.instanceMatrix.setUsage(DynamicDrawUsage); outside.receiveShadow = true;
+      outside.boundingSphere = ground.boundingSphere.clone(); outside.count = 0;
+      this.root.add(outside); this.outsideGrounds.push(outside);
     }
+    this.boundaryPulse = new InstancedMesh(this.cube, new MeshBasicMaterial({ color: COLORS.red, transparent: true, opacity: VIEW.BOUNDARY_PULSE_ALPHA, depthWrite: false }), 2);
+    this.boundaryPulse.count = 0; this.boundaryPulse.frustumCulled = false; this.root.add(this.boundaryPulse);
     this.obstacles = this.batch(capacity);
     this.vehicles = this.batch(capacity);
     this.trucks = this.batch(capacity); this.trees = this.batch(capacity);
@@ -200,15 +211,20 @@ export class WorldView {
       mesh.setMatrixAt(index, this.matrix);
       this.color.set(row.kind === 'grass' && z % 2 ? COLORS.grassAlt : ROW_COLORS[kind]!);
       mesh.setColorAt(index, this.color);
+      const outside = this.outsideGrounds[kind]!;
+      this.matrix.makeTranslation(0, -VIEW.OUTSIDE_DROP, -z); outside.setMatrixAt(index, this.matrix);
+      this.darkenOutside(); outside.setColorAt(index, this.color);
     }
     for (let i = 0; i < this.grounds.length; i++) {
       const mesh = this.grounds[i]!;
       mesh.count = this.groundCounts[i]!;
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      const outside = this.outsideGrounds[i]!; outside.count = mesh.count;
+      outside.instanceMatrix.needsUpdate = true; outside.instanceColor!.needsUpdate = true;
     }
     // Batch bounds follow the recycled window even thousands of rows from home.
-    for (const mesh of [...this.grounds, this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.logs, this.crates, this.blobs, this.markings]) {
+    for (const mesh of [...this.grounds, ...this.outsideGrounds, this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.logs, this.crates, this.blobs, this.markings]) {
       mesh.boundingSphere!.center.set(4, 0, -camZ - CONFIG.VIEW_ROWS / 2);
       mesh.boundingSphere!.radius = VIEW.POOL_ROWS;
     }
@@ -234,7 +250,7 @@ export class WorldView {
     this.tier = tier;
     this.outlines.applyTier(tier);
     const material = tier === 'high' ? this.standard : this.lambert;
-    for (const mesh of this.grounds) mesh.material = material;
+    for (const mesh of [...this.grounds, ...this.outsideGrounds]) mesh.material = material;
     for (const mesh of [this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.logs, this.crates, this.animals, this.podium, this.backdrop, this.markings]) mesh.material = material;
     this.grounds[2]!.material = tier === 'low' ? this.lambert : this.waterMaterials[tier === 'high' ? 0 : 1]!;
     this.obstacles.castShadow = this.logs.castShadow = this.crates.castShadow = this.podium.castShadow = tier === 'high';
@@ -243,6 +259,12 @@ export class WorldView {
     this.blobs.visible = tier === 'low';
   }
 
+  private darkenOutside(): void {
+    const gray = this.color.r * .2126 + this.color.g * .7152 + this.color.b * .0722;
+    this.color.setRGB((this.color.r + (gray - this.color.r) * VIEW.OUTSIDE_DESATURATION) * VIEW.OUTSIDE_BRIGHTNESS,
+      (this.color.g + (gray - this.color.g) * VIEW.OUTSIDE_DESATURATION) * VIEW.OUTSIDE_BRIGHTNESS,
+      (this.color.b + (gray - this.color.b) * VIEW.OUTSIDE_DESATURATION) * VIEW.OUTSIDE_BRIGHTNESS);
+  }
   private put(mesh: InstancedMesh, x: number, y: number, z: number, sx: number, sy: number, sz: number, color: string, facing = 0): void {
     const index = mesh.count++;
     this.transform.position.set(x, y + sy / 2, -z);
@@ -272,7 +294,7 @@ export class WorldView {
     this.waterUniform.value = time;
     this.obstacles.count = this.vehicles.count = this.logs.count = this.crates.count = this.animals.count = this.blobs.count = this.podium.count = 0;
     this.trucks.count = this.trees.count = this.trains.count = this.carriages.count = 0;
-    this.markings.count = 0;
+    this.markings.count = 0; this.boundaryPulse.count = 0;
     this.backdrop.count = 0;
     this.put(this.backdrop, 4, -VIEW.GROUND_DEPTH * 2, this.requestedBottom, VIEW.FAR, VIEW.GROUND_DEPTH, VIEW.FAR, COLORS.grass);
     this.backdrop.instanceMatrix.needsUpdate = true; this.backdrop.instanceColor!.needsUpdate = true;
@@ -286,7 +308,16 @@ export class WorldView {
       else this.matrix.makeScale(0, 0, 0);
       ground.setMatrixAt(this.rows[i]!.groundIndex, this.matrix);
       ground.instanceMatrix.needsUpdate = true;
+      const outside = this.outsideGrounds[KINDS.indexOf(row.kind)]!;
+      if (inWindow) this.matrix.makeTranslation(0, -VIEW.OUTSIDE_DROP, -row.z);
+      outside.setMatrixAt(this.rows[i]!.groundIndex, this.matrix); outside.instanceMatrix.needsUpdate = true;
       if (!inWindow) continue;
+      for (let side = -1; side <= 1; side += 2) {
+        const warning = this.boundaryWarning === side && Math.sin(time * Math.PI * 2 * VIEW.LOG_EDGE_PULSE_HZ) > 0;
+        this.put(this.markings, side < 0 ? -.5 : 8.5, 0, row.z, VIEW.BOUNDARY_WIDTH,
+          row.kind === 'grass' ? VIEW.BOUNDARY_KERB_HEIGHT : STREET.DASH_HEIGHT, 1,
+          warning ? COLORS.red : row.kind === 'rail' ? COLORS.rock : COLORS.cream);
+      }
       this.rowBounds.min.set(VIEW.DECOR_MIN_X, -VIEW.GROUND_DEPTH, -row.z - 0.5);
       this.rowBounds.max.set(VIEW.DECOR_MAX_X + 1, 2, -row.z + 0.5);
       if (this.hasView && !this.frustum.intersectsBox(this.rowBounds)) continue;
@@ -345,6 +376,12 @@ export class WorldView {
           SOLO.RIPPLE_WIDTH * (1 - this.deathProgress), COLORS.cream);
       }
     }
+    if (time < this.boundaryUntil && this.boundarySide) {
+      this.transform.position.set(this.boundarySide < 0 ? -.5 : 8.5, VIEW.BOUNDARY_WALL_HEIGHT / 2, -this.animalZ);
+      this.transform.rotation.set(0, 0, 0); this.transform.scale.set(VIEW.BOUNDARY_WIDTH, VIEW.BOUNDARY_WALL_HEIGHT, 1);
+      this.transform.updateMatrix(); this.boundaryPulse.setMatrixAt(0, this.transform.matrix); this.boundaryPulse.count = 1;
+    }
+    this.boundaryPulse.instanceMatrix.needsUpdate = true;
     this.markings.instanceMatrix.needsUpdate = true; this.markings.instanceColor!.needsUpdate = true;
     this.animals.boundingSphere!.center.set(this.animalX, 0, -this.animalZ);
     this.animals.boundingSphere!.radius = VIEW.POOL_ROWS;

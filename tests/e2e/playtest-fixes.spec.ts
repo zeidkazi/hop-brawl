@@ -1,5 +1,37 @@
 import { test, expect } from '@playwright/test';
 
+test('section 30 measured playfield width and readable animal', async ({ page }, info) => {
+  await page.addInitScript(() => localStorage.setItem('hop-brawl-settings', JSON.stringify({ name: 'Framing', animal: 2, sfx: 0 })));
+  await page.goto('/?debug=1'); await page.waitForFunction(() => !!window.__HOP_DEBUG__);
+  await page.getByRole('button', { name: 'SOLO', exact: true }).click();
+  await page.waitForFunction(() => window.__HOP_DEBUG__!.solo.phase === 'playing');
+  const metrics = await page.evaluate(() => {
+    const solo = window.__HOP_DEBUG__!.solo, game = solo.game, camera = game.rig.camera;
+    const point = camera.position.clone();
+    const width = (left: number, right: number) => {
+      const a = point.set(left, 0, -game.rig.camZ - 5.5).project(camera).x;
+      return (point.set(right, 0, -game.rig.camZ - 5.5).project(camera).x - a) * 50;
+    };
+    let top = Infinity, bottom = -Infinity;
+    game.home.animalRoot.updateMatrixWorld(true);
+    game.home.animalRoot.traverse(node => {
+      let visible = true; for (let parent: typeof node | null = node; parent; parent = parent.parent) if (!parent.visible) visible = false;
+      const geometry = (node as any).geometry;
+      if (!visible || !geometry) return;
+      const positions = geometry.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        point.fromBufferAttribute(positions, i).applyMatrix4(node.matrixWorld).project(camera);
+        const y = (1 - point.y) * innerHeight / 2; top = Math.min(top, y); bottom = Math.max(bottom, y);
+      }
+    });
+    return { playableWidthPercent: width(-.5, 8.5), withMarginsPercent: width(-1, 9), animalHeightPx: bottom - top };
+  });
+  await info.attach('framing-measurements', { body: JSON.stringify(metrics), contentType: 'application/json' });
+  console.log(info.project.name, JSON.stringify(metrics));
+  if (info.project.name === 'mobile') expect(metrics.withMarginsPercent).toBeGreaterThanOrEqual(92);
+  else { expect(metrics.playableWidthPercent).toBeGreaterThanOrEqual(45); expect(metrics.animalHeightPx).toBeGreaterThanOrEqual(48); }
+});
+
 test('LEFT BEHIND renders at the bottom edge; long frames pause without moving the player', async ({ page }, info) => {
   test.setTimeout(60000);
   await page.addInitScript(() => localStorage.setItem('hop-brawl-settings', JSON.stringify({ name: 'Fairness', sfx: 0 })));
