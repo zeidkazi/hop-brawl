@@ -128,9 +128,9 @@ export const VIEW = Object.freeze({
   PARTICLE_POOL: 128, TOAST_POOL: 2, SNAPSHOT_POOL: 20,
   DUST_LIFE_S: 0.45, DUST_SPEED: 1.8, DUST_GRAVITY: 4,
   IDLE_PERIOD_S: 1.2, IDLE_BOB: 0.035, MENU_DRIFT: 0.2,
-  HEMISPHERE_INTENSITY: 2.2, SUN_INTENSITY: 2.8,
+  HEMISPHERE_INTENSITY: 1.1, SUN_INTENSITY: 3.2,
   SHADOW_MARGIN: 2, SHADOW_BIAS: -0.0005, SHADOW_NORMAL_BIAS: 0.03,
-  BLOB_OPACITY: 0.2, BLOB_Y: 0.013, BLOB_SEGMENTS: 16,
+  BLOB_OPACITY: 0.32, BLOB_Y: 0.013, BLOB_SEGMENTS: 16,
   WATER_AMPLITUDE: 0.035, WATER_FREQUENCY: 3, WATER_SPEED: 2,
   HOME_DISTANCE: 13, LOBBY_DISTANCE: 17, SEARCH_DISTANCE: 12,
   HOME_PORTRAIT_Y: -5, HOME_DESKTOP_X: 3, PORTRAIT_DISTANCE_FACTOR: 0.8,
@@ -156,14 +156,22 @@ export const QUALITY = Object.freeze({
 
 export const COLORS = Object.freeze({
   yellow: '#FFD23F', red: '#EE4266', green: '#3BCEAC', blue: '#4EA8DE', ink: '#1B1B2F', cream: '#FFF6E5',
-  grass: '#8BD46E', grassAlt: '#7CC861', road: '#4A4E5A', water: '#5CC8FF',
-  sky: '#E0F6FF', skyTop: '#87CEFA', sun: '#FFF4E0', tree: '#397D46', rock: '#909CA6',
+  grass: '#6CCB5F', grassAlt: '#5DBB52', road: '#3A3540', water: '#2EC4D6',
+  sky: '#FFE9C7', skyTop: '#7FD3FF', sun: '#FFF0CB', tree: '#397D46', rock: '#909CA6',
   log: '#99633E', rail: '#A8ACB5', crate: '#CC944C', groundSide: '#597D44',
   players: ['#FF6B6B', '#4D96FF', '#6BCB77', '#C77DFF'],
   animals: ['#FFF6E5', '#6BCB77', '#E98E3D', '#354050', '#F5A3B9', '#929CAB'],
 } as const);
 
 export const ANIMALS = ['chicken', 'frog', 'fox', 'penguin', 'pig', 'cat'] as const;
+export const STREET = Object.freeze({
+  OUTLINE_SCALE: 1.03, RIM_COLOR: '#8CCBFF', RIM_INTENSITY: 1.8,
+  RIM_POSITION: [8, 8, -8], DEFAULT_ANIMAL: 2,
+  KERB_HEIGHT: 0.09, KERB_WIDTH: 0.18, FOAM_WIDTH: 0.12,
+  CROWD_BOB: 0.04, CROWD_SPEED: 3, CHEER_HEIGHT: 0.35, CHEER_SECONDS: 1.5,
+  ARENA_SIDE_X: [-1.7, 9.7], ARENA_ROWS: [-8, -1, 7, 15],
+  TUFT_COUNT: 90, FLOWER_COUNT: 36,
+} as const);
 /** Offline Blender bake/preview settings, passed by the launcher as JSON. */
 export const ART = Object.freeze({
   BAKE_SAMPLES: 64, PREVIEW_SAMPLES: 64, PREVIEW_SIZE: 768,

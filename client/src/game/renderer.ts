@@ -1,9 +1,9 @@
 import {
-  ACESFilmicToneMapping, Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight,
+  Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight,
   Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, PlaneGeometry,
-  Scene, SRGBColorSpace, WebGLRenderer, WebGLRenderTarget,
+  Scene, SRGBColorSpace, WebGLRenderer, WebGLRenderTarget, LinearToneMapping,
 } from 'three';
-import { COLORS, CONFIG, QUALITY, VIEW } from '../../../shared/config';
+import { COLORS, CONFIG, QUALITY, STREET, VIEW } from '../../../shared/config';
 import { CameraRig } from './camera';
 import type { Station } from './camera';
 import { Particles } from './particles';
@@ -23,6 +23,7 @@ export class GameRenderer {
   readonly particles = new Particles();
   readonly quality: QualityController;
   readonly sun = new DirectionalLight(COLORS.sun, VIEW.SUN_INTENSITY);
+  readonly rim = new DirectionalLight(STREET.RIM_COLOR, STREET.RIM_INTENSITY);
   readonly metrics = { frames: 0, calls: 0, triangles: 0, geometries: 0, textures: 0, delta: 0 };
   readonly target = new WebGLRenderTarget(1, 1, { samples: QUALITY.high.samples, type: HalfFloatType });
   private readonly output = new Mesh(new PlaneGeometry(2, 2), new MeshBasicMaterial({ map: this.target.texture, depthTest: false, depthWrite: false }));
@@ -45,7 +46,7 @@ export class GameRenderer {
     if (!context) throw new Error('WEBGL_UNSUPPORTED');
     this.renderer = new WebGLRenderer({ canvas, context, antialias: false });
     this.renderer.outputColorSpace = SRGBColorSpace;
-    this.renderer.toneMapping = ACESFilmicToneMapping;
+    this.renderer.toneMapping = LinearToneMapping;
     this.renderer.info.autoReset = false;
     const mobile = navigator.maxTouchPoints > 0 && matchMedia('(pointer: coarse)').matches;
     this.quality = new QualityController(mobile);
@@ -54,6 +55,8 @@ export class GameRenderer {
     this.scene.background = new Color(COLORS.sky);
     this.scene.fog = new Fog(COLORS.sky, VIEW.LOBBY_DISTANCE, VIEW.FAR / 2);
     this.scene.add(this.sky, this.world.root, this.particles.mesh, new HemisphereLight(COLORS.sky, COLORS.groundSide, VIEW.HEMISPHERE_INTENSITY), this.sun, this.sun.target);
+    this.rim.position.set(...STREET.RIM_POSITION); this.rim.target.position.set(4, 0, -1);
+    this.scene.add(this.rim, this.rim.target);
     this.sun.castShadow = true;
     this.sun.shadow.bias = VIEW.SHADOW_BIAS;
     this.sun.shadow.normalBias = VIEW.SHADOW_NORMAL_BIAS;

@@ -9,12 +9,14 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ANIMALS, COLORS, CONFIG, HOME, VIEW } from '../../../shared/config';
 import { mulberry32 } from '../../../shared/rng';
 import type { Tier } from './quality';
+import { Outlines } from './outlines';
 
 type Moving = { batch: InstancedMesh; index: number; x: number; z: number; speed: number; scale: number };
 
 /** Loaded once into the persistent world scene. Repeated scenery is instanced. */
 export class HomeScene {
   readonly root = new Group();
+  readonly outlines = new Outlines();
   readonly logo = new Group();
   readonly animalRoot = new Group();
   readonly standard = new MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
@@ -121,6 +123,7 @@ export class HomeScene {
       }
     }
     const logs = this.batch(assets.get('log')!, HOME.LOG_COUNT);
+    logs.userData.shadowKind = 'log';
     for (let i = 0; i < logs.count; i++) this.moving.push({ batch: logs, index: i, x: HOME.LOOP_LEFT + Math.floor(i / 3) * 8,
       z: -HOME.RIVER_ROWS[i % 3]!, speed: HOME.LOG_SPEED * (i % 3 === 1 ? -1 : 1), scale: 3 });
     const circle = new CircleGeometry(1, VIEW.BLOB_SEGMENTS); circle.rotateX(-Math.PI / 2);
@@ -128,6 +131,10 @@ export class HomeScene {
     this.blobs.boundingSphere = new Sphere(new Vector3(4, 0, 0), HOME.GROUND_WIDTH);
     this.root.add(this.blobs);
     this.root.traverse(obj => { if (obj instanceof Mesh) this.meshes.push(obj); });
+    for (const mesh of this.meshes) {
+      const kind = mesh.userData.shadowKind;
+      if (kind === 'animal' || kind === 'vehicle' || kind === 'log') this.outlines.add(mesh, kind === 'log' ? 'prop' : kind);
+    }
     this.select(0); this.update(0);
   }
 
@@ -176,7 +183,8 @@ export class HomeScene {
     for (const cube of cubes) cube.dispose();
     this.root.add(ground);
     const geometry = new BoxGeometry(HOME.DASH_LENGTH, 0.015, HOME.DASH_WIDTH);
-    const white = new Float32Array(geometry.attributes.position!.count * 3); white.fill(1);
+    const white = new Float32Array(geometry.attributes.position!.count * 3); color.set(COLORS.yellow);
+    for (let i = 0; i < white.length; i += 3) color.toArray(white, i);
     geometry.setAttribute('color', new Float32BufferAttribute(white, 3));
     const dashes = new InstancedMesh(geometry, this.standard, HOME.GROUND_WIDTH * 2);
     for (let i = 0; i < dashes.count; i++) this.place(dashes, i, -HOME.GROUND_WIDTH / 2 + (i % HOME.GROUND_WIDTH) * 2, 0, i < HOME.GROUND_WIDTH ? 3.5 : -4.5);
@@ -205,6 +213,7 @@ export class HomeScene {
   }
 
   applyTier(tier: Tier): void {
+    this.outlines.applyTier(tier);
     for (const mesh of this.meshes) {
       if (mesh === this.blobs) continue;
       mesh.material = mesh.userData.player_color ? (tier === 'high' ? this.gloveStandard : this.gloveLambert) : (tier === 'high' ? this.standard : this.lambert);
