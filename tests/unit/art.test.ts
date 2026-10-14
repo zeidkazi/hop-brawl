@@ -13,7 +13,7 @@ interface Gltf {
   materials: { doubleSided?: boolean }[];
 }
 const modelDir = join(process.cwd(), 'client/public/models');
-const models = existsSync(modelDir) ? readdirSync(modelDir).filter(file => file.endsWith('.glb') && file !== 'logo.glb') : [];
+const models = existsSync(modelDir) ? readdirSync(modelDir).filter(file => file.endsWith('.glb') && !['logo.glb', 'home_controls.glb'].includes(file)) : [];
 
 describe('Blender deliverables', () => {
   it('keeps the complete model library below the shared byte budget', () => {

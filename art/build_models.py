@@ -301,8 +301,13 @@ def main():
     parser.add_argument('--self-test', action='store_true')
     parser.add_argument('--silhouette-only', action='store_true')
     parser.add_argument('--logo-variants', action='store_true')
+    parser.add_argument('--menu-props', action='store_true')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     config = json.loads(Path(args.config).read_text(encoding='utf-8'))
+    if args.menu_props:
+        from build_menu import build
+        build(ROOT, config)
+        return
     if args.logo_variants:
         from build_logo import build_variants
         build_variants(ROOT, config)
