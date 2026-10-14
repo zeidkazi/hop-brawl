@@ -6,7 +6,9 @@
     <title>Hop Brawl — Cross the road. Shove your friends.</title>
   </head>
   <body>
-    <main id="ui-root" aria-live="polite">Loading…</main>
+    <canvas id="game-canvas" aria-label="Hop Brawl game world"></canvas>
+    <main id="ui-root"></main>
+    <div id="loading" role="status"><div class="loading-box" aria-hidden="true"></div><progress max="100" value="0" aria-label="Loading game"></progress><p>Loading… 0%</p></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

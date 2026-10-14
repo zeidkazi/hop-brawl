@@ -9,8 +9,9 @@ test('loads locally and reproduces Node world/hazard results in independent brow
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/');
   await expect(page).toHaveTitle('Hop Brawl — Cross the road. Shove your friends.');
-  await expect(page.locator('#ui-root')).toHaveText('Loading…');
-  await page.screenshot({ path: testInfo.outputPath('m1-loading-shell.png'), fullPage: true });
+  await expect(page.locator('#home')).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('#game-canvas')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('m2-home.png'), fullPage: true });
 
   const rows = Array.from({ length: 300 }, (_, z) => generateRow(20261030, z));
   const windows = [slowMoWindow(4), slowMoWindow(2)];
