@@ -9,12 +9,12 @@ Every imported asset must have an individual file path, source URL and verified 
 | File / source module | Source URL / provenance | License |
 |---|---|---|
 | `art/fonts/LilitaOne-Regular.ttf` | https://raw.githubusercontent.com/google/fonts/main/ofl/lilitaone/LilitaOne-Regular.ttf | SIL OFL 1.1; no in-game attribution required; redistribution notice in `art/fonts/OFL.txt` from https://raw.githubusercontent.com/google/fonts/main/ofl/lilitaone/OFL.txt |
-| `@fontsource/pixelify-sans/files/pixelify-sans-latin-700-normal.woff2` (5.3.0) | https://cdn.jsdelivr.net/npm/@fontsource/pixelify-sans@5.3.0/files/pixelify-sans-latin-700-normal.woff2 ; authors: https://github.com/eifetx/Pixelify-Sans | SIL OFL 1.1, no in-game attribution required; required redistribution notice retained in `client/public/licenses/pixelify-sans.txt` |
+| `@fontsource/lilita-one/files/lilita-one-latin-400-normal.woff2` (5.3.0) | https://cdn.jsdelivr.net/npm/@fontsource/lilita-one@5.3.0/files/lilita-one-latin-400-normal.woff2 | SIL OFL 1.1, no in-game attribution required; redistribution notice retained in `client/public/licenses/lilita-one.txt` |
 | `@fontsource/nunito/files/nunito-latin-700-normal.woff2` (5.3.0) | https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.3.0/files/nunito-latin-700-normal.woff2 ; authors: https://github.com/googlefonts/nunito | SIL OFL 1.1, no in-game attribution required; required redistribution notice retained in `client/public/licenses/nunito.txt` |
 | `@fontsource/nunito/files/nunito-latin-800-normal.woff2` (5.3.0) | https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.3.0/files/nunito-latin-800-normal.woff2 ; authors: https://github.com/googlefonts/nunito | SIL OFL 1.1; same included notice |
 | `client/src/game/world-view.ts`, `client/src/game/particles.ts` | Original procedural colored boxes, ground and circle shadows created for Hop Brawl; no imported art | Original project geometry, no third-party attribution |
 
-Font license text verified from the pinned packages. Fonts are bundled locally; no external font requests. §28 replaces Pixelify Sans with Lilita One in the Home revision after model approval; the current runtime still uses the M2 fonts at this asset-only checkpoint.
+Font license text verified from the pinned packages. Lilita One and Nunito are bundled locally; no external font requests. Pixelify Sans is retired under §28.
 
 ## M2.5 Blender assets — partial owner approval
 
@@ -22,6 +22,7 @@ The animals, vehicles and props below are original voxel creations built in Blen
 
 | Files | Source URL / original recipe |
 |---|---|
+| `art/home_controls.blend`, `client/public/models/home_controls.glb`, `art/previews/home_controls.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_menu.py ; original CC0 wooden sign and voxel arrows, Lilita One outline labels using the font and OFL notice above |
 | `client/public/models/logo.glb` | Owner-selected A; identical to `art/variants/logo_smooth.glb`, built from https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py using Lilita One (OFL notice above) |
 | `art/logo_smooth.blend`, `art/variants/logo_smooth.glb`, `art/variants/logo_smooth.json`, `art/previews/logo_smooth.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; Lilita One font source above |
 | `art/logo_blocks.blend`, `art/variants/logo_blocks.glb`, `art/variants/logo_blocks.json`, `art/previews/logo_blocks.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/build_logo.py ; actual Blender Blocks remesh of the same Lilita One text |
