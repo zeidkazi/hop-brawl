@@ -19,6 +19,7 @@ export class Movement {
   onLand: (() => void) | null = null;
   onBonk: ((direction: HopDirection) => void) | null = null;
   onDeath: ((cause: DeathCause) => void) | null = null;
+  belowScreen: ((x: number, z: number, camZ: number) => boolean) | null = null;
   private readonly hazard = { x: 0, z: 0 };
   constructor(readonly rowAt: (z: number) => Row) {}
   reset(): void {
@@ -83,7 +84,7 @@ export class Movement {
       const auto = this.camZ + scrollSpeed(this.time) * dt;
       const follow = Math.min(this.z - CONFIG.LEADER_MAX_AHEAD_ROWS, this.camZ + CONFIG.CAMERA_MAX_SPEED * dt);
       this.camZ = Math.max(auto, follow);
-      if (this.hazard.z < this.camZ) this.kill('LEFT BEHIND!');
+      if (this.belowScreen ? this.belowScreen(this.x, this.z, this.camZ) : this.hazard.z < this.camZ) this.kill('LEFT BEHIND!');
       if (!this.hopping && !this.dead && this.buffered) {
         const queued = this.buffered; this.buffered = null; this.input(queued);
       }

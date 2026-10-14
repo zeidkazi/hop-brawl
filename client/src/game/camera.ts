@@ -39,6 +39,7 @@ export class CameraRig {
   private readonly path = new CatmullRomCurve3(this.points);
   private flight = 1;
   private drift = 0;
+  private readonly projected = new Vector3();
 
   constructor(aspect: number) {
     this.aspect = aspect;
@@ -65,6 +66,7 @@ export class CameraRig {
     this.station = station;
     this.drift = 0;
     if (station === 'soloEnd') { this.flight = 1; return; }
+    this.camera.updateProjectionMatrix();
     this.destination();
     this.fromFocus.copy(this.focus);
     this.points[0]!.copy(this.camera.position);
@@ -101,7 +103,7 @@ export class CameraRig {
     const omega = VIEW.RESIZE_SPRING;
     const decay = Math.exp(-omega * dt);
     const term = (this.velocity + omega * error) * dt;
-    const next = this.targetCamZ + (error + term) * decay;
+    const next = this.station === 'gameplay' ? this.targetCamZ : this.targetCamZ + (error + term) * decay;
     this.velocity = (this.velocity - omega * term) * decay;
     const shift = next - this.camZ;
     this.camZ = next;
@@ -124,5 +126,17 @@ export class CameraRig {
       this.drift = drift;
     }
     this.camera.lookAt(this.focus);
+    this.camera.updateMatrixWorld();
+    if (this.station === 'gameplay' && this.flight === 1) {
+      // Shift the frustum, not the world: logical bottom is the actual screen bottom.
+      this.camera.projectionMatrix.elements[9] = 0;
+      this.projected.set(4, 0, -this.camZ).project(this.camera);
+      this.camera.projectionMatrix.elements[9] = this.projected.y + 1;
+      this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
+    }
+  }
+  screenY(x: number, z: number, camZ = this.camZ): number {
+    this.projected.set(x, 0, -z + camZ - this.camZ).project(this.camera);
+    return (1 - this.projected.y) / 2;
   }
 }

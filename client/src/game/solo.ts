@@ -52,6 +52,7 @@ export class Solo {
     this.cause = element('solo-cause'); this.danger = element('solo-danger'); this.marker = element('solo-you');
     this.name = element('solo-name'); this.flag = element('solo-best-flag'); this.heart = element('solo-heart');
     this.movement = new Movement(game.world.rowAt);
+    this.movement.belowScreen = (x, z, camZ) => game.rig.screenY(x, z, camZ) >= 1;
     this.input = new HopInput(game.canvas, this.hop);
     this.movement.onHop = this.hopped; this.movement.onLand = this.landed; this.movement.onDeath = this.died;
     this.movement.onBonk = direction => { this.bonkAt = this.poseTime; this.bonkDirection = direction; game.home.sound.play('hit'); };
@@ -159,6 +160,8 @@ export class Solo {
     }
   };
   private readonly died = (cause: DeathCause): void => {
+    this.game.rig.targetCamZ = this.movement.camZ;
+    this.game.rig.update(0, this.poseTime);
     this.phase = 'dying'; this.deathAt = this.poseTime; this.input.enabled = false; this.game.playing = false;
     this.game.go('soloEnd'); this.cause.textContent = cause; this.cause.hidden = false; this.countdown.hidden = true;
     this.game.home.sound.play('hit');
@@ -206,7 +209,7 @@ export class Solo {
     this.game.world.animalX = this.movement.x; this.game.world.animalZ = this.movement.z;
     this.renderPose(dt);
     if (this.lastScore !== this.movement.distance) { this.lastScore = this.movement.distance; this.score.textContent = String(this.lastScore); }
-    this.danger.style.opacity = this.phase === 'playing' && this.movement.z - this.movement.camZ < SOLO.DANGER_ROWS
+    this.danger.style.opacity = this.phase === 'playing' && this.game.rig.screenY(this.movement.x, this.movement.z) > .85
       ? String(SOLO.DANGER_OPACITY + (this.preferences.reducedMotion ? 0 : Math.sin(this.poseTime * SOLO.DANGER_RATE) * SOLO.DANGER_PULSE)) : '0';
     this.marker.hidden = this.roundTime * 1000 > SOLO.MARKER_MS || this.phase === 'dying' || this.phase === 'over';
     this.name.hidden = this.phase === 'over' || (this.phase === 'dying' && this.movement.dead === 'LEFT BEHIND!');
