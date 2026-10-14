@@ -2,6 +2,7 @@ import {
   Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight,
   Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, PlaneGeometry,
   Scene, SRGBColorSpace, WebGLRenderer, WebGLRenderTarget, LinearToneMapping,
+  Material,
 } from 'three';
 import { COLORS, CONFIG, QUALITY, STREET, VIEW } from '../../../shared/config';
 import { CameraRig } from './camera';
@@ -12,14 +13,17 @@ import type { GraphicsChoice, Tier } from './quality';
 import { WorldView } from './world-view';
 import { HomeScene } from './home-scene';
 import { createSky } from './sky';
+import { prepareDesaturation } from './desaturation';
 
 export class GameRenderer {
+  readonly desaturation = { value: 0 };
+  private readonly preparedMaterials = new WeakSet<Material>();
   readonly scene = new Scene();
   readonly renderer: WebGLRenderer;
   readonly rig: CameraRig;
   readonly world = new WorldView();
   readonly home = new HomeScene();
-  readonly sky = createSky();
+  readonly sky = createSky(this.desaturation);
   readonly particles = new Particles();
   readonly quality: QualityController;
   readonly sun = new DirectionalLight(COLORS.sun, VIEW.SUN_INTENSITY);
@@ -40,6 +44,8 @@ export class GameRenderer {
   private appliedTier: Tier | null = null;
   playing = false;
   onFrame: ((now: number) => void) | null = null;
+  beforeFrame: ((now: number, dt: number) => void) | null = null;
+  worldTime: number | null = null;
 
   constructor(readonly canvas: HTMLCanvasElement) {
     const context = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
@@ -115,7 +121,7 @@ export class GameRenderer {
   setGraphics(choice: GraphicsChoice): void { this.quality.setChoice(choice); this.applyQuality(); }
   go(station: Station): void {
     this.world.station = station; this.rig.go(station);
-    this.home.root.visible = station !== 'gameplay';
+    this.home.root.visible = station !== 'gameplay' && station !== 'soloEnd';
     this.world.root.visible = !this.home.root.visible;
   }
   setReducedMotion(value: boolean): void { this.rig.reducedMotion = value; this.particles.reducedMotion = value; this.home.setReduced(value); }
@@ -131,6 +137,7 @@ export class GameRenderer {
     for (const tier of ['high', 'medium', 'low'] as const) {
       this.quality.tier = tier; this.applyQuality();
       this.world.update(0);
+      prepareDesaturation(this.scene, this.desaturation, this.preparedMaterials);
       await this.renderer.compileAsync(this.scene, this.rig.camera);
       this.draw();
       performance.mark(`hop-warm-${tier}`);
@@ -176,11 +183,12 @@ export class GameRenderer {
     this.metrics.delta = delta;
     const dt = Math.min(VIEW.MAX_DELTA_MS, delta) / 1000;
     const time = (now - this.clockStart) / 1000;
+    this.beforeFrame?.(now, dt);
     if (time * 1000 > VIEW.FRAME_WINDOW_MS && this.quality.sample(now, delta, this.playing)) this.applyQuality();
     this.rig.update(dt, time);
     this.world.requestWindow(this.rig.camZ);
     this.world.setView(this.rig.camera);
-    this.world.update(time);
+    this.world.update(this.worldTime ?? time);
     if (this.home.root.visible) this.home.update(time);
     this.particles.mesh.boundingSphere!.center.set(4, 0, -this.rig.camZ);
     this.particles.mesh.boundingSphere!.radius = VIEW.POOL_ROWS;

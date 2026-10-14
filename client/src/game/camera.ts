@@ -74,6 +74,14 @@ export class CameraRig {
     this.flight = 0;
   }
 
+  resetScroll(snap = false): void {
+    this.camZ = this.targetCamZ = this.velocity = 0;
+    if (snap) {
+      this.station = 'gameplay'; this.destination(); this.camera.position.copy(this.goal);
+      this.focus.copy(this.goalFocus); this.camera.lookAt(this.focus); this.flight = 1;
+    }
+  }
+
   private destination(): void {
     const baseDistance = this.station === 'gameplay' ? gameplayDistance(this.aspect)
       : this.station === 'lobby' ? VIEW.LOBBY_DISTANCE
