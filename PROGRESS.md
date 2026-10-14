@@ -2,7 +2,15 @@
 
 Last updated: 2026-10-15 (Asia/Calcutta).
 
-## Status
+## Ship today: sections 31–32 (current, overrides historical gates below)
+
+- Owner authorized immediate implementation and deployment on 2026-10-15. No M3/M6/pre-deploy review stops apply to this submission. Single Cloudflare Worker with static assets, SQLite Room Durable Objects and lobby WebSocket hibernation. No Vercel or DNS setup today.
+- Step 1 complete: 64 recycled rows cover the angled camera frustum, lower-third player, 1.0-tile log-slot assist and T2–T4 log speeds. Painted boundaries remain. Desktop playfield 48.6%; phone 92.1%; player anchor 65% from top. Rows 5/35/70/150 have zero missing ground and at least seven rows ahead on both viewports. No screenshot sets generated.
+- Step 2 implemented, verification underway: private-room authority, lobby, unique animal picks, player-colored gloves, clock sync, predicted local hops, 100 ms remote interpolation, hearts/respawn/protection/shove, three-round matches, rematch, host handoff and forfeit. 131 unit tests and both client/server typechecks pass. Local Worker runs on 8787; Vite proxies API/WebSocket requests on 5173.
+- Remaining in order: finish multiplayer browser checks; PLAY → Friends; minimum procedural sounds; build and deploy single Worker; live full-match/rematch checks; 1800×1200 cover; final tag `v0.9-submission` on deployed commit.
+- Physical-phone live testing requires the owner's device. Automated touch/mobile tests are reported separately.
+
+## Historical status (superseded by section 32)
 
 - Completed milestones: M1 (world generation/hazards), M2 (persistent-canvas architecture), M2.5 (approved Street Brawl models/Home and section 29.10 Loading), M3 (Solo).
 - Current phase: section 30 fixes are implemented and verified; STOP for another owner M3 playtest before M4. M3 is NOT approved. M2.5 remains tagged m2.5-art-direction. The original Solo report is historical; current review: art/review/PLAYTEST30.md, with six row 5/35/70 captures and raw fuzz/run/loading measurements.
@@ -152,7 +160,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Next exact step
 
-STOP and wait for owner M3 playtest approval. Use the checklist and six current screenshots in art/review/PLAYTEST30.md; test normal/incognito and a phone. Fix only reported bugs with small verified commits. After approval, start M4 Worker + hibernating Room Durable Object, create/join/lobby/clock sync. Do not deploy or implement the M12 punch/tail polish notes now.
+Finish the section 32 multiplayer browser verification, then execute steps 3–7 in order without review stops. Do not implement deferred M12 punch/tail polish. The current submission scope and authorization are listed at the top of this file.
 
 ## Milestone plan / gates
 
@@ -183,6 +191,8 @@ From C:\Users\zeidk\Desktop\game_challenge:
 ```powershell
 npm install
 npm run dev
+# In another terminal:
+npm run dev:server
 ```
 
 Open http://localhost:5173/ in a normal and an incognito window. Loading should progress into the live Home diorama. Choose SOLO; enter a name if needed. After HOP!, use arrow keys/WASD or tap/swipe. Dodge traffic/trains, ride logs, and keep moving ahead of the scrolling bottom. Esc/gear pauses; Resume counts down; Retry/Space/Enter restarts after death. Verify best score survives reload and incognito has separate storage. Multiplayer remains disabled until M4 onward. See art/review/SOLO.md for the full owner checklist.
@@ -196,4 +206,4 @@ npm run check
 npm run test:e2e
 ```
 
-On a new machine, first install the Playwright browser with npx playwright install chromium. npm ci is available for a clean lockfile-based dependency install. npm run build:client writes client/dist; npm run preview serves that build. M4 adds npm run dev:server / wrangler dev on port 8787. All work remains local until M7.
+On a new machine, first install the Playwright browser with npx playwright install chromium. npm ci is available for a clean lockfile-based dependency install. npm run build:client writes client/dist; npm run dev:server runs Wrangler on 8787 and serves that production build as well as the room API. During development use 5173 with both processes running. `npm run deploy` validates tests/build before deploying the single Worker. Section 32 authorizes deployment today.

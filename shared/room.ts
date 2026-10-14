@@ -77,7 +77,8 @@ export class RoomGame {
     if (id !== this.host) return false;
     this.players = this.players.filter(p => p.connected);
     for (const p of this.players) { p.waiting = false; p.move.reset(); }
-    this.phase = 'lobby'; this.now = now; this.winner = ''; this.reason = ''; return true;
+    this.phase = 'lobby'; this.now = now; this.winner = ''; this.reason = '';
+    this.camZ = 0; this.leaderZ = 1; this.startAt = 0; this.nextAt = 0; return true;
   }
   start(id: string, now: number): boolean {
     if (id !== this.host || (this.phase !== 'lobby' && this.phase !== 'matchEnd') || this.players.filter(p => p.connected).length < 2) return false;

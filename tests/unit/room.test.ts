@@ -48,7 +48,8 @@ describe('private room authority', () => {
   it('waits mid-match joins until Rematch or Back to lobby', () => {
     const game = playing(); game.join('2', 'Waiting', 2, 1, 3100); expect(game.players[2]!.waiting).toBe(true);
     game.phase = 'matchEnd'; game.start('0', 3200); expect(game.players.every(p => !p.waiting)).toBe(true);
-    game.phase = 'matchEnd'; expect(game.lobby('1', 3300)).toBe(false); expect(game.lobby('0', 3300)).toBe(true);
+    game.phase = 'matchEnd'; game.camZ = 90; expect(game.lobby('1', 3300)).toBe(false); expect(game.lobby('0', 3300)).toBe(true);
+    expect(game.camZ).toBe(0); expect(game.startAt).toBe(0);
   });
 });
 describe('authoritative shove', () => {
