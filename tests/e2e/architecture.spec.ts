@@ -21,8 +21,11 @@ test('keeps one canvas through menus, tier swaps, streaming and tile flips', asy
     const debug = gl.getExtension('WEBGL_debug_renderer_info');
     return { ...window.__HOP_DEBUG__!.snapshot(), renderer: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) as string : 'unavailable' };
   });
-  expect(await page.evaluate(() => document.fonts.check('700 16px "Pixelify Sans"') && document.fonts.check('800 16px Nunito'))).toBe(true);
+  expect(await page.evaluate(() => document.fonts.check('400 16px "Lilita One"') && document.fonts.check('800 16px Nunito'))).toBe(true);
+  await page.getByRole('button', { name: 'Edit name' }).click();
   await page.getByPlaceholder('Your name').first().fill('Tester');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.locator('#home')).toBeVisible();
   await page.getByRole('button', { name: 'Next animal' }).click();
   await expect(page.locator('#animal-label')).toHaveText('frog');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
@@ -31,7 +34,7 @@ test('keeps one canvas through menus, tier swaps, streaming and tile flips', asy
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().tier)).toBe('low');
   await page.keyboard.press('Escape');
   await expect(page.locator('#home')).toBeVisible();
-  await page.getByRole('button', { name: 'PLAY WITH FRIENDS', exact: true }).click();
+  await page.getByRole('button', { name: 'FRIENDS', exact: true }).click();
   await page.getByLabel('Room code letter 1').fill('a');
   await expect(page.getByLabel('Room code letter 2')).toBeFocused();
   await page.goBack();
@@ -84,7 +87,10 @@ test('deep links and denied storage keep the local menu usable', async ({ page }
   await expect(page.getByLabel('Room code letter 4')).toHaveValue('D');
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.locator('#home')).toBeVisible();
+  await page.getByRole('button', { name: 'Edit name' }).click();
   await page.getByPlaceholder('Your name').first().fill('No storage');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.locator('#home')).toBeVisible();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.locator('#settings-name')).toHaveValue('No storage');
   expect(await page.evaluate(() => window.__HOP_DEBUG__)).toBeUndefined();

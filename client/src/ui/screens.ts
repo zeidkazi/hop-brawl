@@ -4,8 +4,8 @@ import type { GameRenderer } from '../game/renderer';
 import { Motion } from './motion';
 import { readPreferences, savePreferences } from './settings';
 
-type Screen = 'home' | 'friends' | 'settings' | 'how' | 'credits';
-const SCREENS: readonly Screen[] = ['home', 'friends', 'settings', 'how', 'credits'];
+type Screen = 'home' | 'friends' | 'settings' | 'how' | 'credits' | 'name';
+const SCREENS: readonly Screen[] = ['home', 'friends', 'settings', 'how', 'credits', 'name'];
 const CARDS = [
   ['Hop forward. Survive.', "Tap or swipe on phone · Arrow keys / WASD on PC. Dodge cars and trains, ride logs, and don't fall off the bottom of the screen."],
   ['Shove to win.', "Hop into your opponent to shove them one tile — into traffic, if you're lucky. Shoving has a short cooldown."],
@@ -33,21 +33,34 @@ export class Screens {
     // Static trusted markup only; persisted names and URL values use value/textContent.
     root.innerHTML = `
       <section id="home" class="screen home" aria-label="Home" hidden>
-        <div class="home-content">
-          <h1 class="logo">HOP<br><span>BRAWL</span></h1>
+        <h1 class="sr-only">Hop Brawl</h1>
+        <div class="home-toolbar">
+          <button class="name-pill" data-screen="name" aria-label="Edit name"><span aria-hidden="true">✎</span> <span id="name-caption"></span></button>
+          <nav aria-label="Help and preferences">
+            <button class="icon-button" data-screen="how" aria-label="How to Play">?</button>
+            <button class="icon-button" data-screen="settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 2-.7 3-2 .9-2.7-.9-2 3.5L5 10v3l-2.4 1.6 2 3.5 2.7-.9 2 .9.7 3h4l.7-3 2-.9 2.7.9 2-3.5L19 13v-3l2.4-1.5-2-3.5-2.7.9-2-.9L14 2Z"/><circle cx="12" cy="11.5" r="3"/></svg></button>
+          </nav>
+        </div>
+        <div class="scene-controls" aria-label="Choose your animal">
+          <button class="scene-hit" data-animal="-1" aria-label="Previous animal"></button>
+          <button class="scene-hit" data-animal="1" aria-label="Next animal"></button>
+          <button class="scene-hit animal-hit" data-animal="1" aria-label="Change animal"></button>
+          <strong id="animal-label" class="sr-only" aria-live="polite"></strong>
+        </div>
+        <div class="home-actions">
+          <div class="mode-buttons">
+            <button class="yellow primary" data-mode="play" disabled>PLAY</button>
+            <button class="green" data-screen="friends">FRIENDS</button>
+            <button class="blue" data-mode="solo" disabled>SOLO</button>
+          </div>
+        </div>
+      </section>
+      <section id="name" class="screen modal name-editor" aria-labelledby="name-title" hidden>
+        <form class="panel"><h2 id="name-title">YOUR NAME</h2>
           <label class="sr-only" for="home-name">Your name</label>
           <input id="home-name" class="name" autocomplete="nickname" placeholder="Your name" maxlength="${VIEW.NAME_MAX_LENGTH}">
-          <div class="carousel" aria-label="Choose your animal" tabindex="0">
-            <button data-animal="-1" aria-label="Previous animal">‹</button><strong id="animal-label" aria-live="polite"></strong><button data-animal="1" aria-label="Next animal">›</button>
-          </div>
-          <div class="mode-buttons">
-            <button class="yellow primary" disabled>QUICK PLAY</button>
-            <button class="green" data-screen="friends">PLAY WITH FRIENDS</button>
-            <button class="blue" disabled>SOLO</button>
-          </div>
-          <nav class="small-links" aria-label="Help and preferences"><button data-screen="how">How to Play</button><button data-screen="settings">Settings</button></nav>
-          <button class="text-button credits-link" data-screen="credits">Credits</button>
-        </div>
+          <button class="yellow" type="submit">Done</button>
+        </form>
       </section>
       <section id="friends" class="screen modal" aria-labelledby="friends-title" hidden>
         <div class="panel"><h2 id="friends-title">PLAY WITH FRIENDS</h2>
@@ -64,6 +77,7 @@ export class Screens {
           <label class="check">Reduce motion<input id="reducedMotion" type="checkbox"></label>
           <label>Graphics<select id="graphics"><option value="auto">Auto</option><option value="high">High</option><option value="low">Low</option></select></label>
           <label>Name<input id="settings-name" class="name" placeholder="Your name" autocomplete="nickname" maxlength="${VIEW.NAME_MAX_LENGTH}"></label>
+          <button class="text-button" data-screen="credits">Credits</button>
           <button class="yellow" data-back>Back</button>
         </div>
       </section>
@@ -74,8 +88,8 @@ export class Screens {
         </div>
       </section>
       <section id="credits" class="screen modal" aria-labelledby="credits-title" hidden>
-        <div class="panel"><h2 id="credits-title">CREDITS</h2><p>Original placeholder geometry for Hop Brawl.</p>
-          <p>Pixelify Sans — The Pixelify Sans Project Authors.<br><a href="/licenses/pixelify-sans.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
+        <div class="panel"><h2 id="credits-title">CREDITS</h2><p>Original Hop Brawl models and scenery — CC0.</p>
+          <p>Lilita One — Juan Montoreano.<br><a href="/licenses/lilita-one.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
           <p>Nunito — The Nunito Project Authors.<br><a href="/licenses/nunito.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
           <button class="yellow" data-back>Back</button>
         </div>
@@ -90,6 +104,7 @@ export class Screens {
       input.addEventListener('input', () => {
         this.preferences.name = input.value.slice(0, VIEW.NAME_MAX_LENGTH);
         for (const other of this.names) if (other !== input) other.value = this.preferences.name;
+        this.updateName();
         this.save();
       });
     });
@@ -117,14 +132,33 @@ export class Screens {
       else if (button.dataset.animal) this.changeAnimal(Number(button.dataset.animal));
       else if (button.dataset.card) this.changeCard(Number(button.dataset.card));
     });
-    this.swipe(root.querySelector('.carousel')!, direction => this.changeAnimal(direction));
+    const hits = root.querySelectorAll<HTMLElement>('.scene-hit');
+    this.game.home.onTargets = points => {
+      for (let i = 0; i < hits.length; i++) {
+        hits[i]!.style.left = `${points[i * 2]! * 100}%`;
+        hits[i]!.style.top = `${points[i * 2 + 1]! * 100}%`;
+      }
+    };
+    this.game.home.layout(this.game.rig.camera);
+    root.querySelector('#name form')!.addEventListener('submit', event => {
+      event.preventDefault(); this.preferences.name = this.preferences.name.trim();
+      this.names.forEach(input => { input.value = this.preferences.name; }); this.updateName(); this.save(); this.back();
+    });
+    this.swipe(root.querySelector('.animal-hit')!, direction => this.changeAnimal(direction));
     this.swipe(root.querySelector('#how-card')!, direction => this.changeCard(direction));
     this.setupRoomCode();
     window.addEventListener('popstate', () => this.show(this.route()));
-    window.addEventListener('keydown', event => { if (event.key === 'Escape' && this.screen !== 'home') this.back(); });
+    window.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && this.screen !== 'home') { this.back(); return; }
+      if (this.screen !== 'home' || event.repeat || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); this.changeAnimal(event.key === 'ArrowRight' ? 1 : -1); }
+      else if (event.key.toLowerCase() === 'f') this.navigate('friends');
+      else if (event.key.toLowerCase() === 's') root.querySelector<HTMLButtonElement>('[data-mode="solo"]')!.click();
+      else if (event.key === 'Enter' && !(event.target instanceof HTMLButtonElement)) root.querySelector<HTMLButtonElement>('[data-mode="play"]')!.click();
+    });
     this.applyPreferences(); this.game.setGraphics(this.preferences.graphics);
     this.game.world.animal = this.preferences.animal;
-    this.updateAnimal(); this.changeCard(0);
+    this.updateAnimal(); this.updateName(); this.game.home.select(this.preferences.animal); this.changeCard(0);
     const initial = new URL(location.href).searchParams.has('room') ? 'friends' : this.route();
     history.replaceState({ screen: initial }, '', location.href);
     this.show(initial);
@@ -157,13 +191,14 @@ export class Screens {
     this.game.setReducedMotion(this.preferences.reducedMotion);
   }
   private updateAnimal(): void { this.animalLabel.textContent = ANIMALS[this.preferences.animal]!; }
+  private updateName(): void { this.root.querySelector('#name-caption')!.textContent = this.preferences.name.trim() || 'Tap to set name'; }
   private changeAnimal(direction: number): void {
     this.preferences.animal = (this.preferences.animal + direction + ANIMALS.length) % ANIMALS.length;
     this.save(); this.updateAnimal(); this.carousel?.kill();
-    const world = this.game.world;
-    this.carousel = gsap.timeline().to(world, { animalSwap: -VIEW.CAROUSEL_TRAVEL, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.in', overwrite: 'auto' })
-      .call(() => { world.animal = this.preferences.animal; world.animalSwap = VIEW.CAROUSEL_TRAVEL; })
-      .to(world, { animalSwap: 0, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.out' });
+    const home = this.game.home;
+    this.carousel = gsap.timeline().to(home, { swap: -VIEW.CAROUSEL_TRAVEL, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.in', overwrite: 'auto' })
+      .call(() => { this.game.world.animal = this.preferences.animal; home.select(this.preferences.animal); home.swap = VIEW.CAROUSEL_TRAVEL; })
+      .to(home, { swap: 0, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.out' });
   }
   private changeCard(direction: number): void {
     this.card = (this.card + direction + CARDS.length) % CARDS.length;
@@ -173,10 +208,12 @@ export class Screens {
     this.root.querySelector('#card-page')!.textContent = `${this.card + 1} / ${CARDS.length}`;
   }
   private swipe(element: HTMLElement, change: (direction: number) => void): void {
-    element.addEventListener('pointerdown', event => { this.pointerX = event.clientX; });
-    element.addEventListener('pointerup', event => { const dx = event.clientX - this.pointerX; if (Math.abs(dx) >= VIEW.CAROUSEL_SWIPE_PX) change(dx < 0 ? 1 : -1); });
+    let swiped = false;
+    element.addEventListener('pointerdown', event => { this.pointerX = event.clientX; swiped = false; });
+    element.addEventListener('pointerup', event => { const dx = event.clientX - this.pointerX; if (Math.abs(dx) >= VIEW.CAROUSEL_SWIPE_PX) { swiped = true; change(dx < 0 ? 1 : -1); } });
+    element.addEventListener('click', event => { if (swiped) { event.preventDefault(); event.stopPropagation(); swiped = false; } });
     element.addEventListener('keydown', event => {
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); change(event.key === 'ArrowRight' ? 1 : -1); }
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); event.stopPropagation(); change(event.key === 'ArrowRight' ? 1 : -1); }
     });
   }
   private setupRoomCode(): void {
