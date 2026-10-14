@@ -5,8 +5,9 @@ import type { Tier } from './quality';
 
 export class Particles {
   readonly mesh = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial(), VIEW.PARTICLE_POOL);
-  readonly pool = new Pool(VIEW.PARTICLE_POOL, () => ({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, age: 0 }));
+  readonly pool = new Pool(VIEW.PARTICLE_POOL, () => ({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, age: 0, color: 0 }));
   private readonly transform = new Object3D();
+  private readonly color = new Color();
   tier: Tier = 'high';
   reducedMotion = false;
 
@@ -18,7 +19,8 @@ export class Particles {
     this.mesh.count = 0;
   }
 
-  burst(x: number, z: number): void {
+  burst(x: number, z: number, tint: string = COLORS.cream): void {
+    const color = this.color.set(tint).getHex();
     const count = Math.floor(VIEW.PROPS_PER_ROW * QUALITY[this.tier].particles * (this.reducedMotion ? 0.5 : 1));
     for (let i = 0; i < count; i++) {
       const index = this.pool.acquire();
@@ -26,6 +28,7 @@ export class Particles {
       const particle = this.pool.items[index]!;
       const angle = i / count * Math.PI * 2;
       particle.x = x; particle.y = 0; particle.z = z; particle.age = 0;
+      particle.color = color;
       particle.vx = Math.cos(angle) * VIEW.DUST_SPEED;
       particle.vz = Math.sin(angle) * VIEW.DUST_SPEED;
       particle.vy = VIEW.DUST_SPEED;
@@ -44,8 +47,10 @@ export class Particles {
       this.transform.position.set(particle.x, particle.y, -particle.z);
       this.transform.scale.setScalar((1 - particle.age / VIEW.DUST_LIFE_S) / VIEW.VOXELS_PER_TILE);
       this.transform.updateMatrix();
+      this.mesh.setColorAt(this.mesh.count, this.color.setHex(particle.color));
       this.mesh.setMatrixAt(this.mesh.count++, this.transform.matrix);
     }
     this.mesh.instanceMatrix.needsUpdate = true;
+    this.mesh.instanceColor!.needsUpdate = true;
   }
 }

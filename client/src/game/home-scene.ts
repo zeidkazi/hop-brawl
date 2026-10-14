@@ -31,6 +31,9 @@ export class HomeScene {
   readonly animalRoot = new Group();
   readonly standard = new MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
   readonly lambert = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  private readonly actorStandard = this.standard.clone();
+  private readonly actorLambert = this.lambert.clone();
+  private readonly actorOutline = this.outlines.material.clone();
   private readonly gloveStandard = this.standard.clone();
   private readonly gloveLambert = this.lambert.clone();
   private readonly logoMaterial = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, fog: false });
@@ -72,6 +75,8 @@ export class HomeScene {
 
   async load(): Promise<void> {
     if (this.loaded) return;
+    this.actorStandard.transparent = this.actorLambert.transparent = this.actorOutline.transparent = true;
+    this.gloveStandard.transparent = this.gloveLambert.transparent = true;
     this.setPlayerColor(0);
     const loader = new GLTFLoader();
     await downloads.load();
@@ -180,6 +185,7 @@ export class HomeScene {
       if (kind === 'ui') this.outlines.add(mesh, 'ui');
     }
     this.select(0); this.update(0); this.loaded = true;
+    for (const entry of this.outlines.entries) if (entry.kind === 'animal') entry.shell.material = this.actorOutline;
   }
 
   private batch(model: Group, count: number): InstancedMesh {
@@ -274,6 +280,7 @@ export class HomeScene {
     for (const mesh of this.meshes) {
       if (mesh === this.blobs) continue;
       mesh.material = mesh.userData.player_color ? (tier === 'high' ? this.gloveStandard : this.gloveLambert) : (tier === 'high' ? this.standard : this.lambert);
+      if (mesh.userData.shadowKind === 'animal' && !mesh.userData.player_color) mesh.material = tier === 'high' ? this.actorStandard : this.actorLambert;
       if (mesh.userData.shadowKind === 'logo') mesh.material = mesh.userData.player_color ? this.logoGlove : this.logoMaterial;
       mesh.castShadow = !['eyes', 'headband', 'headband_stripe'].includes(mesh.userData.part as string) && ['animal', 'vehicle', 'prop', 'log'].includes(mesh.userData.shadowKind as string) && (tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string)));
     }
@@ -285,6 +292,9 @@ export class HomeScene {
     const color = COLORS.players[index] ?? COLORS.players[0];
     this.gloveStandard.color.set(color); this.gloveLambert.color.set(color);
     this.logoGlove.color.set(color);
+  }
+  setActorOpacity(value: number): void {
+    this.actorStandard.opacity = this.actorLambert.opacity = this.gloveStandard.opacity = this.gloveLambert.opacity = this.actorOutline.opacity = value;
   }
   get selectedAnimal(): string { return ANIMALS[this.selected]!; }
   punch(): void { this.move('punch'); }
@@ -351,6 +361,18 @@ export class HomeScene {
   }
 
   setReduced(value: boolean): void { this.reduced = value; this.arena?.setReduced(value); for (const boxer of this.boxers) boxer.reduced = value; if (value) this.intro?.progress(1); }
+
+  updateGameActor(time: number): void {
+    this.time = time;
+    const blink = time % HOME.BLINK_PERIOD_S < HOME.BLINK_S;
+    for (const eye of this.eyes[this.selected]!) eye.visible = !blink;
+    for (const tail of this.tails[this.selected]!) tail.rotation.y = this.reduced ? 0 : Math.sin(time * HOME.TAIL_SPEED) * HOME.TAIL_WAG;
+    const boxer = this.boxers[this.selected]!;
+    boxer.update(time);
+    this.effects.root.position.copy(this.animalRoot.position);
+    this.effects.root.scale.copy(this.animalRoot.scale);
+    this.effects.update(time, boxer.move, this.reduced);
+  }
 
   update(time: number): void {
     this.time = time;

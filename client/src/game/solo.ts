@@ -1,12 +1,13 @@
 import { Vector3 } from 'three';
-import { CONFIG, HOME, SOLO } from '../../../shared/config';
+import { COLORS, CONFIG, HOME, SOLO } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
+import { trainWarning } from '../../../shared/hazards';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
 import type { GameRenderer } from './renderer';
 import { HopInput } from './input';
 import type { Preferences } from '../ui/settings';
 import type { Motion } from '../ui/motion';
-import type { Boxer, BoxerCue } from './boxer';
+import type { Boxer } from './boxer';
 
 export const SOLO_BEST_KEY = 'hop-brawl-solo-best';
 export function readBest(storage: Pick<Storage, 'getItem'>): number | null {
@@ -29,10 +30,11 @@ export class Solo {
   best: number | null = readBest({ getItem: key => localStorage.getItem(key) });
   private runBest = 0; private newBest = false;
   private countdownEnd = 0; private previousWall = 0; private roundTime = 0; private poseTime = 0;
+  private countdownDuration: number = SOLO.COUNTDOWN_MS;
+  private warned = false;
   private deathAt = 0; private bonkAt = -Infinity; private bonkDirection: HopDirection = 'up';
   private heading = 0; private lastScore = -1; private lastCountdown = '';
   private boxer: Boxer | null = null;
-  private savedCue: ((cue: BoxerCue) => void) | null = null;
   private readonly point = new Vector3();
   private readonly seed = new Uint32Array(1);
   private readonly score: HTMLElement; private readonly bestLabel: HTMLElement;
@@ -76,30 +78,37 @@ export class Solo {
     root.querySelector('[data-mode="solo"]')?.classList.toggle('practice', this.best === null);
   }
 
-  start(retry = false): void {
+  start(retry = false, countdownOrigin = performance.now()): void {
     const game = this.game;
     if (!this.active) {
       game.home.select(this.preferences.animal); this.boxer = game.home.boxers[this.preferences.animal]!;
-      this.savedCue = this.boxer.onCue; this.boxer.onCue = cue => game.home.sound.play(cue);
       game.scene.add(game.home.animalRoot);
+      game.scene.add(game.home.effects.root);
+      if (game.home.arena) {
+        game.scene.add(game.home.arena.root); game.home.arena.root.rotation.y = Math.PI;
+        game.home.arena.root.position.set(CONFIG.COLUMNS - 1, 0, 0);
+      }
     }
     crypto.getRandomValues(this.seed);
     game.world.reset(this.seed[0]!); this.movement.reset();
     game.world.showCrates = false; // Crate/boost rules are milestone 9.
     game.world.actorVisible = false; game.world.animal = this.preferences.animal;
     game.rig.resetScroll(retry); game.go('gameplay'); game.desaturation.value = 0;
+    game.home.setActorOpacity(1); game.world.deathCause = null;
     this.roundTime = this.poseTime = 0; this.runBest = this.best ?? 0; this.newBest = false; this.lastScore = -1;
+    this.warned = false;
     this.heading = 0; this.bonkAt = -Infinity; this.cause.hidden = true;
     this.name.textContent = this.preferences.name; this.bestLabel.textContent = `BEST ${this.runBest}`;
     this.flag.hidden = this.runBest === 0; this.heart.style.opacity = '1'; this.heart.style.transform = '';
     game.home.animalRoot.visible = true; game.home.animalRoot.scale.setScalar(1);
     this.boxer!.update(0); this.boxer!.countdown();
-    this.beginCountdown(retry ? SOLO.RETRY_COUNTDOWN_MS : SOLO.COUNTDOWN_MS);
+    this.beginCountdown(retry ? SOLO.RETRY_COUNTDOWN_MS : SOLO.COUNTDOWN_MS, countdownOrigin);
     this.renderPose(0);
   }
-  private beginCountdown(duration: number): void {
+  private beginCountdown(duration: number, origin = performance.now()): void {
     this.phase = 'countdown'; this.input.enabled = false; this.input.clear(); this.game.playing = false;
-    this.previousWall = performance.now(); this.countdownEnd = this.previousWall + duration;
+    this.previousWall = performance.now(); this.countdownEnd = origin + duration;
+    this.countdownDuration = duration;
     this.lastCountdown = ''; this.countdown.hidden = false; this.show('solo');
   }
   pause(): void {
@@ -114,17 +123,22 @@ export class Solo {
   restart(): void {
     if (this.phase !== 'over' && this.phase !== 'paused') return;
     this.phase = 'paused'; this.input.enabled = false;
-    this.motion.tileFlip(() => { this.start(true); });
+    const started = performance.now();
+    this.motion.tileFlip(() => { this.start(true, started); });
   }
   quit(): void {
     if (!this.active) return;
     this.input.enabled = false; this.input.clear(); this.phase = 'inactive';
     this.game.playing = false; this.game.worldTime = null; this.game.desaturation.value = 0;
+    this.game.home.setActorOpacity(1);
     this.game.world.actorVisible = true; this.game.world.showCrates = true;
     const home = this.game.home; home.root.add(home.animalRoot);
+    home.root.add(home.effects.root);
+    home.effects.root.scale.setScalar(HOME.ANIMAL_SCALE);
+    if (home.arena) { home.root.add(home.arena.root); home.arena.root.position.set(0, 0, 0); home.arena.root.rotation.y = 0; }
     home.animalRoot.position.set(4, 0, HOME.ANIMAL_Z); home.animalRoot.scale.setScalar(HOME.ANIMAL_SCALE);
     home.animalRoot.rotation.set(0, HOME.ANIMAL_YAW, 0); home.animalRoot.visible = true;
-    if (this.boxer) { this.boxer.onCue = this.savedCue; this.boxer.play('idle'); }
+    this.boxer?.play('idle');
     this.game.rig.resetScroll(); this.game.go('home'); this.show('home');
     this.root.querySelector('[data-mode="solo"]')?.classList.toggle('practice', this.best === null);
   }
@@ -149,8 +163,9 @@ export class Solo {
     if (this.preferences.haptics) navigator.vibrate?.(SOLO.HAPTIC_DEATH_MS);
     this.best = Math.max(this.best ?? 0, this.movement.distance);
     try { localStorage.setItem(SOLO_BEST_KEY, String(this.best)); } catch { /* Session best remains usable. */ }
-    if (cause === 'SPLASH!' || cause === 'LEFT BEHIND!') this.game.particles.burst(this.movement.x, this.movement.z);
-    this.heart.style.opacity = '0'; this.heart.style.transform = 'translateY(40px) rotate(30deg)';
+    this.game.world.deathCause = cause; this.game.world.deathX = this.movement.x; this.game.world.deathZ = this.movement.z;
+    if (cause === 'SPLASH!' || cause === 'LEFT BEHIND!') this.game.particles.burst(this.movement.x, this.movement.z, cause === 'SPLASH!' ? COLORS.water : COLORS.cream);
+    this.heart.style.opacity = '0'; this.heart.style.transform = `translateY(${SOLO.HEART_FALL_PX}px) rotate(${SOLO.HEART_SPIN_DEG}deg)`;
   };
   private readonly frame = (now: number, dt: number): void => {
     if (!this.active) return;
@@ -158,7 +173,7 @@ export class Solo {
     if (this.phase !== 'paused') this.poseTime += dt;
     if (this.phase === 'countdown') {
       const remaining = this.countdownEnd - now;
-      const label = String(Math.max(1, Math.ceil(remaining / (SOLO.COUNTDOWN_MS / 3))));
+      const label = String(Math.max(1, Math.ceil(remaining / (this.countdownDuration / 3))));
       if (label !== this.lastCountdown) { this.countdown.textContent = label; this.lastCountdown = label; }
       if (remaining <= 0) {
         this.phase = 'playing'; this.input.enabled = true; this.game.playing = true;
@@ -166,6 +181,11 @@ export class Solo {
       }
     } else if (this.phase === 'playing') {
       this.roundTime += elapsed; this.movement.advance(this.roundTime);
+      let warning = false;
+      for (const slot of this.game.world.rows) if (slot.row?.kind === 'rail' && slot.z >= this.movement.camZ
+        && slot.z <= this.movement.camZ + CONFIG.VIEW_ROWS && trainWarning(slot.row, this.movement.time)) warning = true;
+      if (warning && !this.warned) this.game.home.sound.play('tock');
+      this.warned = warning;
       if (now - this.countdownEnd > SOLO.HOP_BANNER_MS) this.countdown.hidden = true;
     } else if (this.phase === 'dying' || this.phase === 'over') {
       const deathMs = (this.poseTime - this.deathAt) * 1000;
@@ -184,19 +204,20 @@ export class Solo {
     this.game.world.animalX = this.movement.x; this.game.world.animalZ = this.movement.z;
     this.renderPose(dt);
     if (this.lastScore !== this.movement.distance) { this.lastScore = this.movement.distance; this.score.textContent = String(this.lastScore); }
-    this.danger.style.opacity = this.phase === 'playing' && this.movement.z - this.movement.camZ < 2
-      ? String(0.2 + (this.preferences.reducedMotion ? 0 : Math.sin(this.poseTime * 4) * 0.08)) : '0';
+    this.danger.style.opacity = this.phase === 'playing' && this.movement.z - this.movement.camZ < SOLO.DANGER_ROWS
+      ? String(SOLO.DANGER_OPACITY + (this.preferences.reducedMotion ? 0 : Math.sin(this.poseTime * SOLO.DANGER_RATE) * SOLO.DANGER_PULSE)) : '0';
     this.marker.hidden = this.roundTime * 1000 > SOLO.MARKER_MS || this.phase === 'dying' || this.phase === 'over';
-    this.project(this.marker, this.movement.x, 1.7, this.movement.z);
-    this.project(this.name, this.movement.x, 1.25, this.movement.z);
+    this.project(this.marker, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z, -SOLO.MARKER_GAP_PX);
+    this.project(this.name, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z);
     if (!this.flag.hidden) this.project(this.flag, SOLO.FLAG_X, SOLO.FLAG_HEIGHT, this.runBest);
   };
   private renderPose(dt: number): void {
     const player = this.movement, actor = this.game.home.animalRoot;
-    this.boxer?.update(this.poseTime);
     const p = player.hopping ? Math.min(1, (player.time - player.hopStart) * 1000 / CONFIG.HOP_MS) : 0;
-    let y = player.onLog ? 5 / 12 - 0.1 : 0, sy = 1, sx = 1;
+    let y = player.onLog ? SOLO.LOG_TOP : 0, sy = 1, sx = 1;
     if (player.hopping) {
+      y = (this.game.world.rowAt(player.fromZ).kind === 'river' ? SOLO.LOG_TOP * (1 - p) : 0)
+        + (this.game.world.rowAt(player.toZ).kind === 'river' ? SOLO.LOG_TOP * p : 0);
       y += Math.sin(p * Math.PI) * SOLO.HOP_HEIGHT;
       sy = p < SOLO.ANTICIPATION_MS / CONFIG.HOP_MS ? 1 - (1 - SOLO.SQUASH_Y) * Math.sin(p * Math.PI * CONFIG.HOP_MS / SOLO.ANTICIPATION_MS)
         : 1 + (SOLO.STRETCH_Y - 1) * Math.sin(p * Math.PI);
@@ -210,17 +231,21 @@ export class Solo {
       actor.position.x += X[this.bonkDirection] * offset; actor.position.z -= Z[this.bonkDirection] * offset; }
     if (player.dead) {
       const t = Math.min(1, (this.poseTime - this.deathAt) * 1000 / SOLO.DEATH_MS);
-      if (player.dead === 'FLATTENED!') actor.scale.y = Math.max(0.1, 1 - t * 4);
-      else if (player.dead === 'SPLASH!') { actor.position.y -= t * 1.5; actor.scale.setScalar(1 - t * 0.7); }
-      else if (player.dead === 'DERAILED!') { actor.position.x += t * 12; actor.position.y += Math.sin(t * Math.PI) * 4; actor.rotation.z = t * Math.PI * 6; }
-      else if (player.dead === 'SWEPT AWAY!') { actor.position.x += (player.x < 0 ? -1 : 1) * t * 3; actor.rotation.z = Math.sin(t * 25) * .4; }
-      else actor.scale.setScalar(1 - t);
+      this.game.world.deathProgress = t;
+      if (player.dead === 'FLATTENED!') actor.scale.y = Math.max(SOLO.FLATTEN_Y, 1 - t * SOLO.FLATTEN_RATE);
+      else if (player.dead === 'SPLASH!') { actor.position.y -= t * SOLO.SINK_DEPTH; actor.scale.setScalar(1 - t * SOLO.SINK_SCALE); }
+      else if (player.dead === 'DERAILED!') { actor.position.x += t * SOLO.TRAIN_FLING_X; actor.position.y += Math.sin(t * Math.PI) * SOLO.TRAIN_FLING_Y; actor.rotation.z = t * Math.PI * 2 * SOLO.TRAIN_SPINS; }
+      else if (player.dead === 'SWEPT AWAY!') { actor.position.x += (player.x < 0 ? -1 : 1) * t * SOLO.SWEPT_TRAVEL; actor.rotation.z = Math.sin(t * SOLO.SWEPT_WOBBLE_RATE) * SOLO.SWEPT_WOBBLE; }
+      else { this.game.home.setActorOpacity(1 - t); actor.visible = t < 1; }
       if (this.preferences.reducedMotion) actor.rotation.z = 0;
     }
+    this.game.home.updateGameActor(this.poseTime);
+    const arena = this.game.home.arena;
+    if (arena) { arena.root.position.z = -Math.floor(player.camZ / SOLO.ARENA_SPAN) * SOLO.ARENA_SPAN; arena.update(this.poseTime); }
   }
-  private project(element: HTMLElement, x: number, y: number, z: number): void {
+  private project(element: HTMLElement, x: number, y: number, z: number, offsetY = 0): void {
     this.point.set(x, y, -z).project(this.game.rig.camera);
-    element.style.transform = `translate(${(this.point.x + 1) * innerWidth / 2}px,${(1 - this.point.y) * innerHeight / 2}px) translate(-50%,-50%)`;
-    element.style.visibility = this.point.z > 1 || Math.abs(this.point.y) > 1.1 ? 'hidden' : 'visible';
+    element.style.transform = `translate(${(this.point.x + 1) * innerWidth / 2}px,${(1 - this.point.y) * innerHeight / 2 + offsetY}px) translate(-50%,-50%)`;
+    element.style.visibility = this.point.z > 1 || Math.abs(this.point.y) > SOLO.LABEL_CLIP ? 'hidden' : 'visible';
   }
 }
