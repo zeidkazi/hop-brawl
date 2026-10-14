@@ -1033,3 +1033,84 @@ The world is a sequence of **segments**; each segment is one type and spans seve
 ### 30.8 Bugs found in playtest
 - **Logo intro breaks under frame drops** (letters end up scattered/misplaced). All intro/UI animations must be time-based and always settle to their exact final pose; on tab visibility return or a frame gap > 250 ms, jump animations to their end state.
 - **Name dialog leaves a faint ghost panel** after confirming. Overlays must reach opacity 0 and `display: none`/`visibility: hidden` after exit.
+
+## 31. M3 playtest round 2 (overrides §30 where it conflicts)
+
+### 31.1 Draw distance bug (critical)
+- Rows currently render only ~3 rows ahead of the player, leaving most of the screen empty. **Every row inside the camera frustum must be rendered**, plus a buffer: stream rows `camZ − 4 … camZ + VIEW_ROWS + 10`. Generation happens ahead of time (≥ 10 rows beyond the top of the screen) so nothing ever pops in.
+- Test: at rows 5, 35, 70 and 150 on 390×844 and 1440×900, assert no empty/unrendered ground anywhere on screen (sample screen pixels against the sky color).
+
+### 31.2 Camera: angled 3/4 view, closer
+- Back to an **angled 3/4 view**: pitch ~52°, yaw ~18° (lanes run slightly diagonal, more depth), but closer than the M2 camera.
+- Player sits in the **lower third** of the screen (≈ 35 % from the bottom), so most of the screen shows what's ahead.
+- Targets: portrait playfield ≥ 88 % of width; desktop ≥ 45 %; player ≥ 48 px tall at 1440×900. Rows visible ahead of the player: ≥ 7 on portrait and desktop.
+- Make pitch/yaw/distance tunables in `config.ts` and expose them in the `?debug=1` panel so the owner can tune live.
+
+### 31.3 Logs: more challenge, still fair
+- **Forgiving log aim-assist (like classic crossing games):** a hop onto a river row lands on the **nearest log slot within 1.0 tile** of the straight-ahead landing point (prefer the slot closest to straight ahead; ties → the slot the log is moving toward). Only splash when no log slot is within 1.0 tile. Challenge comes from timing, speeds, directions, sinking logs and edge carry, never from pixel-precise landings.
+- Log speeds: T1 0.6–0.9 (unchanged), T2 0.9–1.3, T3 1.1–1.7, T4 1.3–2.0 — always ≤ the slowest car of the tier.
+- From T2: 2-tile logs appear (30 %); adjacent river rows always move in **opposite directions at clearly different speeds** (≥ 35 % difference), so timing matters.
+- From T3: occasional **sinking logs** (15 %): a log that bobs, shows bubbles for 1.0 s, then sinks for 1.5 s and resurfaces — visible warning before sinking, never sinking while the only log in reach.
+- Edge carry stays a real threat: the red edge warning (§30.2) remains.
+
+### 31.4 Boundaries through the environment (replaces the painted lines in §30.2)
+Remove the white boundary lines. The edge must be obvious from the world itself:
+- **Grass rows:** a low hedge or white picket fence segment at x = −1 and x = 9, with the crowd bleachers and bunting starting just beyond — the crowd watches *from behind the fence*.
+- **Road rows:** the 9 playable columns are a **zebra crossing** (wide, low-contrast white stripes); outside it is normal road. You "cross at the crossing".
+- **River rows:** the playable water is open; beyond the edges, **reeds, rocks and lily pads** cluster at the boundary, and the water there is darker and calmer.
+- **Rail rows:** **railway crossing posts with barrier arms** (raised) at both edges — the track crossing *is* the playfield.
+- **Lighting:** the playfield sits in a soft "arena light" pool; outside is ~15 % darker via a smooth lighting gradient (no hard dark band). Keep desaturation subtle (≤ 10 %).
+- Feedback stays: bonk shimmer at the edge, red pulse + "!" when a log carries you within 1.5 tiles of the edge.
+
+### 31.5 Deadline scope (owner decision, 2026-10-15)
+Deadline pressure: finish fast with fewer review stops.
+- **Cut (do not build):** emotes (§4.11), gamepad, share-result button, session scoreboard, Showdown rounds (3–4 player tie after 3 rounds → highest total distance wins), per-biome crowd variants (biomes = palette + tree swap only), announcer voice (text slams + SFX only).
+- **Keep:** Solo, Private Room 2–4, Quick Play 1v1 + 60 s Solo prompt, shove, hearts, crates/boosts, awards, rematch, music + SFX, loading screen, How to Play, settings.
+- **New order:** M4 → M5 → M6 → **M7 deploy (by Oct 21)** → M8 → M9 → M10 (remaining props only) → M11 → M12 → M13. Deploying early is the priority so hosting problems surface with time to fix.
+- **Review stops only:** after §31 (M3), after M6 (multiplayer playable locally), after M7 (live URL). Everything else continues without stopping; report briefly at each milestone.
+- **Efficiency:** unit tests on every commit; full browser suite and screenshots only at milestone ends; keep reports short.
+
+### 31.6 Core gameplay sound pass (pulled forward from M11; music stays in M11)
+Sources: CC0 only — Kenney audio packs, Freesound (filter: CC0), OpenGameArt (filter: CC0); fill gaps with procedurally generated Web Audio / jsfxr-style sounds. Log every file in CREDITS.md. Howler (Web Audio), pre-decoded, max 16 voices, distance attenuation + left/right panning by world x relative to the player.
+
+| Event | Sound |
+|---|---|
+| **Train warning (2.0 s / 1.5 s)** | crossing **bell "ding-ding" loop** from both crossing posts, starts with the red lights; low **rumble that grows** as the train approaches; **horn blast** 0.5 s before it enters the screen |
+| Train passing | loud **whoosh + clatter** sweeping left→right (or right→left) with panning; light camera shake within 2 rows |
+| Cars | soft **engine hum** per vehicle (car vs truck different pitch), audible only within ~3 rows; **honk** on a near miss (vehicle passes within 0.3 tiles) |
+| River | gentle **water ambience** loop when a river row is on screen; **log "thunk"** on landing on a log; **bubbles** before a sinking log goes under |
+| Hop | short **"boing/whoosh"** with 3 random pitch variants; slightly different pitch per animal |
+| Bonk (tree/edge) | dull **thud** + tiny squeak |
+| Deaths | FLATTENED: squash + crunch · SPLASH: splash · DERAILED: big impact + train horn · SWEPT AWAY: splash + whoosh · LEFT BEHIND: falling "whoop" |
+| Crowd | low **crowd murmur** ambience from the bleachers (pans with them); **cheer** on NEW BEST and on K.O.s |
+| Meadow ambience | light birds loop (biome-specific ambience swaps later) |
+| Solo | countdown beeps + "HOP!" whoosh, NEW BEST jingle, game-over sting |
+| UI | button click, back, toggle, panel open/close whoosh |
+- Mix: SFX volume setting applies; hazards quieter than player sounds; the train bell and horn are always clearly audible above everything else (they are gameplay warnings).
+- Sound obeys mute/volume settings and the autoplay unlock on first tap.
+
+## 32. SHIP TODAY (owner decision, 2026-10-15 — overrides §21, §31.5 and every other section where it conflicts)
+
+Goal: a live, playable multiplayer build submitted **today**. After submission the same URL keeps improving until Oct 30 (only stable builds get deployed).
+
+### 32.1 Today's scope (in this exact order)
+1. **Solo fixes from §31, minimal:** §31.1 draw distance (critical); §31.2 angled 3/4 camera with the player in the lower third (no debug sliders); §31.3 log aim-assist (1.0 tile) + T2+ speeds only (no sinking logs); keep the current painted boundary lines (skip §31.4).
+2. **Private Room multiplayer (2–4 players), condensed M4–M6:**
+   - Cloudflare Worker + Room Durable Object (hibernation in lobby), `POST /api/rooms`, `/ws/room/:code`, 4-letter codes, `?room=CODE` links, Copy link button.
+   - Lobby: player list, animal pick, host START (≥ 2 players).
+   - Same seed for all, shared server camera, server-authoritative hops/shoves with client prediction + 100 ms interpolation, clock sync.
+   - 2 hearts, respawn + spawn protection, shove (stun, shove-proof, cooldown), best of 3 rounds (first to 2), Round End + Match End screens (winner, round wins), Rematch + Back to lobby.
+   - Basic resilience only: host handoff, a player leaving mid-match = out (1 left → wins by forfeit), "Room not found" / "Room full".
+3. **Home:** PLAY opens the Friends flow (Create / Join) — Quick Play is hidden for today. SOLO unchanged.
+4. **Minimum sound:** train bell + horn, hop, splash, squash, bonk, shove punch, round win (CC0 Kenney/Freesound-CC0 or procedural). Everything else in §31.6 later.
+5. **Deploy (single Worker):** serve the built frontend from the same Cloudflare Worker via Workers static assets (no Vercel, no DNS today) → one URL `https://hop-brawl.<account>.workers.dev`. Free plan, no card. Owner runs `npx wrangler login` once; then you run `npx wrangler deploy`.
+6. **Verify live:** open the URL in a normal + incognito window and on a phone: create room, join by code, play a full best-of-3 match, rematch. Fix anything broken, redeploy.
+7. **Cover image:** export a 1800×1200 PNG of a 2-player match moment (both animals, gloves, traffic, logo-free HUD) for the Handshake cover.
+
+### 32.2 Deferred (after submission, same URL, in this order)
+Quick Play + 60 s Solo prompt → crates/boosts → awards → environmental boundaries (§31.4) → sinking logs → full sound pass (§31.6) + music → biomes → Vercel + custom domain (§15a) → remaining polish/edge cases.
+
+### 32.3 How to work today
+- No review stops until the live URL works end to end; then stop and report: URL, what was tested, known issues.
+- Unit tests for room/shove/round logic; skip screenshot sets except the cover image.
+- Commit maxing continues (small commits, pushed regularly). Tag `v0.9-submission` on the deployed commit.
