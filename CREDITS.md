@@ -15,7 +15,7 @@ Every imported asset must have an individual file path, source URL and verified 
 
 Font license text verified from the pinned packages. Fonts are bundled locally; no external font requests. §28 replaces Pixelify Sans with Lilita One in the Home revision after model approval; the current runtime still uses the M2 fonts at this asset-only checkpoint.
 
-## M2.5 Blender assets — awaiting owner approval
+## M2.5 Blender assets — partial owner approval
 
 All assets below are original project creations, authored as voxel data and built in Blender 5.2.2 LTS. No downloaded art, font outlines or other game assets were used. Each row lists the editable source, game export and transparent rendered preview. License for every file: **CC0 1.0 Universal**, no attribution required; see `art/LICENSE.md` and https://creativecommons.org/publicdomain/zero/1.0/legalcode .
 
@@ -32,7 +32,18 @@ All assets below are original project creations, authored as voxel data and buil
 | `art/voxels/oak.json`, `art/oak.blend`, `client/public/models/oak.glb`, `art/previews/oak.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/oak.py |
 | `art/voxels/crate.json`, `art/crate.blend`, `client/public/models/crate.glb`, `art/previews/crate.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/crate.py |
 
-The runtime imports these only after the M2.5 preview approval gate. Remaining models arrive in M10 using the same mandatory Blender pipeline.
+The owner approved the chicken, penguin and crate designs. Their voxel sources are unchanged; exports use the same closed-part/coplanar optimization as the revised models. Frog, fox, pig, cat, car, oak and logo revisions await approval. The runtime imports these only after the M2.5 preview approval gate. Remaining models arrive in M10 using the same mandatory Blender pipeline.
+
+The following silhouette previews are original Blender renders of the same animal geometry, with black material on white. Each is also **CC0 1.0 Universal**, with the same license above.
+
+| File | Source URL / original recipe |
+|---|---|
+| `art/previews/chicken-silhouette.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/chicken.py |
+| `art/previews/penguin-silhouette.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/penguin.py |
+| `art/previews/frog-silhouette.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/frog.py |
+| `art/previews/fox-silhouette.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/fox.py |
+| `art/previews/pig-silhouette.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/pig.py |
+| `art/previews/cat-silhouette.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/cat.py |
 
 ## Announcer acquisition (milestone 11)
 
