@@ -317,8 +317,13 @@ def main():
     parser.add_argument('--silhouette-only', action='store_true')
     parser.add_argument('--logo-variants', action='store_true')
     parser.add_argument('--menu-props', action='store_true')
+    parser.add_argument('--arena', action='store_true')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     config = json.loads(Path(args.config).read_text(encoding='utf-8'))
+    if args.arena:
+        from build_arena import build as build_arena
+        build_arena(ROOT, config)
+        return
     if args.menu_props:
         from build_menu import build as build_menu
         build_menu(ROOT, config)
