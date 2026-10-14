@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { ART, VIEW } from '../shared/config.ts';
+import { ART, COLORS, VIEW } from '../shared/config.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const localEnv = fileURLToPath(new URL('../.env.local', import.meta.url));
@@ -18,7 +18,7 @@ if (args.includes('--version')) {
 }
 const configPath = fileURLToPath(new URL('../tmp/art-config.json', import.meta.url));
 mkdirSync(fileURLToPath(new URL('../tmp/', import.meta.url)), { recursive: true });
-writeFileSync(configPath, JSON.stringify({ ...ART, VOXELS_PER_TILE: VIEW.VOXELS_PER_TILE }));
+writeFileSync(configPath, JSON.stringify({ ...ART, PLAYER_COLORS: COLORS.players, VOXELS_PER_TILE: VIEW.VOXELS_PER_TILE }));
 const script = fileURLToPath(new URL('../art/build_models.py', import.meta.url));
 const result = spawnSync(blender, ['-b', '--factory-startup', '--python-exit-code', '1', '-P', script, '--', '--config', configPath, ...args], {
   cwd: root, stdio: 'inherit', windowsHide: true,

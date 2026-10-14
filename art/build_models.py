@@ -270,13 +270,17 @@ def build(name, config, author=False):
         spec = importlib.util.spec_from_file_location(name, recipe_path)
         recipe = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(recipe)
-        source_path.write_text(json.dumps(recipe.create().data(), separators=(',', ':')) + '\n', encoding='utf-8')
+        from brawler_gear import equip
+        source_path.write_text(json.dumps(equip(name, recipe.create()).data(), separators=(',', ':')) + '\n', encoding='utf-8')
     source = json.loads(source_path.read_text(encoding='utf-8'))
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.context.scene.world = bpy.data.worlds.new('PreviewWorld')
     objects = mesh_parts(name, source, config)
     bake(objects, config)
     parents = group_parts(objects, name, source, config)
+    for obj in objects:
+        if obj.get('part') in ('glove_left', 'glove_right', 'headband_stripe'):
+            obj['player_color'] = True
     bpy.context.view_layer.update()
     bpy.ops.object.select_all(action='DESELECT')
     for obj in [*objects, *parents]:
@@ -286,9 +290,20 @@ def build(name, config, author=False):
         export_yup=True, export_texcoords=False, export_normals=True, export_materials='EXPORT',
         export_animations=False, export_extras=True, export_apply=True,
         export_all_vertex_colors=False, export_vertex_color='NAME', export_vertex_color_name='COLOR_0')
+    from brawler_gear import tint_preview
+    tint_preview(objects, config['PLAYER_COLORS'][0])
     preview(objects, name, config)
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(ROOT / 'art' / f'{name}.blend'), compress=True)
+    if name == 'fox':
+        for index, color in enumerate(config['PLAYER_COLORS']):
+            # Reuse the exact same mesh and camera; only the tint changes.
+            for obj in objects:
+                if obj.get('player_color'):
+                    mix = next(n for n in obj.data.materials[0].node_tree.nodes if n.type == 'MIX_RGB')
+                    mix.inputs[2].default_value = (*linear(color), 1)
+            bpy.context.scene.render.filepath = str(ROOT / 'art/previews' / f'fox-player-{index + 1}.png')
+            bpy.ops.render.render(write_still=True)
     triangles = sum(len(p.vertices) - 2 for obj in objects for p in obj.data.polygons)
     print(f'ASSET_OK {name}: {len(source["voxels"])} voxels, {triangles} triangles, {output.stat().st_size} bytes', flush=True)
 
