@@ -72,6 +72,8 @@ export class GameRenderer {
     this.mediumShadow = this.highShadow.clone();
     this.mediumShadow.mapSize.setScalar(QUALITY.medium.shadowSize);
     this.resize();
+    // Start the resolve shader while asset bytes are still arriving.
+    this.renderer.compile(this.output, this.outputCamera);
     window.addEventListener('resize', this.queueResize);
     document.addEventListener('visibilitychange', this.visibility);
   }
@@ -120,6 +122,7 @@ export class GameRenderer {
 
   async warmup(): Promise<void> {
     await this.home.load();
+    performance.mark('hop-assets-ready');
     this.scene.add(this.home.root);
     this.home.layout(this.rig.camera);
     this.home.warmAll(true);
@@ -129,8 +132,8 @@ export class GameRenderer {
       this.world.update(0);
       await this.renderer.compileAsync(this.scene, this.rig.camera);
       this.draw();
+      performance.mark(`hop-warm-${tier}`);
     }
-    this.renderer.compile(this.output, this.outputCamera);
     this.home.warmAll(false);
     this.world.root.visible = false;
     this.quality.tier = initialTier; this.applyQuality();

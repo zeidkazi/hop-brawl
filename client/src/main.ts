@@ -3,6 +3,7 @@ import { GameRenderer } from './game/renderer';
 import { preloadFonts } from './ui/fonts';
 import { Screens } from './ui/screens';
 import { Loading } from './ui/loading';
+import { downloads } from './ui/downloads';
 import styles from './ui/styles.css?inline';
 
 // Keep the game stylesheet out of index.html's render-blocking critical path.
@@ -16,8 +17,11 @@ root.style.setProperty('--flip-rows', String(VIEW.TILE_FLIP_ROWS));
 let game: GameRenderer | undefined;
 async function boot(): Promise<void> {
   try {
+    performance.mark('hop-boot-start');
+    const transfer = downloads.load();
     game ??= new GameRenderer(document.querySelector<HTMLCanvasElement>('#game-canvas')!);
-    await Promise.all([preloadFonts(), game.warmup()]);
+    performance.mark('hop-renderer-ready');
+    await Promise.all([transfer, preloadFonts(), game.warmup()]);
     const screens = new Screens(root, game);
     game.home.logo.visible = false;
     game.start(false);
