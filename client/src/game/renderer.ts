@@ -155,10 +155,10 @@ export class GameRenderer {
     this.metrics.textures = this.renderer.info.memory.textures;
   }
 
-  start(): void {
+  start(intro = true): void {
     if (this.frameId) return;
     this.clockStart = performance.now();
-    this.home.playIntro();
+    if (intro) this.home.playIntro();
     this.frameId = requestAnimationFrame(this.frame);
   }
 

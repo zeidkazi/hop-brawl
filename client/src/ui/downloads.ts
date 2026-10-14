@@ -2,9 +2,10 @@
 declare const __ASSET_BYTES__: Record<string, number>;
 type Entry = { url: string; size: number; loaded: number; data?: ArrayBuffer };
 export class Downloads {
+  private active: Promise<void> | null = null;
   readonly entries = new Map<string, Entry>();
   onProgress: ((loaded: number, total: number) => void) | null = null;
-  constructor(private readonly fetcher: typeof fetch = fetch) {}
+  constructor(private readonly fetcher: typeof fetch = (input, init) => fetch(input, init)) {}
   register(url: string, size: number): void {
     if (!this.entries.has(url)) this.entries.set(url, { url, size, loaded: 0 });
   }
@@ -13,7 +14,11 @@ export class Downloads {
     let loaded = 0; for (const entry of this.entries.values()) loaded += entry.loaded;
     this.onProgress?.(loaded, this.total);
   }
-  async load(): Promise<void> {
+  load(): Promise<void> {
+    if (!this.active) this.active = this.fetchAll().finally(() => { this.active = null; });
+    return this.active;
+  }
+  private async fetchAll(): Promise<void> {
     const results = await Promise.allSettled([...this.entries.values()].filter(entry => !entry.data).map(async entry => {
       entry.loaded = 0;
       const response = await this.fetcher(entry.url);
@@ -39,6 +44,10 @@ export class Downloads {
     const data = this.entries.get(url)?.data;
     if (!data) throw new Error(`Asset not downloaded: ${url}`);
     return data;
+  }
+  invalidate(url: string): void {
+    const entry = this.entries.get(url);
+    if (entry) { delete entry.data; entry.loaded = 0; }
   }
 }
 export const downloads = new Downloads();

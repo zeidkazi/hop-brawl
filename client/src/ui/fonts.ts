@@ -1,15 +1,22 @@
 import titleUrl from '@fontsource/lilita-one/files/lilita-one-latin-400-normal.woff2?url';
 import bodyUrl from '@fontsource/nunito/files/nunito-latin-700-normal.woff2?url';
 import boldUrl from '@fontsource/nunito/files/nunito-latin-800-normal.woff2?url';
+import { downloads, registerAsset } from './downloads';
+
+const fonts = [[titleUrl, 'Lilita One', '400', 'lilita-one-latin-400-normal.woff2'],
+  [bodyUrl, 'Nunito', '700', 'nunito-latin-700-normal.woff2'],
+  [boldUrl, 'Nunito', '800', 'nunito-latin-800-normal.woff2']] as const;
+for (const [url, , , filename] of fonts) registerAsset(url, filename);
+let loaded = false;
 
 export async function preloadFonts(): Promise<void> {
-  const fonts = [[titleUrl, 'Lilita One', '400'], [bodyUrl, 'Nunito', '700'], [boldUrl, 'Nunito', '800']] as const;
+  if (loaded) return;
+  await downloads.load();
   await Promise.all(fonts.map(async ([url, family, weight]) => {
-    const link = document.createElement('link');
-    link.rel = 'preload'; link.as = 'font'; link.type = 'font/woff2'; link.crossOrigin = 'anonymous'; link.href = url;
-    document.head.append(link);
-    const face = new FontFace(family, `url("${url}")`, { weight, style: 'normal', display: 'block' });
-    document.fonts.add(await face.load());
+    const face = new FontFace(family, downloads.bytes(url), { weight, style: 'normal', display: 'block' });
+    try { document.fonts.add(await face.load()); }
+    catch (error) { downloads.invalidate(url); throw error; }
   }));
   await document.fonts.ready;
+  loaded = true;
 }

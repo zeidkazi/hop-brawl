@@ -6,7 +6,8 @@ import {
 import type { PerspectiveCamera } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { ANIMALS, BOXER, COLORS, CONFIG, HOME, STREET, VIEW } from '../../../shared/config';
+import { ANIMALS, BOXER, COLORS, CONFIG, HOME, HOME_MODELS, STREET, VIEW } from '../../../shared/config';
+import { downloads, registerAsset } from '../ui/downloads';
 import { mulberry32 } from '../../../shared/rng';
 import type { Tier } from './quality';
 import { Outlines } from './outlines';
@@ -16,6 +17,7 @@ import type { BoxerMove } from './boxer';
 import { BoxingEffects, BoxingSound } from './boxing-feedback';
 
 type Moving = { batch: InstancedMesh; index: number; x: number; z: number; speed: number; scale: number };
+for (const name of HOME_MODELS) registerAsset(`/models/${name}.glb`, `${name}.glb`);
 
 /** Loaded once into the persistent world scene. Repeated scenery is instanced. */
 export class HomeScene {
@@ -23,6 +25,7 @@ export class HomeScene {
   readonly outlines = new Outlines();
   arena: Arena | null = null;
   private warming = false;
+  private loaded = false;
   readonly logo = new Group();
   readonly animalRoot = new Group();
   readonly standard = new MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
@@ -67,11 +70,16 @@ export class HomeScene {
   onTargets: ((points: Float64Array) => void) | null = null;
 
   async load(): Promise<void> {
+    if (this.loaded) return;
     this.setPlayerColor(0);
     const loader = new GLTFLoader();
-    const names = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls', 'arena'];
-    const loaded = await Promise.all(names.map(async name => [name, (await loader.loadAsync(`/models/${name}.glb`)).scene] as const));
-    const assets = new Map(loaded);
+    await downloads.load();
+    const loaded = await Promise.all(HOME_MODELS.map(async name => {
+      const url = `/models/${name}.glb`;
+      try { return [name, (await loader.parseAsync(downloads.bytes(url), '/models/')).scene] as const; }
+      catch (error) { downloads.invalidate(url); throw error; }
+    }));
+    const assets = new Map<string, Group>(loaded);
     for (const [name, model] of assets) {
       model.traverse(obj => {
         if (!(obj instanceof Mesh)) return;
@@ -169,7 +177,7 @@ export class HomeScene {
       if (kind === 'logo' && mesh.userData.part) this.outlines.add(mesh, 'logo');
       if (kind === 'ui') this.outlines.add(mesh, 'ui');
     }
-    this.select(0); this.update(0);
+    this.select(0); this.update(0); this.loaded = true;
   }
 
   private batch(model: Group, count: number): InstancedMesh {
