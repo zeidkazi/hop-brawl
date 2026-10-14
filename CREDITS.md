@@ -56,6 +56,17 @@ The following silhouette previews are original Blender renders of the same anima
 | `art/previews/pig-silhouette.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/pig.py |
 | `art/previews/cat-silhouette.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/cat.py |
 
+## Street Brawl revisions
+
+All six animal model/source/preview entries above now include original CC0 boxing gloves and white headbands with recolorable stripes authored by https://github.com/zeidkazi/hop-brawl/blob/main/art/brawler_gear.py . One neutral-color GLB per animal supports all player colors at runtime.
+
+| Preview file | Source / license |
+|---|---|
+| `art/previews/fox-player-1.png` | Same fox geometry with coral gear; brawler_gear.py above, CC0 1.0 |
+| `art/previews/fox-player-2.png` | Same fox geometry with blue gear; brawler_gear.py above, CC0 1.0 |
+| `art/previews/fox-player-3.png` | Same fox geometry with green gear; brawler_gear.py above, CC0 1.0 |
+| `art/previews/fox-player-4.png` | Same fox geometry with purple gear; brawler_gear.py above, CC0 1.0 |
+
 ## Announcer acquisition (milestone 11)
 
 Find one consistent, energetic voice for: "Round one", "Round two", "Final round", "Showdown", "Hop!", "K.O.!", "Winner!". Search free voice packs, including Kenney and CC0-filtered OpenGameArt/Freesound sources. Verify each file's license; free download alone is not license permission. Record missing same-voice lines and ask the owner to record them at M11. Until then use text slams and SFX. No announcer files have been selected or downloaded yet.
