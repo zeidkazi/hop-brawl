@@ -7,10 +7,12 @@ def create():
     v.box(1, 22, 3, 3, 1, 9, steel)
     v.box(1, 14, 4, 12, 1, 9, '#DDE5E7')
     v.box(1, 14, 4, 4, 1, 9, '#AEBFC8')
-    for x in (1, 7, 14):
+    for x in (1, 7):
         v.box(x, x, 5, 11, 1, 1, '#B8C8CF').box(x, x, 5, 11, 9, 9, '#B8C8CF')
     v.box(16, 22, 4, 5, 1, 9, orange)
     v.box(16, 21, 6, 8, 1, 9, glass).box(16, 21, 9, 9, 1, 9, orange)
+    # Solid painted rear cab wall; no glass-colored sheet behind the driver.
+    v.box(16, 16, 6, 8, 1, 9, orange)
     for x in (16, 21):
         for d in (1, 9):
             v.box(x, x, 6, 8, d, d, orange)
