@@ -893,3 +893,38 @@ The 3D scene **is** the menu. UI is minimal and sits on top without covering the
 ### 28.5 All other screens
 - Same rule: the scene stays visible and alive; UI is a bottom sheet or a centered card **only when input is needed** (join code, settings, results), with the slanted fighting-game banners from §8.1 for titles.
 - Before implementing any screen, Work takes a screenshot at 390×844 and 1440×900 and shows the owner for approval.
+
+## 29. Visual identity: "Street Brawl", not a crossing-game clone (overrides §12, §28 where they conflict)
+
+Goal: at a glance, nobody should mistake Hop Brawl for another voxel crossing game. Gameplay stays identical; only the look changes.
+
+### 29.1 Brawler characters
+- Every animal wears **boxing gear**: oversized voxel **boxing gloves** in the **player's color** (§8.1: coral / blue / green / purple; menus use coral), and a **headband** (white with a player-color stripe). Gloves replace front paws/wings visually; they swing on hops and punch forward on shoves.
+- Gloves and headband are separate meshes recolored at runtime by player color (one model per animal, not one per color).
+- **Default/mascot animal: the fox** (not the chicken). Home shows the fox first, and the logo mascot is the fox in gloves. The chicken remains selectable.
+
+### 29.2 Toon outline style
+- All characters, vehicles, crates, trains, logs and the logo get a **dark outline** (inverted-hull method: back-face shell scaled ~3 %, color Ink #1B1B2F). Medium tier: outlines on characters, vehicles and logo only. Low tier: characters only. Matches the UI's dark-outline style.
+- Lighting: stronger key light + cool rim light from behind (the silhouette pops), warmer and more saturated palette, deeper contact shadows.
+
+### 29.3 New palette (replaces Meadow in §12.3; adjust the other biomes in the same direction)
+| Element | Color |
+|---|---|
+| Grass A / B (alternating rows) | `#6CCB5F` / `#5DBB52`, with small voxel grass tufts and flowers scattered |
+| Road | warm charcoal `#3A3540` with **yellow** dashed lane lines `#FFD23F` and kerb stripes (red/white) at row edges |
+| River | turquoise `#2EC4D6` with white foam at log ends |
+| Sky gradient | `#7FD3FF` → `#FFE9C7` (warm horizon) |
+
+### 29.4 Arena roadside (decorative columns outside 0..8)
+- The road is a **street-brawl event**: instead of only trees at the sides, alternate **voxel crowd bleachers** (small blocky spectators in mixed colors that bob idly and jump + cheer on any K.O.), **festival bunting flags** strung between posts, **traffic cones and barriers**, and an occasional **stadium spotlight tower**. Trees still appear as grass-row obstacles inside the playfield.
+- Per biome variants: autumn = hay bales + pumpkins by the bleachers; snow = snowy bleachers + scarves on spectators; night city = neon signs + spotlights switched on.
+- All instanced; crowd animation is a cheap vertex/instance bob, no per-spectator logic.
+
+### 29.5 Logo
+- Strong contrast is mandatory: **thick dark Ink outline** (inverted hull or backing plate), saturated Brawl Yellow `#FFD23F` face with highlight, never pale. Must read clearly over grass, road and sky.
+- Mascot on the logo: the **fox in boxing gloves** (replaces the chicken).
+
+### 29.6 Animal select direction
+- ▶ (next): current animal hops **out to the left**, new animal hops **in from the right**.
+- ◀ (previous): current hops **out to the right**, new hops **in from the left**.
+- Swipes follow the same direction as the finger. Keyboard ←/→ match the arrows.
