@@ -1,0 +1,56 @@
+{
+  "font": "Lilita One",
+  "variant": "logo_smooth",
+  "letters": [
+    {
+      "node": "logo_BRAWL_B",
+      "tilt_deg": -5.032528074864719,
+      "height_nudge": -0.06308453436700215,
+      "height": 1.8
+    },
+    {
+      "node": "logo_BRAWL_R",
+      "tilt_deg": 4.7731160337013625,
+      "height_nudge": -0.03046604593133163,
+      "height": 1.8
+    },
+    {
+      "node": "logo_BRAWL_A",
+      "tilt_deg": 3.9584403081143877,
+      "height_nudge": -0.02618848693813909,
+      "height": 1.8
+    },
+    {
+      "node": "logo_BRAWL_W",
+      "tilt_deg": -5.802460347384215,
+      "height_nudge": -0.01149928476029078,
+      "height": 1.8
+    },
+    {
+      "node": "logo_BRAWL_L",
+      "tilt_deg": 5.682696762149691,
+      "height_nudge": -0.0121622604976643,
+      "height": 1.8
+    },
+    {
+      "node": "logo_HOP_H",
+      "tilt_deg": -3.1798262603452256,
+      "height_nudge": 0.042909839021867256,
+      "height": 1.26
+    },
+    {
+      "node": "logo_HOP_O",
+      "tilt_deg": 5.9255945085182145,
+      "height_nudge": 0.0004084581244838657,
+      "height": 1.26
+    },
+    {
+      "node": "logo_HOP_P",
+      "tilt_deg": 3.9435357701561737,
+      "height_nudge": -0.029785447468788626,
+      "height": 1.26
+    }
+  ],
+  "bytes": 182904,
+  "remesh_depth": null
+}
