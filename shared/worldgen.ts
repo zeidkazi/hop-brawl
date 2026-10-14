@@ -1,5 +1,6 @@
-import { CONFIG, WORLD } from './config';
+import { CONFIG, SEGMENTS, WORLD } from './config';
 import { hash32, mulberry32, randomBetween, randomInt } from './rng';
+import { segmentAt, tierAt } from './segments';
 import type { Random } from './rng';
 import type { Biome, GrassRow, LaneItem, Obstacle, RailRow, RiverRow, RoadRow, Row, RowKind, Vehicle } from './types';
 
@@ -13,28 +14,7 @@ export function difficultyAtRow(z: number): number {
   return Math.min(1, Math.max(0, z / CONFIG.DIFFICULTY_FULL_ROW));
 }
 
-function candidateKind(seed: number, z: number): RowKind {
-  if (z <= WORLD.START_GRASS_LAST_ROW) return 'grass';
-  const roll = mulberry32(hash32(seed, z))();
-  if (roll < WORLD.GRASS_WEIGHT) return 'grass';
-  if (roll < WORLD.GRASS_WEIGHT + WORLD.ROAD_WEIGHT) return 'road';
-  if (roll < WORLD.GRASS_WEIGHT + WORLD.ROAD_WEIGHT + WORLD.RIVER_WEIGHT) return 'river';
-  return z <= WORLD.EARLY_LAST_ROW ? 'grass' : 'rail';
-}
-
-/** Bounded lookback lets a distant row be generated without replaying the world. */
-export function rowKind(seed: number, z: number): RowKind {
-  if (!Number.isSafeInteger(z)) throw new RangeError('Row must be a safe integer');
-  const kind = candidateKind(seed, z);
-  if (kind === 'grass') return kind;
-  const limit = kind === 'road'
-    ? (z <= WORLD.EARLY_LAST_ROW ? WORLD.EARLY_MAX_CONSECUTIVE_ROAD : WORLD.MAX_CONSECUTIVE_ROAD)
-    : kind === 'river' ? WORLD.MAX_CONSECUTIVE_RIVER : WORLD.MAX_CONSECUTIVE_RAIL;
-  for (let offset = 1; offset <= limit; offset++) {
-    if (candidateKind(seed, z - offset) !== kind) return kind;
-  }
-  return 'grass';
-}
+export function rowKind(seed: number, z: number): RowKind { return segmentAt(seed, z).kind; }
 
 function rowRandom(seed: number, z: number): Random {
   const random = mulberry32(hash32(seed, z));
@@ -44,13 +24,18 @@ function rowRandom(seed: number, z: number): Random {
 
 export function generateGrassRow(seed: number, z: number): GrassRow {
   const random = rowRandom(seed, z);
+  const segment = segmentAt(seed, z), tier = tierAt(z);
+  const corridor = hash32(seed, segment.start) % (CONFIG.COLUMNS - SEGMENTS.CORRIDOR_COLUMNS + 1);
   const available: number[] = [];
   for (let column = 0; column < CONFIG.COLUMNS; column++) {
-    if (z <= WORLD.START_GRASS_LAST_ROW
-      && column >= WORLD.START_CLEAR_MIN_COLUMN && column <= WORLD.START_CLEAR_MAX_COLUMN) continue;
+    if (column >= corridor && column < corridor + SEGMENTS.CORRIDOR_COLUMNS) continue;
+    if (segment.rest && column >= SEGMENTS.REST_CLEAR_MIN && column <= SEGMENTS.REST_CLEAR_MAX) continue;
+    if (z <= WORLD.START_GRASS_LAST_ROW && column >= WORLD.START_CLEAR_MIN_COLUMN && column <= WORLD.START_CLEAR_MAX_COLUMN) continue;
     available.push(column);
   }
-  const count = z < 0 ? 0 : randomInt(random, 0, Math.min(WORLD.MAX_GRASS_OBSTACLES, available.length));
+  const adjacent = rowKind(seed, z - 1) !== 'grass' || rowKind(seed, z + 1) !== 'grass';
+  const maximum = adjacent ? SEGMENTS.ADJACENT_OBSTACLES : tier.obstacles;
+  const count = z < 0 ? 0 : randomInt(random, 0, Math.min(maximum, available.length));
   const obstacles: Obstacle[] = [];
   for (let i = 0; i < count; i++) {
     const index = randomInt(random, 0, available.length - 1);
@@ -61,7 +46,7 @@ export function generateGrassRow(seed: number, z: number): GrassRow {
   for (let column = 0; column < CONFIG.COLUMNS; column++) {
     if (!obstacles.some(obstacle => obstacle.column === column)) freeColumns.push(column);
   }
-  const crate = z >= CONFIG.CRATE_MIN_ROW && random() < CONFIG.CRATE_CHANCE
+  const crate = z >= CONFIG.CRATE_MIN_ROW && random() < CONFIG.CRATE_CHANCE * (segment.rest ? SEGMENTS.REST_CRATE_MULTIPLIER : 1)
     ? { id: `${z}`, column: freeColumns[randomInt(random, 0, freeColumns.length - 1)]! }
     : null;
   return { kind: 'grass', z, biome: biomeAtRow(z), obstacles, crate };
@@ -84,10 +69,14 @@ function ringGaps(random: Random, count: number, total: number, min: number, max
 
 export function generateRoadRow(seed: number, z: number): RoadRow {
   const random = rowRandom(seed, z);
-  const direction = randomInt(random, 0, 1) === 0 ? -1 : 1;
-  const rawSpeed = randomBetween(random, WORLD.ROAD_SPEED_MIN, WORLD.ROAD_SPEED_MAX)
-    * (1 + WORLD.ROAD_DIFFICULTY_GAIN * difficultyAtRow(z));
-  const speed = z <= WORLD.EARLY_LAST_ROW ? Math.min(rawSpeed, WORLD.EARLY_ROAD_SPEED_CAP) : rawSpeed;
+  const segment = segmentAt(seed, z), tier = tierAt(z);
+  const schedule = mulberry32(hash32(seed, segment.start));
+  const lane = z - segment.start;
+  const firstDirection = schedule() < .5 ? -1 : 1;
+  const direction = (lane % 2 ? -firstDirection : firstDirection) as -1 | 1;
+  const slow = randomBetween(schedule, tier.car[0], tier.car[1] / SEGMENTS.ROAD_SPEED_RATIO);
+  const fast = randomBetween(schedule, slow * SEGMENTS.ROAD_SPEED_RATIO, tier.car[1]);
+  const speed = lane % 2 ? fast : slow;
   const span = WORLD.LOOP_MAX_X - WORLD.LOOP_MIN_X;
   const minimumGap = Math.max(WORLD.ROAD_GAP_MIN, speed * CONFIG.MIN_ROAD_TIME_GAP_S);
   // These bounds keep every possible 80/20 car/truck draw feasible.
@@ -98,7 +87,7 @@ export function generateRoadRow(seed: number, z: number): RoadRow {
   const lengths: number[] = [];
   let occupied = 0;
   for (let i = 0; i < count; i++) {
-    const car = random() < WORLD.CAR_CHANCE;
+    const car = z < SEGMENTS.TIERS[1].start || random() < WORLD.CAR_CHANCE;
     const length = car ? WORLD.CAR_LENGTH : WORLD.TRUCK_LENGTH;
     kinds.push(car ? 'car' : 'truck');
     lengths.push(length);
@@ -119,50 +108,26 @@ export function generateRoadRow(seed: number, z: number): RoadRow {
 }
 
 export function generateRiverRow(seed: number, z: number): RiverRow {
-  const random = rowRandom(seed, z);
+  const segment = segmentAt(seed, z), tier = tierAt(z);
+  const random = mulberry32(hash32(seed, segment.start));
   const span = WORLD.LOOP_MAX_X - WORLD.LOOP_MIN_X;
-  const gain = 1 + WORLD.RIVER_DIFFICULTY_GAIN * difficultyAtRow(z);
-  const speedMaximum = WORLD.RIVER_SPEED_MAX * gain;
-  const options: { length: number; count: number; pitch: number; minimumSpeed: number }[] = [];
-  for (let length = WORLD.LOG_LENGTH_MIN; length <= WORLD.LOG_LENGTH_MAX; length++) {
-    const fewest = Math.ceil(span / (length + WORLD.RIVER_GAP_MAX));
-    const most = Math.floor(span / (length + WORLD.RIVER_GAP_MIN));
-    for (let count = fewest; count <= most; count++) {
-      const pitch = span / count;
-      const minimumSpeed = Math.max(WORLD.RIVER_SPEED_MIN * gain, pitch / CONFIG.MAX_LOG_WAIT_S);
-      if (minimumSpeed <= speedMaximum) options.push({ length, count, pitch, minimumSpeed });
-    }
-  }
-  // Pick only ring schedules that satisfy both spatial gaps and arrival times.
-  const option = options[randomInt(random, 0, options.length - 1)];
-  if (!option) throw new RangeError('River tunables have no solvable repeating schedule');
-  let speed = randomBetween(random, option.minimumSpeed, speedMaximum);
-  let direction: -1 | 1 = randomInt(random, 0, 1) === 0 ? -1 : 1;
-  if (rowKind(seed, z - 1) === 'river') {
-    // Recursion is bounded by MAX_CONSECUTIVE_RIVER, never by world distance.
-    const previous = generateRiverRow(seed, z - 1);
-    direction = previous.direction === 1 ? -1 : 1;
-    if (speed === previous.speed) {
-      speed = speed > option.minimumSpeed
-        ? (speed + option.minimumSpeed) / 2
-        : (speed + speedMaximum) / 2;
-    }
-  }
+  const length = randomInt(random, tier.length[0], tier.length[1]);
+  const count = Math.floor(span / (length + SEGMENTS.LOG_GAP_MIN));
+  const pitch = span / count;
+  const speed = randomBetween(random, tier.log[0], tier.log[1]);
+  const firstDirection = random() < .5 ? -1 : 1;
+  const direction = ((z - segment.start) % 2 ? -firstDirection : firstDirection) as -1 | 1;
   const logs: LaneItem[] = [];
-  for (let i = 0; i < option.count; i++) {
-    logs.push({ offset: i * option.pitch + option.length / 2, length: option.length });
-  }
-  return {
-    kind: 'river', z, biome: biomeAtRow(z), direction, speed,
-    phase: randomBetween(random, 0, span), logs,
-  };
+  for (let i = 0; i < count; i++) logs.push({ offset: i * pitch + length / 2, length });
+  return { kind: 'river', z, biome: biomeAtRow(z), direction, speed,
+    phase: rowRandom(seed, z)() * span, logs };
 }
 
 export function generateRailRow(seed: number, z: number): RailRow {
   const random = rowRandom(seed, z);
-  const period = randomBetween(random, WORLD.TRAIN_PERIOD_MIN_S, WORLD.TRAIN_PERIOD_MAX_S);
+  const period = randomBetween(random, SEGMENTS.TRAIN_PERIOD_MIN_S, WORLD.TRAIN_PERIOD_MAX_S);
   return {
-    kind: 'rail', z, biome: biomeAtRow(z), period,
+    kind: 'rail', z, biome: biomeAtRow(z), period, warning: tierAt(z).warning,
     phase: randomBetween(random, 0, period),
     direction: randomInt(random, 0, 1) === 0 ? -1 : 1,
   };

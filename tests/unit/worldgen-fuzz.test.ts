@@ -1,103 +1,105 @@
 import assert from 'node:assert/strict';
 import { describe, expect, it } from 'vitest';
-import { CONFIG, WORLD } from '../../shared/config';
+import { CONFIG, SEGMENTS, WORLD } from '../../shared/config';
 import { mulberry32 } from '../../shared/rng';
-import type { Row, RowKind } from '../../shared/types';
+import { segmentAt, tierAt } from '../../shared/segments';
 import { generateRow } from '../../shared/worldgen';
+import type { Vehicle } from '../../shared/types';
 
-describe('required generator fuzz', () => {
-  it('satisfies every §10 guarantee for 1,000 random seeds × 300 rows', { timeout: 60_000 }, () => {
-    // Reproducible random seed stream; failures include the exact world seed/row.
+describe('section 30 segment fuzz', () => {
+  it('audits every tier, corridor, separator, rest stop and schedule over 1000 seeds x 300 rows', { timeout: 60000 }, () => {
     const random = mulberry32(0x686f7062);
-    const seen = new Set<RowKind>();
-    let crates = 0;
-    let riverPairs = 0;
+    let riverPairs = 0, restCrates = 0, restRows = 0, normalCrates = 0, normalRows = 0, segments = 0;
+    const seen = new Set<string>();
     for (let sample = 0; sample < 1000; sample++) {
       const seed = Math.floor(random() * 0x100000000);
-      let previous: Row | undefined;
-      let streak = 0;
+      const rows = Array.from({ length: 305 }, (_, z) => generateRow(seed, z));
+      let firstRail = true;
       for (let z = 0; z < 300; z++) {
-        const row = generateRow(seed, z);
-        const at = `seed=${seed}, row=${z}, kind=${row.kind}`;
-        seen.add(row.kind);
-        streak = previous?.kind === row.kind ? streak + 1 : 1;
-        assert.deepEqual(generateRow(seed, z), row, `determinism: ${at}`);
-        assert.equal(row.z, z, at);
-        if (z <= 4) assert.equal(row.kind, 'grass', `starting grass: ${at}`);
-        if (z >= 5 && z <= 14) assert.notEqual(row.kind, 'rail', `early rail: ${at}`);
-
-        if (row.kind === 'grass') {
-          const columns = row.obstacles.map(obstacle => obstacle.column);
-          assert(columns.length <= 3, `obstacle count: ${at}`);
-          assert.equal(new Set(columns).size, columns.length, `duplicate obstacle: ${at}`);
-          // Stronger than required: every grass row, not just those between hazards.
-          assert(CONFIG.COLUMNS - columns.length >= 4, `safe columns: ${at}`);
-          for (const column of columns) {
-            assert(Number.isInteger(column) && column >= 0 && column <= 8, `column: ${at}`);
-            if (z <= 4) assert(column === 0 || column === 8, `blocked spawn: ${at}`);
-          }
-          if (row.crate) {
-            crates++;
-            assert(z >= 8, `early crate: ${at}`);
-            assert(!columns.includes(row.crate.column), `blocked crate: ${at}`);
-            assert(Number.isInteger(row.crate.column) && row.crate.column >= 0 && row.crate.column <= 8, `crate column: ${at}`);
-          }
-        } else if (row.kind === 'rail') {
-          assert.equal(streak, 1, `adjacent rails: ${at}`);
-          assert(z > 5, `rail adjacent to starting respawn rows: ${at}`);
-          assert(row.period >= 6 && row.period <= 10, `train period: ${at}`);
-          assert(row.phase >= 0 && row.phase < row.period, `train phase: ${at}`);
-        } else {
-          const gain = Math.min(1, z / 150);
-          const river = row.kind === 'river';
-          const items = river ? row.logs : row.vehicles;
-          const limit = river ? 3 : z <= 14 ? 2 : 4;
-          assert(streak <= limit, `lane streak: ${at}`);
-          assert(row.direction === 1 || row.direction === -1, `direction: ${at}`);
-          assert(row.phase >= 0 && row.phase < 21, `lane phase: ${at}`);
-          if (river) {
-            assert(row.speed >= 1 + 0.5 * gain && row.speed <= 2.2 * (1 + 0.5 * gain), `river speed: ${at}`);
-            if (previous?.kind === 'river') {
-              riverPairs++;
-              assert.equal(row.direction, -previous.direction, `river direction: ${at}`);
-              assert.notEqual(row.speed, previous.speed, `equal river speeds: ${at}`);
-            }
+        const row = rows[z]!, segment = segmentAt(seed, z), tier = tierAt(z), at = `seed=${seed}, z=${z}`;
+        seen.add(row.kind); assert.deepEqual(row, generateRow(seed, z), at);
+        if (z <= 4) assert.equal(row.kind, 'grass', at);
+        if (z < 10 && row.kind !== 'grass') { assert.equal(row.kind, 'road', at); assert.equal(segment.end - segment.start, 1, at); }
+        if (segment.start === z) {
+          segments++;
+          const length = segment.end - segment.start;
+          if (row.kind !== 'grass') {
+            assert.equal(rows[z - 1]?.kind, 'grass', `preceding grass ${at}`);
+            assert.equal(rows[segment.end]?.kind, 'grass', `following grass ${at}`);
+            const range = tier[row.kind]; assert(length >= range[0] && length <= range[1], `segment length ${at}`);
           } else {
-            const cap = z <= 14 ? 2 : Infinity;
-            assert(row.speed >= Math.min(cap, 1.5 * (1 + 0.8 * gain)), `road minimum speed: ${at}`);
-            assert(row.speed <= Math.min(cap, 3 * (1 + 0.8 * gain)), `road maximum speed: ${at}`);
-          }
-          for (let i = 0; i < items.length; i++) {
-            const current = items[i]!;
-            const next = items[(i + 1) % items.length]!;
-            const distance = next.offset + (i === items.length - 1 ? 21 : 0) - current.offset;
-            const gap = distance - (current.length + next.length) / 2;
-            assert(gap >= (river ? 1.5 : 3) - 1e-10, `short gap: ${at}, item=${i}`);
-            assert(gap <= (river ? 3 : 7) + 1e-10, `long gap: ${at}, item=${i}`);
-            if (river) {
-              assert(current.length >= 2 && current.length <= 4, `log length: ${at}`);
-              assert(distance / row.speed <= 2.5 + 1e-10, `log arrival: ${at}, item=${i}`);
-            } else {
-              assert(gap / row.speed >= 0.6 - 1e-10, `road time gap: ${at}, item=${i}`);
+            if (segment.rest) assert.equal(length, SEGMENTS.REST_ROWS, at);
+            else if (z !== 0) assert(length >= tier.grass[0] && length <= tier.grass[1], `breather ${at}`);
+            const clear = new Set(Array.from({ length: CONFIG.COLUMNS }, (_, x) => x));
+            for (let n = z; n < segment.end; n++) {
+              const grass = rows[n]!; assert.equal(grass.kind, 'grass', at);
+              if (grass.kind === 'grass') for (const obstacle of grass.obstacles) clear.delete(obstacle.column);
             }
+            assert(clear.size >= SEGMENTS.CORRIDOR_COLUMNS, `corridor ${at}`);
           }
         }
-        previous = row;
+        if (z >= 20 && z % SEGMENTS.REST_EVERY === 0) assert(segment.rest && segment.start === z, `rest interval ${at}`);
+        if (row.kind === 'grass') {
+          const columns = row.obstacles.map(item => item.column);
+          assert.equal(new Set(columns).size, columns.length, at);
+          assert(columns.length <= tier.obstacles, `obstacle tier ${at}`);
+          if ((z && rows[z - 1]!.kind !== 'grass') || rows[z + 1]!.kind !== 'grass') assert(columns.length <= 1, `hazard edge ${at}`);
+          if (z <= 4) assert(columns.every(x => x === 0 || x === 8), `spawn ${at}`);
+          if (segment.rest) assert(columns.every(x => x < 2 || x > 6), `rest corridor ${at}`);
+          if (row.crate) assert(z >= 8 && !columns.includes(row.crate.column), `crate ${at}`);
+          if (z >= 8) { if (segment.rest) { restRows++; restCrates += Number(!!row.crate); } else { normalRows++; normalCrates += Number(!!row.crate); } }
+        } else if (row.kind === 'road') {
+          assert(row.speed >= tier.car[0] && row.speed <= tier.car[1], `car speed ${at}`);
+          const previous = rows[z - 1];
+          if (previous?.kind === 'road') {
+            assert(Math.max(previous.speed, row.speed) >= Math.min(previous.speed, row.speed) * SEGMENTS.ROAD_SPEED_RATIO - 1e-10, `speed contrast ${at}`);
+            const before = rows[z - 2];
+            if (before?.kind === 'road') assert(!(before.direction === previous.direction && previous.direction === row.direction), `directions ${at}`);
+          }
+          for (let i = 0; i < row.vehicles.length; i++) {
+            const item: Vehicle = row.vehicles[i]!;
+            const next: Vehicle = row.vehicles[(i + 1) % row.vehicles.length]!;
+            if (z < 25) assert.equal(item.kind, 'car', `early truck ${at}`);
+            const gap = next.offset + (i === row.vehicles.length - 1 ? 21 : 0) - item.offset - (item.length + next.length) / 2;
+            assert(gap >= WORLD.ROAD_GAP_MIN - 1e-9 && gap <= WORLD.ROAD_GAP_MAX + 1e-9, `car gap ${at}`);
+            assert(gap / row.speed >= CONFIG.MIN_ROAD_TIME_GAP_S - 1e-9, at);
+          }
+        } else if (row.kind === 'river') {
+          assert(row.speed >= tier.log[0] && row.speed <= tier.log[1] && row.speed < tier.car[0], `log speed ${at}`);
+          const pitch = 21 / row.logs.length, length = row.logs[0]!.length;
+          assert(length >= tier.length[0] && length <= tier.length[1], `log length ${at}`);
+          assert(pitch >= length, `overlapping logs ${at}`);
+          // Slot centers are one tile apart; 0.6 reach makes each log's safe interval contiguous.
+          const gapSeconds = Math.max(0, pitch - (length - 1 + 2 * SEGMENTS.LOG_SLOT_REACH)) / row.speed;
+          assert(gapSeconds <= SEGMENTS.LOG_WAIT_S, `maximum uncovered wait at every column ${at}`);
+          const previous = rows[z - 1];
+          if (previous?.kind === 'river') {
+            riverPairs++; assert.equal(row.direction, -previous.direction, at);
+            assert.equal(row.speed, previous.speed, at); assert.equal(row.logs[0]!.length, previous.logs[0]!.length, at);
+            // Exact periodic bound, independent of phase or column: two gap intervals per period.
+            // Eroding availability by 0.5s leaves a valid start, and even joined forbidden starts
+            // cannot defer a complete 0.5s overlap beyond 3s. This holds at ALL real times.
+            const period = pitch / row.speed, window = SEGMENTS.OVERLAP_WINDOW_S;
+            assert(period - 2 * gapSeconds >= 2 * window, `overlap exists ${at}`);
+            assert(2 * (gapSeconds + window) + window <= SEGMENTS.OVERLAP_PERIOD_S, `overlap frequency ${at}`);
+          }
+        } else {
+          assert(z >= 30, `early rail ${at}`);
+          assert(row.period >= 7 && row.period <= 10, `train period ${at}`);
+          assert.equal(row.warning, tier.warning, `warning ${at}`);
+          if (firstRail) { assert.equal(rows[z - 1]?.kind, 'grass', at); assert.equal(rows[z - 2]?.kind, 'grass', at); firstRail = false; }
+        }
       }
     }
     expect([...seen].sort()).toEqual(['grass', 'rail', 'river', 'road']);
-    expect(crates).toBeGreaterThan(0);
-    expect(riverPairs).toBeGreaterThan(0);
+    expect(restCrates / restRows).toBeGreaterThan(.47); expect(restCrates / restRows).toBeLessThan(.53);
+    expect(normalCrates / normalRows).toBeGreaterThan(.22); expect(normalCrates / normalRows).toBeLessThan(.28);
+    console.log(JSON.stringify({ seeds: 1000, rows: 300000, segments, riverPairs, restCrateRate: restCrates / restRows, normalCrateRate: normalCrates / normalRows }));
   });
-
-  it('reconstructs a streamed window far into a run, including negative starting rows', () => {
-    for (const camZ of [0, 50, 1000, 1_000_000]) {
-      const window = [];
-      for (let z = camZ - WORLD.STREAM_BEHIND_ROWS; z <= camZ + WORLD.STREAM_AHEAD_ROWS; z++) {
-        window.push(generateRow(0xffffffff, z));
-      }
-      expect(window).toHaveLength(25);
-      for (const row of window.reverse()) expect(row).toEqual(generateRow(0xffffffff, row.z));
+  it('reconstructs arbitrary distant streamed windows without replaying earlier chapters', () => {
+    for (const camZ of [0, 50, 1000, 1000000]) {
+      const rows = Array.from({ length: 25 }, (_, i) => generateRow(0xffffffff, camZ - WORLD.STREAM_BEHIND_ROWS + i));
+      for (const row of rows.reverse()) expect(generateRow(0xffffffff, row.z)).toEqual(row);
     }
   });
 });

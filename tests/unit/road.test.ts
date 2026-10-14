@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG, WORLD } from '../../shared/config';
+import { tierAt } from '../../shared/segments';
 import { generateRoadRow } from '../../shared/worldgen';
 
 describe('road traffic schedules', () => {
@@ -7,8 +8,8 @@ describe('road traffic schedules', () => {
     for (let seed = 0; seed < 100; seed++) {
       for (let z = 5; z <= 14; z++) expect(generateRoadRow(seed, z).speed).toBeLessThanOrEqual(2);
       const row = generateRoadRow(seed, 150);
-      expect(row.speed).toBeGreaterThanOrEqual(2.7);
-      expect(row.speed).toBeLessThanOrEqual(5.4);
+      expect(row.speed).toBeGreaterThanOrEqual(tierAt(150).car[0]);
+      expect(row.speed).toBeLessThanOrEqual(tierAt(150).car[1]);
     }
   });
 

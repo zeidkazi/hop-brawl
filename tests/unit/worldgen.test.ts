@@ -66,7 +66,7 @@ describe('complete world', () => {
   it('chooses train periods from 6–10 seconds with seeded phase and direction', () => {
     for (let seed = 0; seed < 100; seed++) {
       const rail = generateRailRow(seed, 80);
-      expect(rail.period).toBeGreaterThanOrEqual(6);
+      expect(rail.period).toBeGreaterThanOrEqual(7);
       expect(rail.period).toBeLessThanOrEqual(10);
       expect(rail.phase).toBeGreaterThanOrEqual(0);
       expect(rail.phase).toBeLessThan(rail.period);
