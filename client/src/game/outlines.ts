@@ -2,9 +2,9 @@ import { BackSide, BufferGeometry, InstancedMesh, Mesh, MeshBasicMaterial, Vecto
 import { COLORS, STREET } from '../../../shared/config';
 import type { Tier } from './quality';
 
-export type OutlineKind = 'animal' | 'vehicle' | 'logo' | 'prop';
+export type OutlineKind = 'animal' | 'vehicle' | 'logo' | 'prop' | 'ui';
 export function outlinedAt(kind: OutlineKind, tier: Tier): boolean {
-  return tier === 'high' || kind === 'animal' || (tier === 'medium' && (kind === 'vehicle' || kind === 'logo'));
+  return kind === 'ui' || tier === 'high' || kind === 'animal' || (tier === 'medium' && (kind === 'vehicle' || kind === 'logo'));
 }
 
 /** Back-face hulls share instance buffers and never cast shadows. No screen pass. */

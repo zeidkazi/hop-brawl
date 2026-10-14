@@ -11,6 +11,9 @@ import { mulberry32 } from '../../../shared/rng';
 import type { Tier } from './quality';
 import { Outlines } from './outlines';
 import { Arena } from './arena';
+import { Boxer } from './boxer';
+import type { BoxerMove } from './boxer';
+import { BoxingEffects, BoxingSound } from './boxing-feedback';
 
 type Moving = { batch: InstancedMesh; index: number; x: number; z: number; speed: number; scale: number };
 
@@ -26,6 +29,12 @@ export class HomeScene {
   readonly lambert = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
   private readonly gloveStandard = this.standard.clone();
   private readonly gloveLambert = this.lambert.clone();
+  private readonly logoMaterial = new MeshBasicMaterial({ vertexColors: true, toneMapped: false, fog: false });
+  private readonly logoGlove = this.logoMaterial.clone();
+  readonly boxers: Boxer[] = [];
+  readonly sound = new BoxingSound();
+  readonly effects = new BoxingEffects();
+  private time = 0;
   private readonly flatWater = this.lambert.clone();
   readonly animals: Group[] = [];
   readonly eyes: Object3D[][] = [];
@@ -77,12 +86,15 @@ export class HomeScene {
       animal.traverse(obj => { if (obj.userData.part === 'eyes') eyes.push(obj); if (obj.userData.part === 'tail') tails.push(obj); if (obj.userData.part?.startsWith('glove_')) gloves.push(obj); });
       this.eyes.push(eyes); this.tails.push(tails);
       this.gloves.push(gloves);
+      const boxer = new Boxer(animal); this.boxers.push(boxer);
+      boxer.onCue = cue => { this.sound.play(cue); if (cue === 'tock' || cue === 'hit') this.effects.contact(this.time); if (cue === 'win') this.arena?.cheerKO(this.time); };
       animal.visible = false;
     }
     this.animalRoot.position.set(4, 0, -1);
     this.animalRoot.rotation.y = HOME.ANIMAL_YAW;
     this.animalRoot.scale.setScalar(HOME.ANIMAL_SCALE);
     this.root.add(this.animalRoot);
+    this.root.add(this.effects.root);
     const logo = assets.get('logo')!;
     const logoBounds = new Box3().setFromObject(logo);
     const center = logoBounds.getCenter(new Vector3());
@@ -108,14 +120,6 @@ export class HomeScene {
     });
 
     const controls = assets.get('home_controls')!;
-    const sign = new Group();
-    sign.add(controls.getObjectByName('home_controls_sign')!);
-    for (const name of ANIMALS) {
-      const label = controls.getObjectByName(`label_${name}`)!;
-      this.labels.push(label); sign.add(label); label.visible = false;
-    }
-    sign.rotation.y = Math.PI; sign.scale.setScalar(HOME.SIGN_SCALE);
-    sign.position.set(HOME.SIGN_X, 0, HOME.SIGN_Z); this.root.add(sign);
     const sourceArrow = controls.getObjectByName('home_controls_arrow') as Mesh;
     // Center the exported arrow geometry before making two shared-geometry copies.
     sourceArrow.geometry = sourceArrow.geometry.clone(); sourceArrow.geometry.center();
@@ -151,11 +155,12 @@ export class HomeScene {
     this.blobs = new InstancedMesh(circle, new MeshBasicMaterial({ color: 0, transparent: true, opacity: VIEW.BLOB_OPACITY, depthWrite: false }), HOME.VEHICLE_COUNT + 1);
     this.blobs.boundingSphere = new Sphere(new Vector3(4, 0, 0), HOME.GROUND_WIDTH);
     this.root.add(this.blobs);
-    this.root.traverse(obj => { if (obj instanceof Mesh && !obj.userData.arena && !obj.userData.outline) this.meshes.push(obj); });
+    this.root.traverse(obj => { if (obj instanceof Mesh && !obj.userData.arena && !obj.userData.outline && !obj.userData.effect) this.meshes.push(obj); });
     for (const mesh of this.meshes) {
       const kind = mesh.userData.shadowKind;
       if (kind === 'animal' || kind === 'vehicle' || kind === 'log') this.outlines.add(mesh, kind === 'log' ? 'prop' : kind);
       if (kind === 'logo' && mesh.userData.part) this.outlines.add(mesh, 'logo');
+      if (kind === 'ui') this.outlines.add(mesh, 'ui');
     }
     this.select(0); this.update(0);
   }
@@ -242,16 +247,17 @@ export class HomeScene {
 
   select(index: number): void {
     this.selected = index;
-    for (let i = 0; i < this.animals.length; i++) { this.animals[i]!.visible = i === index; this.labels[i]!.visible = i === index; }
+    for (let i = 0; i < this.animals.length; i++) this.animals[i]!.visible = i === index;
   }
 
   applyTier(tier: Tier): void {
     this.outlines.applyTier(tier);
-    for (const letter of this.logoLetters) letter.mesh.geometry = tier === 'low' ? letter.face : letter.outlined;
+    for (const letter of this.logoLetters) letter.mesh.geometry = letter.outlined;
     this.arena?.applyTier(tier); if (this.warming) this.arena?.warmAll();
     for (const mesh of this.meshes) {
       if (mesh === this.blobs) continue;
       mesh.material = mesh.userData.player_color ? (tier === 'high' ? this.gloveStandard : this.gloveLambert) : (tier === 'high' ? this.standard : this.lambert);
+      if (mesh.userData.shadowKind === 'logo') mesh.material = mesh.userData.player_color ? this.logoGlove : this.logoMaterial;
       mesh.castShadow = !['eyes', 'headband', 'headband_stripe'].includes(mesh.userData.part as string) && ['animal', 'vehicle', 'prop', 'log'].includes(mesh.userData.shadowKind as string) && (tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string)));
     }
     if (this.blobs) this.blobs.visible = tier === 'low';
@@ -261,15 +267,13 @@ export class HomeScene {
   setPlayerColor(index: number): void {
     const color = COLORS.players[index] ?? COLORS.players[0];
     this.gloveStandard.color.set(color); this.gloveLambert.color.set(color);
+    this.logoGlove.color.set(color);
   }
   get selectedAnimal(): string { return ANIMALS[this.selected]!; }
-  punch(): void {
-    for (const glove of this.gloves[this.selected]!) {
-      const rest = glove.userData.restZ ??= glove.position.z;
-      gsap.killTweensOf(glove.position);
-      gsap.fromTo(glove.position, { z: rest }, { z: rest - HOME.GLOVE_PUNCH, duration: HOME.GLOVE_PUNCH_MS / 2000, repeat: 1, yoyo: true });
-    }
-  }
+  punch(): void { this.move('punch'); }
+  move(move: BoxerMove, side: -1 | 1 = -1): void { this.boxers[this.selected]!.play(move, side); }
+  landed(): void { this.boxers[this.selected]!.landed(); }
+  reviewMove(move: BoxerMove, elapsed: number): void { this.boxers[this.selected]!.review = { move, elapsed }; }
 
   warmAll(value: boolean): void {
     this.warming = value;
@@ -285,6 +289,7 @@ export class HomeScene {
 
   layout(camera: PerspectiveCamera): void {
     camera.updateMatrixWorld();
+    this.effects.root.quaternion.copy(camera.quaternion);
     const distance = camera.position.distanceTo(new Vector3(4, HOME.FOCUS_Y, -1));
     const height = 2 * Math.tan(camera.fov * Math.PI / 360) * distance;
     this.right.set(1, 0, 0).applyQuaternion(camera.quaternion);
@@ -319,9 +324,10 @@ export class HomeScene {
     this.intro.from(chicken.position, { y: chicken.position.y + HOME.LOGO_DROP, duration: HOME.CHICKEN_LAND_S, ease: 'bounce.out' });
   }
 
-  setReduced(value: boolean): void { this.reduced = value; this.arena?.setReduced(value); if (value) this.intro?.progress(1); }
+  setReduced(value: boolean): void { this.reduced = value; this.arena?.setReduced(value); for (const boxer of this.boxers) boxer.reduced = value; if (value) this.intro?.progress(1); }
 
   update(time: number): void {
+    this.time = time;
     this.waterTime.value = time;
     this.arena?.update(time);
     this.flatWater.color.setScalar(1 + Math.sin(time * VIEW.WATER_SPEED) * VIEW.WATER_AMPLITUDE);
@@ -340,10 +346,10 @@ export class HomeScene {
         this.transform.scale.set(0.5, 1, 0.4); this.transform.updateMatrix(); this.blobs.setMatrixAt(blob++, this.transform.matrix);
       }
     }
-    const phase = time % HOME.HOP_PERIOD_S;
-    const hop = !this.reduced && phase < HOME.HOP_DURATION_S ? Math.sin(phase / HOME.HOP_DURATION_S * Math.PI) * HOME.HOP_HEIGHT : 0;
-    const bob = this.reduced ? 0 : Math.sin(time * Math.PI * 2 / VIEW.IDLE_PERIOD_S) * VIEW.IDLE_BOB;
-    this.animalRoot.position.set(4 + this.swap, hop + bob + Math.abs(this.swap) / 2, -1);
+    this.boxers[this.selected]!.update(time);
+    this.animalRoot.position.set(4 + this.swap, Math.abs(this.swap) / 2, -1);
+    this.effects.root.position.copy(this.animalRoot.position);
+    this.effects.update(time, this.boxers[this.selected]!.review?.move ?? this.boxers[this.selected]!.move, this.reduced);
     if (this.blobs) {
       this.transform.position.set(4 + this.swap, VIEW.BLOB_Y, -1); this.transform.rotation.set(0, 0, 0);
       this.transform.scale.set(0.6, 1, 0.5); this.transform.updateMatrix(); this.blobs.setMatrixAt(0, this.transform.matrix);
@@ -353,7 +359,6 @@ export class HomeScene {
     for (const eye of this.eyes[this.selected]!) eye.visible = !blink;
     for (const eye of this.logoEyes) eye.visible = !blink;
     for (const tail of this.tails[this.selected]!) tail.rotation.y = this.reduced ? 0 : Math.sin(time * HOME.TAIL_SPEED) * HOME.TAIL_WAG;
-    for (let i = 0; i < this.gloves[this.selected]!.length; i++) this.gloves[this.selected]![i]!.rotation.x = this.reduced ? 0 : Math.sin(time * HOME.GLOVE_SPEED + i * Math.PI) * HOME.GLOVE_SWING * (hop > 0 ? 2 : 1);
     this.logo.position.copy(this.logoBase).addScaledVector(this.up, this.reduced ? 0 : Math.sin(time) * HOME.LOGO_BOB);
   }
 }
