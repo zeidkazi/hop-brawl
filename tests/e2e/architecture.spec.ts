@@ -5,7 +5,9 @@ test('keeps one canvas through menus, tier swaps, streaming and tile flips', asy
   test.setTimeout(90000);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('console', message => {
+    if (message.type() === 'error' || (message.type() === 'warning' && /has been removed|deprecated/i.test(message.text()))) errors.push(message.text());
+  });
   await page.goto('/?debug=1');
   await expect.poll(() => page.evaluate(() => !!window.__HOP_DEBUG__)).toBe(true);
   const canvas = await page.locator('#game-canvas').elementHandle();

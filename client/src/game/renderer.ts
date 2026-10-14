@@ -1,6 +1,6 @@
 import {
   ACESFilmicToneMapping, Color, DirectionalLight, Fog, HalfFloatType, HemisphereLight,
-  Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, PCFSoftShadowMap, PlaneGeometry,
+  Mesh, MeshBasicMaterial, OrthographicCamera, PCFShadowMap, PlaneGeometry,
   Scene, SRGBColorSpace, WebGLRenderer, WebGLRenderTarget,
 } from 'three';
 import { COLORS, CONFIG, QUALITY, VIEW } from '../../../shared/config';
@@ -90,7 +90,8 @@ export class GameRenderer {
       this.particles.tier = tier;
       this.renderer.shadowMap.enabled = tier !== 'low';
       this.renderer.shadowMap.autoUpdate = tier !== 'low';
-      this.renderer.shadowMap.type = tier === 'high' ? PCFSoftShadowMap : PCFShadowMap;
+      // r182+ PCF includes soft filtering; the former PCFSoft enum is removed.
+      this.renderer.shadowMap.type = PCFShadowMap;
       this.sun.shadow = tier === 'high' ? this.highShadow : this.mediumShadow;
       this.appliedTier = tier;
     }
