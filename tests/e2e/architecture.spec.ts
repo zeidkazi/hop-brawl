@@ -55,7 +55,9 @@ test('keeps one canvas through menus, tier swaps, streaming and tile flips', asy
     const api = window.__HOP_DEBUG__!;
     api.graphics('high'); api.station('gameplay'); api.scroll(1000);
   });
-  await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().generatedRows), { timeout: 10000 }).toBeGreaterThan(50);
+  // Exact gameplay camZ jumps directly to the destination instead of generating intermediate windows.
+  await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().generatedRows), { timeout: 10000 }).toBeGreaterThanOrEqual(initial.generatedRows + 25);
+  expect(await page.evaluate(() => window.__HOP_DEBUG__!.solo.game.world.rows.some(slot => slot.z === 1000))).toBe(true);
   await page.evaluate(() => { window.__HOP_DEBUG__!.graphics('low'); window.__HOP_DEBUG__!.particles(); });
   await page.setViewportSize({ width: 844, height: 390 });
   await page.evaluate(() => { window.__HOP_DEBUG__!.flip(); window.__HOP_DEBUG__!.toast('HOP!'); window.__HOP_DEBUG__!.toast('ROUND OVER'); window.__HOP_DEBUG__!.toast('WINNER!'); });

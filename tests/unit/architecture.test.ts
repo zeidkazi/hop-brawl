@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Vector3 } from 'three';
+import { Matrix4, Vector3 } from 'three';
 import { CameraRig } from '../../client/src/game/camera';
 import { Pool } from '../../client/src/game/pool';
 import { WorldView } from '../../client/src/game/world-view';
@@ -7,6 +7,17 @@ import { CONFIG, RAIL, VIEW } from '../../shared/config';
 import { trainWarning, trainX } from '../../shared/hazards';
 
 describe('bounded pools', () => {
+  it('keeps obstacle and roadside tree canopies within their grass-row footprint', () => {
+    const view = new WorldView(), matrix = new Matrix4();
+    for (let bottom = 0; bottom < 100; bottom += 10) {
+      view.requestWindow(bottom); view.prepareWindow(bottom); view.update(0);
+      for (let i = 0; i < view.trees.count; i++) {
+        view.trees.getMatrixAt(i, matrix);
+        expect(matrix.elements[10]).toBeLessThanOrEqual(1);
+        expect(view.rowAt(Math.round(-matrix.elements[14]!)).kind).toBe('grass');
+      }
+    }
+  });
   it('reuses slots, refuses overflow and tolerates duplicate releases', () => {
     const pool = new Pool(2, index => ({ index }));
     const first = pool.acquire();

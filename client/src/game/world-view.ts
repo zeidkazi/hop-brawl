@@ -338,7 +338,7 @@ export class WorldView {
         for (let j = 0; j < row.obstacles.length; j++) {
           const obstacle = row.obstacles[j]!;
           const tree = obstacle.kind === 'tree';
-          this.put(tree ? this.trees : this.obstacles, obstacle.column, 0, row.z, (tree ? 14 : 8) / 12, (tree ? 20 : 6) / 12, (tree ? 14 : 8) / 12, tree && this.modelsReady ? '#FFFFFF' : tree ? COLORS.tree : COLORS.rock);
+          this.put(tree ? this.trees : this.obstacles, obstacle.column, 0, row.z, (tree ? 14 : 8) / 12, (tree ? 20 : 6) / 12, tree ? 1 : 8 / 12, tree && this.modelsReady ? '#FFFFFF' : tree ? COLORS.tree : COLORS.rock);
         }
         if (this.showCrates && row.crate) this.put(this.crates, row.crate.column, 0, row.z, 10 / 12, 10 / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.crate);
       } else if (row.kind === 'road') {
