@@ -1,0 +1,132 @@
+[
+  {
+    "name": "desktop",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "errors": [],
+    "seed": 42,
+    "run": {
+      "target": 70,
+      "hold": true,
+      "captures": [
+        {
+          "row": 5,
+          "x": 3,
+          "time": 0.9000000000000004,
+          "hops": 5,
+          "camZ": 0,
+          "dead": null
+        },
+        {
+          "row": 35,
+          "x": 4,
+          "time": 6.983000000000025,
+          "hops": 38,
+          "camZ": 27.9055511931467,
+          "dead": null
+        },
+        {
+          "row": 70,
+          "x": 4,
+          "time": 13.60050000000293,
+          "hops": 74,
+          "camZ": 62.90683888650666,
+          "dead": null
+        }
+      ],
+      "decisions": 74,
+      "maxPlanMs": 11.799999997019768
+    },
+    "performance": {
+      "frames": 1075,
+      "calls": 59,
+      "triangles": 38996,
+      "geometries": 157,
+      "textures": 6,
+      "delta": 16.599999999998545,
+      "tier": "high",
+      "choice": "auto",
+      "resolution": 1,
+      "pixelRatio": 1,
+      "p95": 16.700000000000728,
+      "worst": 16.80000000000291,
+      "programs": 75,
+      "rows": 25,
+      "generatedRows": 137,
+      "particles": 8,
+      "station": "gameplay",
+      "mobile": false,
+      "animal": "fox",
+      "animalOffset": 0,
+      "crowdCheering": false,
+      "move": "idle"
+    }
+  },
+  {
+    "name": "mobile",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "errors": [],
+    "seed": 42,
+    "run": {
+      "target": 70,
+      "hold": true,
+      "captures": [
+        {
+          "row": 5,
+          "x": 3,
+          "time": 0.9001,
+          "hops": 5,
+          "camZ": 0,
+          "dead": null
+        },
+        {
+          "row": 35,
+          "x": 4,
+          "time": 6.943600000004503,
+          "hops": 38,
+          "camZ": 27.904943308253372,
+          "dead": null
+        },
+        {
+          "row": 70,
+          "x": 4,
+          "time": 13.722200000004415,
+          "hops": 75,
+          "camZ": 62.919047619047596,
+          "dead": null
+        }
+      ],
+      "decisions": 75,
+      "maxPlanMs": 6.600000001490116
+    },
+    "performance": {
+      "frames": 1093,
+      "calls": 50,
+      "triangles": 32006,
+      "geometries": 157,
+      "textures": 5,
+      "delta": 16.700000000000728,
+      "tier": "medium",
+      "choice": "auto",
+      "resolution": 1,
+      "pixelRatio": 1.5,
+      "p95": 16.700000000000728,
+      "worst": 16.799999999999272,
+      "programs": 76,
+      "rows": 25,
+      "generatedRows": 137,
+      "particles": 8,
+      "station": "gameplay",
+      "mobile": true,
+      "animal": "fox",
+      "animalOffset": 0,
+      "crowdCheering": false,
+      "move": "idle"
+    }
+  }
+]
