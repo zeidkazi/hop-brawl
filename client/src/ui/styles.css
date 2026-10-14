@@ -79,6 +79,39 @@ a { color: inherit; }
 .practice { position:relative; }.practice::after { content:'New? Practice here first!'; position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font:800 11px Nunito,sans-serif; color:var(--cream); white-space:nowrap; -webkit-text-stroke:0; text-shadow:0 1px 2px var(--ink); }
 #ui-root[data-screen='solo'] #toasts { top:130px; }
 #game-canvas { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+.room-top { position:absolute; top:max(16px,env(safe-area-inset-top)); left:24px; right:24px; display:flex; align-items:center; gap:12px; }
+.room-top strong { margin-right:auto; font:26px 'Lilita One',sans-serif; color:var(--cream); -webkit-text-stroke:4px var(--ink); paint-order:stroke fill; }
+.room-top button { pointer-events:auto; }
+.room-top .text-button { background:var(--cream); border:2px solid var(--ink); text-decoration:none; }
+.room-lobby { display:flex; justify-content:flex-end; align-items:center; }
+.room-panel { width:min(390px,100%); margin-top:70px; }
+.lobby-players p { padding:7px 10px; margin:5px 0; border-left:6px solid; background:#1b1b2f0b; }
+.lobby-animals { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:16px; }
+.lobby-animals button { padding:7px 3px; text-transform:capitalize; box-shadow:0 3px var(--ink); }
+.lobby-animals button[aria-pressed='true'] { background:var(--yellow); }
+.lobby-animals button:disabled { opacity:.35; }
+.room-panel h2 { font-size:29px; }
+.room-panel button:disabled, .room-result button:disabled { opacity:.45; }
+.match-scores { position:absolute; top:82px; left:24px; right:24px; display:flex; gap:10px; }
+.match-scores > div { border:3px solid var(--ink); border-bottom:6px solid var(--player); background:var(--cream); border-radius:9px; padding:8px 12px; min-width:140px; }
+.match-scores strong,.match-scores span { display:block; }
+.match-scores span { color:var(--ink); font-size:17px; }
+.match-name { position:absolute; top:0; left:0; font:18px 'Lilita One',sans-serif; color:var(--player); -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; white-space:nowrap; pointer-events:none; }
+.match-countdown { position:absolute; top:36%; left:50%; transform:translate(-50%,-50%) rotate(-4deg); font:96px 'Lilita One',sans-serif; color:var(--yellow); -webkit-text-stroke:7px var(--ink); paint-order:stroke fill; }
+.match-status { position:absolute; bottom:12%; left:50%; transform:translateX(-50%); font:24px 'Lilita One',sans-serif; color:var(--cream); -webkit-text-stroke:4px var(--ink); paint-order:stroke fill; text-align:center; width:90%; }
+.room-result { text-align:center; }
+.room-result h2 { overflow-wrap:anywhere; }
+.room-result p { font-size:20px; }
+#room-error { color:#b91c42; min-height:24px; font-size:15px; }
+#ui-root[data-screen='versus'] #toasts { top:180px; }
+@media (orientation:portrait) {
+  .room-top { left:16px; right:16px; gap:8px; }.room-top strong { font-size:23px; }.room-top button { padding:8px 10px; }
+  .room-lobby { align-items:flex-end; }.room-panel { width:100%; padding:16px; max-height:62%; }
+  .room-panel h2 { margin-bottom:12px; }.room-panel p { margin:6px 0; }.lobby-players p { padding:4px 8px; }
+  .match-scores { left:12px; right:12px; gap:6px; display:grid; grid-template-columns:1fr 1fr; }
+  .match-scores > div { min-width:0; padding:5px 8px; font-size:14px; }.match-scores span { font-size:16px; }
+  .match-name { font-size:16px; }
+}
 @media (orientation: portrait) {
   .screen { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
   .home-toolbar { top: max(16px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right)); }

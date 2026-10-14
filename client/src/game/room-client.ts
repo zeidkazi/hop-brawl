@@ -3,16 +3,25 @@ import { Movement } from '../../../shared/movement';
 import type { HopDirection } from '../../../shared/movement';
 import type { RoomSnapshot } from '../../../shared/room';
 import { generateRow } from '../../../shared/worldgen';
+import { gameplayScreenY } from '../../../shared/camera';
+import type { Row } from '../../../shared/types';
 
 export class RoomClient {
   id = ''; state: RoomSnapshot | null = null; offset = 0; sequence = 0; ready = false;
-  readonly prediction = new Movement(z => generateRow(this.state?.seed ?? 0, z));
+  private readonly rows = new Map<number, Row>();
+  readonly prediction = new Movement(z => {
+    let row = this.rows.get(z); if (!row) { row = generateRow(this.state?.seed ?? 0, z); this.rows.set(z, row); } return row;
+  });
   readonly history: RoomSnapshot[] = [];
   onState: ((state: RoomSnapshot) => void) | null = null;
   onError: ((error: string) => void) | null = null;
   private socket: WebSocket | null = null;
   private pending: { direction: HopDirection; sequence: number; time: number }[] = [];
   private heartbeat = 0; private lastClock = 0; private lastMessage = 0;
+  constructor() {
+    this.prediction.belowScreen = (x, z, cam) => this.state?.players.filter(p => p.connected)
+      .every(p => gameplayScreenY(x, z, cam, this.state!.leaderZ, p.aspect) >= 1) ?? false;
+  }
   get now(): number { return Date.now() + this.offset; }
   get time(): number { return this.state ? Math.max(0, (this.now - this.state.startAt) / 1000) : 0; }
   get base(): string { return import.meta.env.VITE_SERVER_URL || location.origin; }
@@ -36,7 +45,8 @@ export class RoomClient {
         if (data.type === 'welcome') { this.id = data.id; this.offset = data.snapshot.now - Date.now(); }
         const changed = this.state?.startAt !== data.snapshot.startAt;
         this.state = data.snapshot; this.ready = true;
-        if (changed) { this.pending.length = 0; this.history.length = 0; }
+        if (changed) { this.pending.length = 0; this.history.length = 0; this.rows.clear(); }
+        for (const z of this.rows.keys()) if (z < data.snapshot.camZ - ROOM.RESPAWN_LOOKAHEAD) this.rows.delete(z);
         this.history.push(data.snapshot); while (this.history.length > ROOM.MAX_PENDING) this.history.shift();
         const me = data.snapshot.players.find(p => p.id === this.id);
         if (me) {

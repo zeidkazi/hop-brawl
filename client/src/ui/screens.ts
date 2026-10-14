@@ -5,9 +5,11 @@ import { Motion } from './motion';
 import { readPreferences, savePreferences } from './settings';
 import { Solo } from '../game/solo';
 import { SOLO_MARKUP } from './solo-markup';
+import { ROOM_MARKUP } from './room-markup';
+import { Versus } from '../game/versus';
 
-type Screen = 'home' | 'friends' | 'settings' | 'how' | 'credits' | 'name' | 'solo' | 'pause' | 'soloEnd';
-const SCREENS: readonly Screen[] = ['home', 'friends', 'settings', 'how', 'credits', 'name', 'solo', 'pause', 'soloEnd'];
+type Screen = 'home' | 'friends' | 'settings' | 'how' | 'credits' | 'name' | 'solo' | 'pause' | 'soloEnd' | 'lobby' | 'versus' | 'roundEnd' | 'matchEnd';
+const SCREENS: readonly Screen[] = ['home', 'friends', 'settings', 'how', 'credits', 'name', 'solo', 'pause', 'soloEnd', 'lobby', 'versus', 'roundEnd', 'matchEnd'];
 const CARDS = [
   ['Hop forward. Survive.', "Tap or swipe on phone · Arrow keys / WASD on PC. Dodge cars and trains, ride logs, and don't fall off the bottom of the screen."],
   ['Shove to win.', "Hop into your opponent to shove them one tile — into traffic, if you're lucky. Shoving has a short cooldown."],
@@ -24,6 +26,7 @@ export class Screens {
   readonly preferences = readPreferences(storage, matchMedia('(prefers-reduced-motion: reduce)').matches);
   readonly motion: Motion;
   readonly solo: Solo;
+  readonly versus: Versus;
   private screen: Screen = 'home';
   private readonly panels: Record<Screen, HTMLElement>;
   private readonly names: HTMLInputElement[];
@@ -68,9 +71,9 @@ export class Screens {
       </section>
       <section id="friends" class="screen modal" aria-labelledby="friends-title" hidden>
         <div class="panel"><h2 id="friends-title">PLAY WITH FRIENDS</h2>
-          <button class="green" disabled>Create Room</button><p class="divider">or join</p>
+          <button class="green" data-room="create">Create Room</button><p class="divider">or join</p>
           <div class="room-code" aria-label="Room code">${Array.from({ length: 4 }, (_, i) => `<input aria-label="Room code letter ${i + 1}" maxlength="1" autocomplete="off" autocapitalize="characters" inputmode="text">`).join('')}</div>
-          <button class="yellow" disabled>Join</button><button class="text-button" data-back>Back</button>
+          <button class="yellow" data-room="join">Join</button><p id="room-error" role="status"></p><button class="text-button" data-back>Back</button>
         </div>
       </section>
       <section id="settings" class="screen modal" aria-labelledby="settings-title" hidden>
@@ -99,11 +102,15 @@ export class Screens {
         </div>
       </section>
       ${SOLO_MARKUP}
+      ${ROOM_MARKUP}
       <div id="tile-cover" aria-hidden="true" hidden></div><div id="toasts" role="status" aria-live="polite"></div>`;
     this.panels = Object.fromEntries(SCREENS.map(key => [key, root.querySelector<HTMLElement>(`#${key}`)!])) as Record<Screen, HTMLElement>;
     this.motion = new Motion(Object.values(this.panels), root.querySelector('#tile-cover')!, root.querySelector('#toasts')!);
     this.solo = new Solo(root, game, this.preferences, this.motion, screen => {
       history.replaceState({ screen }, '', '/'); this.show(screen);
+    });
+    this.versus = new Versus(root, game, this.preferences, this.motion, screen => {
+      history.replaceState({ screen }, '', this.versus.active ? `?room=${this.versus.client.state!.code}` : '/'); this.show(screen);
     });
     game.onDiscontinuity = () => {
       this.solo.pause(); this.carousel?.progress(1); this.motion.settle();
@@ -187,6 +194,7 @@ export class Screens {
 
   private route(): Screen {
     const value: unknown = history.state?.screen;
+    if (['lobby', 'versus', 'roundEnd', 'matchEnd'].includes(String(value)) && !this.versus.active) return 'friends';
     return SCREENS.includes(value as Screen) ? value as Screen : new URL(location.href).searchParams.has('room') ? 'friends' : 'home';
   }
   navigate(screen: Screen): void {
@@ -203,13 +211,14 @@ export class Screens {
     } else history.back();
   }
   private show(screen: Screen): void {
+    if (this.versus.active && !['lobby', 'versus', 'roundEnd', 'matchEnd'].includes(screen)) { this.versus.leave(screen === 'home' ? 'home' : 'friends'); return; }
     if (screen === 'solo' && !this.solo.active) { this.solo.start(); return; }
     if (screen === 'home' && this.solo.active) { this.solo.quit(); return; }
     if (screen !== 'name') this.afterName = null;
     this.screen = screen;
     this.root.dataset.screen = screen;
     this.motion.show(this.panels[screen]);
-    if (!this.solo.active && this.game.rig.station !== 'home') this.game.go('home');
+    if (!this.solo.active && !this.versus.active && this.game.rig.station !== 'home') this.game.go('home');
     this.panels[screen].querySelector<HTMLElement>('input, button, a')?.focus({ preventScroll: true });
   }
   private save(): void { savePreferences(storage, this.preferences); }
