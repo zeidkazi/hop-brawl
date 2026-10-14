@@ -43,6 +43,7 @@ export class HomeScene {
   private readonly logoBase = new Vector3();
   private readonly targets = new Float64Array(6);
   private readonly logoEyes: Object3D[] = [];
+  private readonly logoLetters: { mesh: Mesh; face: BufferGeometry; outlined: BufferGeometry }[] = [];
   private intro: gsap.core.Timeline | null = null;
   private blobs: InstancedMesh | null = null;
   private water: Mesh | null = null;
@@ -88,7 +89,23 @@ export class HomeScene {
     this.logoWidth = logoBounds.max.x - logoBounds.min.x;
     logo.position.sub(center);
     this.logo.add(logo); this.root.add(this.logo);
-    logo.traverse(obj => { if (obj.name === 'logo_chicken_eyes') this.logoEyes.push(obj); obj.userData.shadowKind = 'logo'; });
+    for (const line of ['HOP', 'BRAWL']) for (const letter of line) {
+      const handle = logo.getObjectByName(`logo_${line}_${letter}`)!;
+      const face = handle.getObjectByName(`${handle.name}_face`) as Mesh;
+      const backing = handle.getObjectByName(`${handle.name}_outline`) as Mesh;
+      face.updateMatrix(); backing.updateMatrix();
+      const faceGeometry = face.geometry.clone().applyMatrix4(face.matrix);
+      const outlineGeometry = backing.geometry.clone().applyMatrix4(backing.matrix);
+      const merged = mergeGeometries([faceGeometry, outlineGeometry])!; outlineGeometry.dispose();
+      const mesh = new Mesh(merged, this.standard); mesh.name = handle.name + '_display';
+      handle.remove(face, backing); handle.add(mesh);
+      face.geometry.dispose(); backing.geometry.dispose();
+      this.logoLetters.push({ mesh, face: faceGeometry, outlined: merged });
+    }
+    logo.traverse(obj => {
+      if (obj.name === 'logo_fox_eyes' || obj.name === 'logo_chicken_eyes') this.logoEyes.push(obj);
+      obj.userData.shadowKind = 'logo';
+    });
 
     const controls = assets.get('home_controls')!;
     const sign = new Group();
@@ -104,6 +121,7 @@ export class HomeScene {
     sourceArrow.geometry = sourceArrow.geometry.clone(); sourceArrow.geometry.center();
     for (const direction of [-1, 1]) {
       const arrow = sourceArrow.clone(); arrow.scale.set(-HOME.ARROW_SCALE * direction, HOME.ARROW_SCALE, HOME.ARROW_SCALE);
+      arrow.userData.shadowKind = 'ui';
       this.arrows.push(arrow); this.root.add(arrow);
     }
     this.buildGround();
@@ -137,6 +155,7 @@ export class HomeScene {
     for (const mesh of this.meshes) {
       const kind = mesh.userData.shadowKind;
       if (kind === 'animal' || kind === 'vehicle' || kind === 'log') this.outlines.add(mesh, kind === 'log' ? 'prop' : kind);
+      if (kind === 'logo' && mesh.userData.part) this.outlines.add(mesh, 'logo');
     }
     this.select(0); this.update(0);
   }
@@ -228,11 +247,12 @@ export class HomeScene {
 
   applyTier(tier: Tier): void {
     this.outlines.applyTier(tier);
+    for (const letter of this.logoLetters) letter.mesh.geometry = tier === 'low' ? letter.face : letter.outlined;
     this.arena?.applyTier(tier); if (this.warming) this.arena?.warmAll();
     for (const mesh of this.meshes) {
       if (mesh === this.blobs) continue;
       mesh.material = mesh.userData.player_color ? (tier === 'high' ? this.gloveStandard : this.gloveLambert) : (tier === 'high' ? this.standard : this.lambert);
-      mesh.castShadow = ['animal', 'vehicle', 'prop', 'log'].includes(mesh.userData.shadowKind as string) && (tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string)));
+      mesh.castShadow = !['eyes', 'headband', 'headband_stripe'].includes(mesh.userData.part as string) && ['animal', 'vehicle', 'prop', 'log'].includes(mesh.userData.shadowKind as string) && (tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string)));
     }
     if (this.blobs) this.blobs.visible = tier === 'low';
     if (this.water) this.water.material = tier === 'low' ? this.flatWater : this.waterMaterials[tier === 'high' ? 0 : 1]!;
@@ -287,7 +307,7 @@ export class HomeScene {
       this.intro.fromTo(node.position, { y: y + HOME.LOGO_DROP }, { y, duration: HOME.LOGO_DROP_S, ease: 'bounce.out' }, i * HOME.LOGO_STAGGER_S);
       this.intro.fromTo(node.scale, { x: 0.85, y: 1.2 }, { x: 1, y: 1, duration: HOME.LOGO_DROP_S, ease: 'back.out(2)' }, i++ * HOME.LOGO_STAGGER_S);
     }
-    const chicken = this.logo.getObjectByName('logo_chicken')!;
+    const chicken = this.logo.getObjectByName('logo_fox') ?? this.logo.getObjectByName('logo_chicken')!;
     this.intro.from(chicken.position, { y: chicken.position.y + HOME.LOGO_DROP, duration: HOME.CHICKEN_LAND_S, ease: 'bounce.out' });
   }
 
