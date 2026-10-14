@@ -1,6 +1,6 @@
 # Final model sign-off — SPEC §29.7–§29.9
 
-Captured 2026-10-15 from the production build. **Street Brawl direction is approved; final model sign-off is pending. M3 has not started.**
+Captured 2026-10-15 from the production build. **The owner signed off all models on 2026-10-15.** The subsequent loading screen is documented in [LOADING.md](LOADING.md); M3 is authorized after its completion.
 
 The checklist below links every requested image. Native grass captures use the actual Home camera and distance, not an enlarged model viewer. Blender previews use the final exported anatomy and gear.
 

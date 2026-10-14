@@ -4,8 +4,8 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 
 ## Status
 
-- Completed milestones: M1 (world generation/hazards) and M2 (persistent-canvas architecture).
-- Current phase: M2.5 final boxer/model pass under SPEC sections 29.7–29.9. Street Brawl direction is approved; final model sign-off remains pending. Illustrated evidence: art/review/SIGNOFF.md. M3 has not started; do not tag M2.5 complete before sign-off.
+- Completed milestones: M1 (world generation/hazards), M2 (persistent-canvas architecture), M2.5 (approved Street Brawl models/Home and section 29.10 Loading).
+- Current phase: owner signed off all models on 2026-10-15 and authorized M3 after Loading. M2.5 is ready for tag m2.5-art-direction. Loading evidence: art/review/LOADING.md. Next: M3 Solo, then stop for owner playtesting.
 - Owner approved the plan and M1 on 2026-10-14. Deployment is deferred until after M13 and before M14, no later than 2026-10-26; no deployment without the owner's pre-deploy approval.
 - Read SPEC.md including sections 28 and 29; Street Brawl overrides the earlier art direction. Owner section 29 committed as 65e3131, docs(spec): add street brawl visual identity.
 - Initial commit c6ec455 (`docs: add game spec`) pushed to `origin/main` at https://github.com/zeidkazi/hop-brawl.git.
@@ -118,7 +118,8 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Known bugs / unresolved checks
 
-- Street Brawl direction is approved; final boxer/model sign-off under sections 29.7–29.9 is pending. Solo remains disabled until M3; multiplayer actions remain disabled until networking milestones.
+- Models and Home are signed off. Solo remains disabled until M3; multiplayer actions remain disabled until networking milestones.
+- M12 owner polish notes (do not implement early): make 1–2 combo punches visibly travel toward the gameplay camera; improve the fox tail silhouette from that camera.
 - Worker/Room implementation and wrangler dev arrive in M4. Do not add fake server endpoints just to make an unavailable server command appear to work.
 - Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only Home on the host GPU.
 - Cloudflare and Vercel authentication and free-account plan verification remain required before deployment.
@@ -126,7 +127,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Next exact step
 
-WAIT for the owner's final model sign-off using art/review/SIGNOFF.md and every section 29.9 evidence image. After sign-off, record acceptance, complete/tag/push m2.5-art-direction, then begin M3 Solo. Preserve the persistent canvas, full menu resolution, warmed models/effects, floating glove handles and shared Boxer controller. Connect its presentation adapters to actual gameplay events as those milestones are implemented. Stop after M3 for owner playtesting.
+Tag and push m2.5-art-direction, then implement M3: input, shared hop/hazard movement, camera rules, Solo countdown/death/best/pause, and tile-flip Retry. Preserve the persistent canvas and warmed approved models. Add meaningful unit/browser coverage and show desktop/phone Solo screenshots. Stop after M3 for owner playtesting. Do not implement the two M12 polish notes now.
 
 ## Milestone plan / gates
 

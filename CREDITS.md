@@ -96,6 +96,14 @@ All six animal model/source/preview entries above now include original CC0 float
 | `art/previews/signoff/home-mobile.png` | Same review script URL above | CC0 1.0 runtime capture; font provenance above |
 | `art/previews/signoff/measurements.png` | Same review script URL above | Original project measurement table; CC0 1.0 |
 
+## Loading screen (§29.10)
+
+| Asset | Source | License |
+|---|---|---|
+| Inline Lilita One SVG wordmark in `client/index.html` | [Project curve exporter](https://github.com/zeidkazi/hop-brawl/blob/main/art/build_loading_wordmark.py), derived from the Lilita One font credited above | SIL OFL 1.1 font; rendered wordmark artwork |
+| Inline coral glove and spark SVGs in `client/index.html` | [Original project markup](https://github.com/zeidkazi/hop-brawl/blob/main/client/index.html) | CC0 1.0 |
+| `art/previews/loading/transition.png`, `art/previews/loading/error.png` | [Production capture script](https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-loading.mjs) | Original project captures, CC0 1.0; font provenance above |
+
 ## Announcer acquisition (milestone 11)
 
 Find one consistent, energetic voice for: "Round one", "Round two", "Final round", "Showdown", "Hop!", "K.O.!", "Winner!". Search free voice packs, including Kenney and CC0-filtered OpenGameArt/Freesound sources. Verify each file's license; free download alone is not license permission. Record missing same-voice lines and ask the owner to record them at M11. Until then use text slams and SFX. No announcer files have been selected or downloaded yet.

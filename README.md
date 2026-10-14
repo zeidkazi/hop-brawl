@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** Street Brawl direction is approved; the final boxer/model pass awaits owner sign-off before M3. All six animals have floating cuffed gloves, no headbands, and a shared procedural move controller. See the [illustrated §29.9 checklist](art/review/SIGNOFF.md) for both lineups, silhouettes, move strips, Home screenshots and production measurements. Solo and multiplayer remain scheduled for subsequent milestones; no public deployment exists yet.
+**Status:** Final models are signed off and M2.5 Loading is complete; M3 Solo is next. All six animals have floating cuffed gloves, no headbands, and a shared procedural move controller. See the [model checklist](art/review/SIGNOFF.md) and [loading transition/error evidence](art/review/LOADING.md). No public deployment exists yet.
 
 ## Local development
 
