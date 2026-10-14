@@ -13,7 +13,26 @@ Every imported asset must have an individual file path, source URL and verified 
 | `@fontsource/nunito/files/nunito-latin-800-normal.woff2` (5.3.0) | https://cdn.jsdelivr.net/npm/@fontsource/nunito@5.3.0/files/nunito-latin-800-normal.woff2 ; authors: https://github.com/googlefonts/nunito | SIL OFL 1.1; same included notice |
 | `client/src/game/world-view.ts`, `client/src/game/particles.ts` | Original procedural colored boxes, ground and circle shadows created for Hop Brawl; no imported art | Original project geometry, no third-party attribution |
 
-Font license text verified from the pinned packages. Fonts are bundled locally; no external font requests. Detailed animal/prop models remain deferred to M10.
+Font license text verified from the pinned packages. Fonts are bundled locally; no external font requests. §28 replaces Pixelify Sans with Lilita One in the Home revision after model approval; the current runtime still uses the M2 fonts at this asset-only checkpoint.
+
+## M2.5 Blender assets — awaiting owner approval
+
+All assets below are original project creations, authored as voxel data and built in Blender 5.2.2 LTS. No downloaded art, font outlines or other game assets were used. Each row lists the editable source, game export and transparent rendered preview. License for every file: **CC0 1.0 Universal**, no attribution required; see `art/LICENSE.md` and https://creativecommons.org/publicdomain/zero/1.0/legalcode .
+
+| Files | Source URL / original recipe |
+|---|---|
+| `art/voxels/logo.json`, `art/logo.blend`, `client/public/models/logo.glb`, `art/previews/logo.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/logo.py |
+| `art/voxels/chicken.json`, `art/chicken.blend`, `client/public/models/chicken.glb`, `art/previews/chicken.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/chicken.py |
+| `art/voxels/frog.json`, `art/frog.blend`, `client/public/models/frog.glb`, `art/previews/frog.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/frog.py |
+| `art/voxels/fox.json`, `art/fox.blend`, `client/public/models/fox.glb`, `art/previews/fox.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/fox.py |
+| `art/voxels/penguin.json`, `art/penguin.blend`, `client/public/models/penguin.glb`, `art/previews/penguin.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/penguin.py |
+| `art/voxels/pig.json`, `art/pig.blend`, `client/public/models/pig.glb`, `art/previews/pig.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/pig.py |
+| `art/voxels/cat.json`, `art/cat.blend`, `client/public/models/cat.glb`, `art/previews/cat.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/cat.py |
+| `art/voxels/car.json`, `art/car.blend`, `client/public/models/car.glb`, `art/previews/car.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/car.py |
+| `art/voxels/oak.json`, `art/oak.blend`, `client/public/models/oak.glb`, `art/previews/oak.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/oak.py |
+| `art/voxels/crate.json`, `art/crate.blend`, `client/public/models/crate.glb`, `art/previews/crate.png` | https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/crate.py |
+
+The runtime imports these only after the M2.5 preview approval gate. Remaining models arrive in M10 using the same mandatory Blender pipeline.
 
 ## Announcer acquisition (milestone 11)
 

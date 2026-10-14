@@ -89,6 +89,7 @@ def mesh_parts(name, source, config):
 def material():
     mat = bpy.data.materials.new('HopBrawl_VertexColor')
     mat.use_nodes = True
+    mat.use_backface_culling = True
     nodes = mat.node_tree.nodes
     shader = nodes.get('Principled BSDF')
     shader.inputs['Roughness'].default_value = 1
