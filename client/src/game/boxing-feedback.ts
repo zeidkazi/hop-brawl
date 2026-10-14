@@ -1,29 +1,47 @@
 import { Group, Mesh, MeshBasicMaterial, Shape, ShapeGeometry, Vector3 } from 'three';
-import { BOXER, COLORS, RAIL } from '../../../shared/config';
+import { BOXER, COLORS, RAIL, SOUND } from '../../../shared/config';
 import type { BoxerCue, BoxerMove } from './boxer';
 
 /** Original synthesized one-shots: no download or API key, obey the SFX setting. */
 export class BoxingSound {
   private context: AudioContext | null = null;
+  private noise: AudioBuffer | null = null;
+  private voices = new Set<AudioScheduledSourceNode>();
   volume = 0.8;
   unlock(): void {
     this.context ??= new AudioContext();
+    if (!this.noise) {
+      this.noise = this.context.createBuffer(1, this.context.sampleRate * SOUND.NOISE_S, this.context.sampleRate);
+      const samples = this.noise.getChannelData(0); for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+    }
     if (this.context.state === 'suspended') void this.context.resume();
   }
-  play(cue: BoxerCue | 'bell'): void {
+  play(cue: BoxerCue | 'bell' | keyof typeof SOUND.cues, pan = 0, level = 1): void {
     const context = this.context;
-    if (!context || context.state !== 'running' || this.volume === 0 || cue === 'win') return;
-    const oscillator = context.createOscillator(), gain = context.createGain();
-    oscillator.type = cue === 'whoosh' ? 'triangle' : 'sine';
+    if (!context || context.state !== 'running' || this.volume === 0) return;
+    if (cue === 'win') { SOUND.WIN_NOTES.forEach((hz, i) => this.tone(hz, hz, SOUND.WIN_NOTE_S, 'triangle', false, pan, level, i * SOUND.WIN_STEP_S)); return; }
+    if (cue in SOUND.cues) {
+      const p = SOUND.cues[cue as keyof typeof SOUND.cues]; this.tone(p.hz, p.end, p.seconds, p.wave, p.noise, pan, level); return;
+    }
     const hz = cue === 'bell' ? RAIL.BELL_HZ : cue === 'whoosh' ? BOXER.WHOOSH_HZ : cue === 'hit' ? BOXER.HIT_HZ : BOXER.TOCK_HZ;
-    const duration = cue === 'bell' ? RAIL.BELL_S : BOXER.SFX_S;
-    oscillator.frequency.setValueAtTime(hz, context.currentTime);
-    if (cue !== 'bell') oscillator.frequency.exponentialRampToValueAtTime(hz / 4, context.currentTime + duration);
-    gain.gain.setValueAtTime(this.volume * BOXER.SFX_GAIN, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
-    oscillator.connect(gain); gain.connect(context.destination);
-    oscillator.start(); oscillator.stop(context.currentTime + duration);
-    oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+    this.tone(hz, cue === 'bell' ? hz : hz / 4, cue === 'bell' ? RAIL.BELL_S : BOXER.SFX_S,
+      cue === 'whoosh' ? 'triangle' : 'sine', false, pan, level);
+  }
+  private tone(hz: number, end: number, duration: number, wave: OscillatorType, noise: boolean, pan: number, level: number, delay = 0): void {
+    const context = this.context!;
+    if (this.voices.size >= SOUND.MAX_VOICES) { const oldest = this.voices.values().next().value!; oldest.stop(); this.voices.delete(oldest); }
+    const gain = context.createGain(), panner = context.createStereoPanner(), filter = context.createBiquadFilter();
+    const start = context.currentTime + delay;
+    const source = noise ? context.createBufferSource() : context.createOscillator();
+    if (source instanceof AudioBufferSourceNode) { source.buffer = this.noise; filter.type = 'lowpass'; filter.frequency.setValueAtTime(hz, start); filter.frequency.exponentialRampToValueAtTime(end, start + duration); }
+    else { source.type = wave; source.frequency.setValueAtTime(hz, start); source.frequency.exponentialRampToValueAtTime(end, start + duration); filter.type = 'allpass'; }
+    panner.pan.value = Math.max(-1, Math.min(1, pan));
+    gain.gain.setValueAtTime(SOUND.FLOOR, start);
+    gain.gain.linearRampToValueAtTime(this.volume * SOUND.GAIN * level, start + SOUND.ATTACK_S);
+    gain.gain.exponentialRampToValueAtTime(SOUND.FLOOR, start + duration);
+    source.connect(filter); filter.connect(gain); gain.connect(panner); panner.connect(context.destination);
+    this.voices.add(source); source.start(start); source.stop(start + duration);
+    source.onended = () => { this.voices.delete(source); source.disconnect(); filter.disconnect(); gain.disconnect(); panner.disconnect(); };
   }
 }
 

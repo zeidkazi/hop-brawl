@@ -211,6 +211,19 @@ export const RAIL = Object.freeze({
   WARNING_TINT: .65, BELL_HZ: 1200, BELL_S: .35, BELL_INTERVAL_S: .45,
   SHAKE_DISTANCE: 2, SHAKE_AMPLITUDE: .025, SHAKE_HZ: 30,
 } as const);
+export const SOUND = Object.freeze({
+  MAX_VOICES: 16, GAIN: .16, ATTACK_S: .006, FLOOR: .001, PAN_TILES: 4.5,
+  HORN_BEFORE_S: .5, WIN_NOTES: [523.25, 659.25, 783.99], WIN_STEP_S: .12, WIN_NOTE_S: .25,
+  NOISE_S: 1, HAZARD_GAIN: .7,
+  cues: {
+    hop: { hz: 640, end: 180, seconds: .13, wave: 'triangle', noise: false },
+    splash: { hz: 1600, end: 260, seconds: .4, wave: 'sine', noise: true },
+    squash: { hz: 150, end: 35, seconds: .24, wave: 'sawtooth', noise: false },
+    bonk: { hz: 230, end: 60, seconds: .12, wave: 'triangle', noise: false },
+    punch: { hz: 320, end: 45, seconds: .15, wave: 'triangle', noise: false },
+    horn: { hz: 195, end: 170, seconds: .6, wave: 'sawtooth', noise: false },
+  },
+} as const);
 export const LOADING = Object.freeze({
   INLINE_BUDGET: 15000, FAST_MS: 400, TAP_MS: 600, TIP_MS: 2500, SLOW_MS: 8000,
   PUNCH_MS: 180, REVEAL_MS: 300, FADE_MS: 200, EASE_MS: 160,

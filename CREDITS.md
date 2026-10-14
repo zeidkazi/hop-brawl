@@ -118,6 +118,15 @@ All six animal model/source/preview entries above now include original CC0 float
 | `rail_post.glb`, editable `art/rail_post.blend`, voxel source and preview | [Original Blender recipe](https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/rail_post.py) | Original closed voxel geometry and baked colors, CC0 1.0 |
 | `art/previews/playtest30/*-row*.png` | [Seeded gameplay review script](https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-playtest30.mjs) | Original runtime captures, CC0 1.0; existing font/model provenance above |
 
-## Announcer acquisition plan (milestone 11, unchanged)
+## Submission procedural sound (§32)
+
+| Sound | Source | License |
+|---|---|---|
+| Train warning bell and horn | [Original Web Audio synthesis](https://github.com/zeidkazi/hop-brawl/blob/main/client/src/game/boxing-feedback.ts) and [warning scheduling](https://github.com/zeidkazi/hop-brawl/blob/main/client/src/game/rail-sound.ts) | CC0 1.0 |
+| Hop, water splash, squash, edge/tree bonk, shove punch, three-note round win | Same original Web Audio synthesis above; tunable oscillator/noise envelopes in shared/config.ts | CC0 1.0 |
+
+These sounds are generated in the browser, with no downloaded clips, external service, API key or attribution requirement. A user gesture unlocks audio; SFX volume applies to every cue; at most 16 voices play at once. No announcer is included in the submission.
+
+## Historical announcer acquisition plan (deferred by §31.5)
 
 Find one consistent, energetic voice for: "Round one", "Round two", "Final round", "Showdown", "Hop!", "K.O.!", "Winner!". Search free voice packs, including Kenney and CC0-filtered OpenGameArt/Freesound sources. Verify each file's license; free download alone is not license permission. Record missing same-voice lines and ask the owner to record them at M11. Until then use text slams and SFX. No announcer files have been selected or downloaded yet.
