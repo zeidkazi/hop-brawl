@@ -78,6 +78,9 @@ export class WorldView {
   private readonly rowBounds = new Box3();
   private readonly palette = new Map<string, Color>();
   private hasView = false;
+  private viewBottom = NaN;
+  private readonly nearPoint = new Vector3();
+  private readonly farPoint = new Vector3();
   private seed: number = CONFIG.HOME_DIORAMA_SEED;
   private preparedBottom = NaN;
   private requestedBottom = 0;
@@ -201,7 +204,7 @@ export class WorldView {
 
   /** Called outside rendering, or scheduled by requestWindow's stable callback. */
   prepareWindow(camZ: number): void {
-    const bottom = Math.floor(camZ) - WORLD.STREAM_BEHIND_ROWS;
+    const bottom = Math.floor(Math.min(camZ, Number.isFinite(this.viewBottom) ? this.viewBottom : camZ)) - WORLD.STREAM_BEHIND_ROWS;
     if (bottom === this.preparedBottom) return;
     this.preparedBottom = bottom;
     this.groundCounts.fill(0);
@@ -245,7 +248,7 @@ export class WorldView {
   private readonly flushWindow = (): void => { this.pending = false; this.prepareWindow(this.requestedBottom); };
   requestWindow(camZ: number): void {
     this.requestedBottom = camZ;
-    if (!this.pending && Math.floor(camZ) - WORLD.STREAM_BEHIND_ROWS !== this.preparedBottom) {
+    if (!this.pending && Math.floor(Math.min(camZ, Number.isFinite(this.viewBottom) ? this.viewBottom : camZ)) - WORLD.STREAM_BEHIND_ROWS !== this.preparedBottom) {
       this.pending = true;
       queueMicrotask(this.flushWindow);
     }
@@ -253,6 +256,7 @@ export class WorldView {
 
   reset(seed: number): void {
     this.seed = seed;
+    this.viewBottom = NaN;
     this.preparedBottom = NaN;
     for (const slot of this.rows) slot.z = NaN;
     this.prepareWindow(0);
@@ -299,6 +303,13 @@ export class WorldView {
     camera.updateMatrixWorld();
     this.matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.matrix);
+    this.viewBottom = Infinity;
+    for (let x = -1; x <= 1; x += 2) for (let y = -1; y <= 1; y += 2) {
+      this.nearPoint.set(x, y, -1).unproject(camera);
+      this.farPoint.set(x, y, 1).unproject(camera).sub(this.nearPoint);
+      const t = -this.nearPoint.y / this.farPoint.y;
+      this.viewBottom = Math.min(this.viewBottom, -(this.nearPoint.z + this.farPoint.z * t));
+    }
     this.hasView = true;
   }
 
@@ -314,8 +325,8 @@ export class WorldView {
     this.backdrop.boundingSphere!.center.set(4, 0, -this.requestedBottom); this.backdrop.boundingSphere!.radius = VIEW.FAR;
     for (let i = 0; i < this.rows.length; i++) {
       const row = this.rows[i]!.row!;
-      // Extra portrait/landscape space is scenery, never additional hazard information.
-      const inWindow = row.z >= Math.floor(this.requestedBottom) && row.z < Math.floor(this.requestedBottom) + CONFIG.VIEW_ROWS;
+      // Section 31: every prepared row renders; the frustum culls props, never an eleven-row cutoff.
+      const inWindow = true;
       const ground = this.grounds[KINDS.indexOf(row.kind)]!;
       if (inWindow) this.matrix.makeTranslation(0, 0, -row.z);
       else this.matrix.makeScale(0, 0, 0);

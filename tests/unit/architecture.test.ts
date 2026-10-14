@@ -97,7 +97,7 @@ describe('camera stations', () => {
 
 it('rail rows render two posts, alternate warning lamps, pulse the bed and show train headlights', () => {
   const view = new WorldView(); view.reset(42); view.requestWindow(28); view.prepareWindow(28);
-  const rails = view.rows.filter(slot => slot.z >= 28 && slot.z < 28 + CONFIG.VIEW_ROWS && slot.row?.kind === 'rail');
+  const rails = view.rows.filter(slot => slot.row?.kind === 'rail');
   expect(rails.length).toBeGreaterThan(0);
   for (let time = 0; time < 12; time += .125) {
     view.update(time);
