@@ -1,0 +1,195 @@
+import { gsap } from 'gsap';
+import { ANIMALS, VIEW } from '../../../shared/config';
+import type { GameRenderer } from '../game/renderer';
+import { Motion } from './motion';
+import { readPreferences, savePreferences } from './settings';
+
+type Screen = 'home' | 'friends' | 'settings' | 'how' | 'credits';
+const SCREENS: readonly Screen[] = ['home', 'friends', 'settings', 'how', 'credits'];
+const CARDS = [
+  ['Hop forward. Survive.', "Tap or swipe on phone · Arrow keys / WASD on PC. Dodge cars and trains, ride logs, and don't fall off the bottom of the screen."],
+  ['Shove to win.', "Hop into your opponent to shove them one tile — into traffic, if you're lucky. Shoving has a short cooldown."],
+  ['Last one hopping.', "You have 2 hearts per round. Last one standing wins the round. First to 2 rounds wins. Grab ? crates for a Shield, Super Hop or Slow-Mo — the leader can't grab them."],
+] as const;
+
+// Denied access to the localStorage getter is handled as well as failed reads/writes.
+const storage = {
+  getItem: (key: string) => window.localStorage.getItem(key),
+  setItem: (key: string, value: string) => window.localStorage.setItem(key, value),
+};
+
+export class Screens {
+  readonly preferences = readPreferences(storage, matchMedia('(prefers-reduced-motion: reduce)').matches);
+  readonly motion: Motion;
+  private screen: Screen = 'home';
+  private readonly panels: Record<Screen, HTMLElement>;
+  private readonly names: HTMLInputElement[];
+  private readonly animalLabel: HTMLElement;
+  private card = 0;
+  private carousel: gsap.core.Timeline | null = null;
+  private pointerX = 0;
+
+  constructor(readonly root: HTMLElement, readonly game: GameRenderer) {
+    // Static trusted markup only; persisted names and URL values use value/textContent.
+    root.innerHTML = `
+      <section id="home" class="screen home" aria-label="Home" hidden>
+        <div class="home-content">
+          <h1 class="logo">HOP<br><span>BRAWL</span></h1>
+          <label class="sr-only" for="home-name">Your name</label>
+          <input id="home-name" class="name" autocomplete="nickname" placeholder="Your name" maxlength="${VIEW.NAME_MAX_LENGTH}">
+          <div class="carousel" aria-label="Choose your animal" tabindex="0">
+            <button data-animal="-1" aria-label="Previous animal">‹</button><strong id="animal-label" aria-live="polite"></strong><button data-animal="1" aria-label="Next animal">›</button>
+          </div>
+          <div class="mode-buttons">
+            <button class="yellow primary" disabled>QUICK PLAY</button>
+            <button class="green" data-screen="friends">PLAY WITH FRIENDS</button>
+            <button class="blue" disabled>SOLO</button>
+          </div>
+          <nav class="small-links" aria-label="Help and preferences"><button data-screen="how">How to Play</button><button data-screen="settings">Settings</button></nav>
+          <button class="text-button credits-link" data-screen="credits">Credits</button>
+        </div>
+      </section>
+      <section id="friends" class="screen modal" aria-labelledby="friends-title" hidden>
+        <div class="panel"><h2 id="friends-title">PLAY WITH FRIENDS</h2>
+          <button class="green" disabled>Create Room</button><p class="divider">or join</p>
+          <div class="room-code" aria-label="Room code">${Array.from({ length: 4 }, (_, i) => `<input aria-label="Room code letter ${i + 1}" maxlength="1" autocomplete="off" autocapitalize="characters" inputmode="text">`).join('')}</div>
+          <button class="yellow" disabled>Join</button><button class="text-button" data-back>Back</button>
+        </div>
+      </section>
+      <section id="settings" class="screen modal" aria-labelledby="settings-title" hidden>
+        <div class="panel"><h2 id="settings-title">SETTINGS</h2>
+          <label>Music volume<input id="music" type="range" min="0" max="1" step="0.01"></label>
+          <label>SFX volume<input id="sfx" type="range" min="0" max="1" step="0.01"></label>
+          <label class="check">Haptics<input id="haptics" type="checkbox"></label>
+          <label class="check">Reduce motion<input id="reducedMotion" type="checkbox"></label>
+          <label>Graphics<select id="graphics"><option value="auto">Auto</option><option value="high">High</option><option value="low">Low</option></select></label>
+          <label>Name<input id="settings-name" class="name" placeholder="Your name" autocomplete="nickname" maxlength="${VIEW.NAME_MAX_LENGTH}"></label>
+          <button class="yellow" data-back>Back</button>
+        </div>
+      </section>
+      <section id="how" class="screen modal" aria-labelledby="how-title" hidden>
+        <div class="panel"><h2 id="how-title">HOW TO PLAY</h2><div id="how-card" tabindex="0"><div class="card-blocks" aria-hidden="true">■ → ■</div><h3></h3><p></p></div>
+          <div class="card-nav"><button data-card="-1" aria-label="Previous card">‹</button><span id="card-page"></span><button data-card="1" aria-label="Next card">›</button></div>
+          <button class="yellow" data-back>Got it!</button>
+        </div>
+      </section>
+      <section id="credits" class="screen modal" aria-labelledby="credits-title" hidden>
+        <div class="panel"><h2 id="credits-title">CREDITS</h2><p>Original placeholder geometry for Hop Brawl.</p>
+          <p>Pixelify Sans — The Pixelify Sans Project Authors.<br><a href="/licenses/pixelify-sans.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
+          <p>Nunito — The Nunito Project Authors.<br><a href="/licenses/nunito.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
+          <button class="yellow" data-back>Back</button>
+        </div>
+      </section>
+      <div id="tile-cover" aria-hidden="true" hidden></div><div id="toasts" role="status" aria-live="polite"></div>`;
+    this.panels = Object.fromEntries(SCREENS.map(key => [key, root.querySelector<HTMLElement>(`#${key}`)!])) as Record<Screen, HTMLElement>;
+    this.motion = new Motion(Object.values(this.panels), root.querySelector('#tile-cover')!, root.querySelector('#toasts')!);
+    this.names = Array.from(root.querySelectorAll<HTMLInputElement>('.name'));
+    this.animalLabel = root.querySelector('#animal-label')!;
+    this.names.forEach(input => {
+      input.value = this.preferences.name;
+      input.addEventListener('input', () => {
+        this.preferences.name = input.value.slice(0, VIEW.NAME_MAX_LENGTH);
+        for (const other of this.names) if (other !== input) other.value = this.preferences.name;
+        this.save();
+      });
+    });
+    for (const key of ['music', 'sfx', 'haptics', 'reducedMotion'] as const) {
+      const input = root.querySelector<HTMLInputElement>(`#${key}`)!;
+      if (key === 'music' || key === 'sfx') input.value = String(this.preferences[key]);
+      else input.checked = this.preferences[key];
+      input.addEventListener('input', () => {
+        if (key === 'music' || key === 'sfx') this.preferences[key] = Number(input.value);
+        else this.preferences[key] = input.checked;
+        this.applyPreferences(); this.save();
+      });
+    }
+    const graphics = root.querySelector<HTMLSelectElement>('#graphics')!;
+    graphics.value = this.preferences.graphics;
+    graphics.addEventListener('change', () => {
+      this.preferences.graphics = graphics.value as typeof this.preferences.graphics;
+      this.game.setGraphics(this.preferences.graphics); this.save();
+    });
+    root.addEventListener('click', event => {
+      const button = event.target instanceof Element ? event.target.closest('button') : null;
+      if (!button) return;
+      if (button.dataset.screen) this.navigate(button.dataset.screen as Screen);
+      else if (button.hasAttribute('data-back')) this.back();
+      else if (button.dataset.animal) this.changeAnimal(Number(button.dataset.animal));
+      else if (button.dataset.card) this.changeCard(Number(button.dataset.card));
+    });
+    this.swipe(root.querySelector('.carousel')!, direction => this.changeAnimal(direction));
+    this.swipe(root.querySelector('#how-card')!, direction => this.changeCard(direction));
+    this.setupRoomCode();
+    window.addEventListener('popstate', () => this.show(this.route()));
+    window.addEventListener('keydown', event => { if (event.key === 'Escape' && this.screen !== 'home') this.back(); });
+    this.applyPreferences(); this.game.setGraphics(this.preferences.graphics);
+    this.game.world.animal = this.preferences.animal;
+    this.updateAnimal(); this.changeCard(0);
+    const initial = new URL(location.href).searchParams.has('room') ? 'friends' : this.route();
+    history.replaceState({ screen: initial }, '', location.href);
+    this.show(initial);
+  }
+
+  private route(): Screen {
+    const value: unknown = history.state?.screen;
+    return SCREENS.includes(value as Screen) ? value as Screen : new URL(location.href).searchParams.has('room') ? 'friends' : 'home';
+  }
+  navigate(screen: Screen): void {
+    if (screen === this.screen) return;
+    history.pushState({ screen }, '', screen === 'friends' ? location.href : '/');
+    this.show(screen);
+  }
+  private back(): void {
+    // Deep-linked sheets have no in-app entry behind them.
+    if (new URL(location.href).searchParams.has('room')) {
+      history.replaceState({ screen: 'home' }, '', '/'); this.show('home');
+    } else history.back();
+  }
+  private show(screen: Screen): void {
+    this.screen = screen;
+    this.motion.show(this.panels[screen]);
+    this.game.go('home');
+    this.panels[screen].querySelector<HTMLElement>('input, button, a')?.focus({ preventScroll: true });
+  }
+  private save(): void { savePreferences(storage, this.preferences); }
+  private applyPreferences(): void {
+    this.motion.reduced = this.preferences.reducedMotion;
+    this.game.setReducedMotion(this.preferences.reducedMotion);
+  }
+  private updateAnimal(): void { this.animalLabel.textContent = ANIMALS[this.preferences.animal]!; }
+  private changeAnimal(direction: number): void {
+    this.preferences.animal = (this.preferences.animal + direction + ANIMALS.length) % ANIMALS.length;
+    this.save(); this.updateAnimal(); this.carousel?.kill();
+    const world = this.game.world;
+    this.carousel = gsap.timeline().to(world, { animalSwap: -VIEW.CAROUSEL_TRAVEL, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.in', overwrite: 'auto' })
+      .call(() => { world.animal = this.preferences.animal; world.animalSwap = VIEW.CAROUSEL_TRAVEL; })
+      .to(world, { animalSwap: 0, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.out' });
+  }
+  private changeCard(direction: number): void {
+    this.card = (this.card + direction + CARDS.length) % CARDS.length;
+    const data = CARDS[this.card]!;
+    this.root.querySelector('#how-card h3')!.textContent = data[0];
+    this.root.querySelector('#how-card p')!.textContent = data[1];
+    this.root.querySelector('#card-page')!.textContent = `${this.card + 1} / ${CARDS.length}`;
+  }
+  private swipe(element: HTMLElement, change: (direction: number) => void): void {
+    element.addEventListener('pointerdown', event => { this.pointerX = event.clientX; });
+    element.addEventListener('pointerup', event => { const dx = event.clientX - this.pointerX; if (Math.abs(dx) >= VIEW.CAROUSEL_SWIPE_PX) change(dx < 0 ? 1 : -1); });
+    element.addEventListener('keydown', event => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); change(event.key === 'ArrowRight' ? 1 : -1); }
+    });
+  }
+  private setupRoomCode(): void {
+    const inputs = Array.from(this.root.querySelectorAll<HTMLInputElement>('.room-code input'));
+    const fill = (value: string): void => {
+      const code = value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, inputs.length);
+      inputs.forEach((input, i) => { input.value = code[i] ?? ''; });
+    };
+    fill(new URL(location.href).searchParams.get('room') ?? '');
+    inputs.forEach((input, index) => {
+      input.addEventListener('input', () => { input.value = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(-1); if (input.value) inputs[index + 1]?.focus(); });
+      input.addEventListener('keydown', event => { if (event.key === 'Backspace' && !input.value) inputs[index - 1]?.focus(); });
+      input.addEventListener('paste', event => { event.preventDefault(); fill(event.clipboardData?.getData('text') ?? ''); inputs[inputs.length - 1]!.focus(); });
+    });
+  }
+}
