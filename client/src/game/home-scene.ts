@@ -6,10 +6,11 @@ import {
 import type { PerspectiveCamera } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { ANIMALS, COLORS, CONFIG, HOME, VIEW } from '../../../shared/config';
+import { ANIMALS, COLORS, CONFIG, HOME, STREET, VIEW } from '../../../shared/config';
 import { mulberry32 } from '../../../shared/rng';
 import type { Tier } from './quality';
 import { Outlines } from './outlines';
+import { Arena } from './arena';
 
 type Moving = { batch: InstancedMesh; index: number; x: number; z: number; speed: number; scale: number };
 
@@ -17,6 +18,8 @@ type Moving = { batch: InstancedMesh; index: number; x: number; z: number; speed
 export class HomeScene {
   readonly root = new Group();
   readonly outlines = new Outlines();
+  arena: Arena | null = null;
+  private warming = false;
   readonly logo = new Group();
   readonly animalRoot = new Group();
   readonly standard = new MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
@@ -54,7 +57,7 @@ export class HomeScene {
   async load(): Promise<void> {
     this.setPlayerColor(0);
     const loader = new GLTFLoader();
-    const names = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls'];
+    const names = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls', 'arena'];
     const loaded = await Promise.all(names.map(async name => [name, (await loader.loadAsync(`/models/${name}.glb`)).scene] as const));
     const assets = new Map(loaded);
     for (const [name, model] of assets) {
@@ -104,14 +107,14 @@ export class HomeScene {
       this.arrows.push(arrow); this.root.add(arrow);
     }
     this.buildGround();
+    this.arena = new Arena(assets.get('arena')!, this.standard, this.lambert); this.root.add(this.arena.root);
     const random = mulberry32(CONFIG.HOME_DIORAMA_SEED);
     const trees = this.batch(assets.get('oak')!, HOME.TREE_COUNT);
     for (let i = 0; i < trees.count; i++) {
-      const side = i % 2 ? 1 : -1;
       const hero = HOME.HERO_TREES[i];
       let z = hero?.[1] ?? Math.floor(-20 + random() * 40);
       while (HOME.ROAD_ROWS.includes(-Math.round(z) as never) || HOME.RIVER_ROWS.includes(-Math.round(z) as never)) z++;
-      this.place(trees, i, hero?.[0] ?? 4 + side * (5 + random() * 11), 0, z, 1 + random() * 0.35);
+      this.place(trees, i, hero?.[0] ?? random() * 8, 0, z, 1 + random() * 0.35);
     }
     for (const [kind, name] of ['car', 'hatchback', 'taxi', 'truck'].entries()) {
       const cars = this.batch(assets.get(name)!, HOME.VEHICLE_COUNT / 4);
@@ -130,7 +133,7 @@ export class HomeScene {
     this.blobs = new InstancedMesh(circle, new MeshBasicMaterial({ color: 0, transparent: true, opacity: VIEW.BLOB_OPACITY, depthWrite: false }), HOME.VEHICLE_COUNT + 1);
     this.blobs.boundingSphere = new Sphere(new Vector3(4, 0, 0), HOME.GROUND_WIDTH);
     this.root.add(this.blobs);
-    this.root.traverse(obj => { if (obj instanceof Mesh) this.meshes.push(obj); });
+    this.root.traverse(obj => { if (obj instanceof Mesh && !obj.userData.arena && !obj.userData.outline) this.meshes.push(obj); });
     for (const mesh of this.meshes) {
       const kind = mesh.userData.shadowKind;
       if (kind === 'animal' || kind === 'vehicle' || kind === 'log') this.outlines.add(mesh, kind === 'log' ? 'prop' : kind);
@@ -189,6 +192,16 @@ export class HomeScene {
     const dashes = new InstancedMesh(geometry, this.standard, HOME.GROUND_WIDTH * 2);
     for (let i = 0; i < dashes.count; i++) this.place(dashes, i, -HOME.GROUND_WIDTH / 2 + (i % HOME.GROUND_WIDTH) * 2, 0, i < HOME.GROUND_WIDTH ? 3.5 : -4.5);
     this.root.add(dashes);
+    const kerbGeometry = new BoxGeometry(1, STREET.KERB_HEIGHT, STREET.KERB_WIDTH);
+    const kerbColors = new Float32Array(kerbGeometry.attributes.position!.count * 3); kerbColors.fill(1);
+    kerbGeometry.setAttribute('color', new Float32BufferAttribute(kerbColors, 3));
+    const kerbs = new InstancedMesh(kerbGeometry, this.standard, HOME.GROUND_WIDTH * 4);
+    for (let i = 0; i < kerbs.count; i++) {
+      const edge = [2.5, 4.5, -3.5, -5.5][Math.floor(i / HOME.GROUND_WIDTH)]!;
+      this.place(kerbs, i, i % HOME.GROUND_WIDTH - HOME.GROUND_WIDTH / 2 + 4, STREET.KERB_HEIGHT / 2, edge);
+      kerbs.setColorAt(i, color.set(i % 2 ? COLORS.cream : COLORS.players[0]));
+    }
+    this.root.add(kerbs);
     const waterGeometry = new PlaneGeometry(HOME.GROUND_WIDTH, HOME.RIVER_ROWS.length, HOME.GROUND_WIDTH, HOME.RIVER_ROWS.length);
     waterGeometry.rotateX(-Math.PI / 2); waterGeometry.translate(4, -VIEW.WATER_AMPLITUDE, -HOME.RIVER_ROWS[1]);
     const waterColors = new Float32Array(waterGeometry.attributes.position!.count * 3);
@@ -214,6 +227,7 @@ export class HomeScene {
 
   applyTier(tier: Tier): void {
     this.outlines.applyTier(tier);
+    this.arena?.applyTier(tier); if (this.warming) this.arena?.warmAll();
     for (const mesh of this.meshes) {
       if (mesh === this.blobs) continue;
       mesh.material = mesh.userData.player_color ? (tier === 'high' ? this.gloveStandard : this.gloveLambert) : (tier === 'high' ? this.standard : this.lambert);
@@ -229,6 +243,8 @@ export class HomeScene {
   }
 
   warmAll(value: boolean): void {
+    this.warming = value;
+    if (value) this.arena?.warmAll();
     for (const animal of this.animals) animal.visible = value;
     for (const label of this.labels) label.visible = value;
     if (value) {
@@ -274,16 +290,22 @@ export class HomeScene {
     this.intro.from(chicken.position, { y: chicken.position.y + HOME.LOGO_DROP, duration: HOME.CHICKEN_LAND_S, ease: 'bounce.out' });
   }
 
-  setReduced(value: boolean): void { this.reduced = value; if (value) this.intro?.progress(1); }
+  setReduced(value: boolean): void { this.reduced = value; this.arena?.setReduced(value); if (value) this.intro?.progress(1); }
 
   update(time: number): void {
     this.waterTime.value = time;
+    this.arena?.update(time);
     this.flatWater.color.setScalar(1 + Math.sin(time * VIEW.WATER_SPEED) * VIEW.WATER_AMPLITUDE);
     let blob = 1;
+    let foam = 0;
     for (const item of this.moving) {
       const x = HOME.LOOP_LEFT + ((item.x - HOME.LOOP_LEFT + time * item.speed) % HOME.LOOP_WIDTH + HOME.LOOP_WIDTH) % HOME.LOOP_WIDTH;
       this.place(item.batch, item.index, x, 0, item.z, 1, item.speed < 0 ? Math.PI : 0, item.scale);
       item.batch.instanceMatrix.needsUpdate = true;
+      if (item.scale > 1) {
+        this.arena?.moveFoam(foam++, x - item.scale / 2, item.z);
+        this.arena?.moveFoam(foam++, x + item.scale / 2, item.z);
+      }
       if (this.blobs && item.scale === 1) {
         this.transform.position.set(x, VIEW.BLOB_Y, item.z); this.transform.rotation.set(0, 0, 0);
         this.transform.scale.set(0.5, 1, 0.4); this.transform.updateMatrix(); this.blobs.setMatrixAt(blob++, this.transform.matrix);

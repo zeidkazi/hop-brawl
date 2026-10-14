@@ -171,6 +171,7 @@ export const STREET = Object.freeze({
   CROWD_BOB: 0.04, CROWD_SPEED: 3, CHEER_HEIGHT: 0.35, CHEER_SECONDS: 1.5,
   ARENA_SIDE_X: [-1.7, 9.7], ARENA_ROWS: [-8, -1, 7, 15],
   TUFT_COUNT: 90, FLOWER_COUNT: 36,
+  SPOT_INTENSITY: 6, SPOT_DISTANCE: 12,
 } as const);
 /** Offline Blender bake/preview settings, passed by the launcher as JSON. */
 export const ART = Object.freeze({
@@ -197,15 +198,15 @@ export const ANIMAL_SIZES = [[8, 11, 8], [9, 7, 9], [8, 10, 10], [8, 11, 8], [9,
 
 /** Home composition and animation; kept separate from gameplay collision sizes. */
 export const HOME = Object.freeze({
-  DISTANCE: 13, PORTRAIT_FIT: 0.62, FOCUS_Y: 0.7,
+  DISTANCE: 16, PORTRAIT_FIT: 0.78, FOCUS_Y: 0.7,
   GROUND_MIN: -24, GROUND_MAX: 32, GROUND_WIDTH: 64,
   ROAD_ROWS: [-4, -3, 4, 5], RIVER_ROWS: [9, 10, 11],
-  TREE_COUNT: 40, VEHICLE_COUNT: 12, LOG_COUNT: 12,
+  TREE_COUNT: 12, VEHICLE_COUNT: 12, LOG_COUNT: 12,
   LOOP_WIDTH: 32, LOOP_LEFT: -12, TRAFFIC_SPEED: 1.6, LOG_SPEED: 1,
   ANIMAL_SCALE: 1.5, ANIMAL_YAW: Math.PI + Math.PI / 12,
   ARROW_OFFSET: 1.65, ARROW_HEIGHT: 0.8, ARROW_SCALE: 0.8,
   SIGN_SCALE: 1.2, SIGN_X: 5.35, SIGN_Z: 0.3,
-  HERO_TREES: [[-0.6, -1.5], [7.1, -0.6], [0.6, -7], [7.5, -7]],
+  HERO_TREES: [[0.2, -7], [7.8, -7]],
   LOGO_WIDTH_RATIO: 0.86, LOGO_HEIGHT_RATIO: 0.60, LOGO_NDC_Y: 0.49,
   LOGO_TILT_X: 0.12, LOGO_TILT_Y: -0.12, LOGO_BOB: 0.035,
   LOGO_DROP: 2.5, LOGO_STAGGER_S: 0.095, LOGO_DROP_S: 0.52,
