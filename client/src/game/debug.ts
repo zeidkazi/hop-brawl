@@ -7,8 +7,10 @@ import type { GameRenderer } from './renderer';
 import type { GraphicsChoice } from './quality';
 import type { Screens } from '../ui/screens';
 import type { BoxerMove } from './boxer';
+import type { Solo } from './solo';
 
 export interface DebugApi {
+  readonly solo: Solo;
   snapshot(): {
     frames: number; calls: number; triangles: number; geometries: number; textures: number; delta: number;
     tier: string; choice: string; resolution: number; pixelRatio: number; p95: number; worst: number;
@@ -34,6 +36,7 @@ export function setupDebug(game: GameRenderer, screens: Screens): void {
   const stats = new Stats(); stats.showPanel(0); document.body.append(stats.dom);
   const readout = document.createElement('pre'); readout.className = 'debug-metrics'; document.body.append(readout);
   const api: DebugApi = {
+    solo: screens.solo,
     snapshot: () => ({ ...game.metrics, tier: game.quality.tier, choice: game.quality.choice,
       resolution: game.quality.resolution, pixelRatio: game.renderer.getPixelRatio(), p95: game.quality.frames.p95,
       worst: game.quality.frames.worst, programs: game.renderer.info.programs?.length ?? 0,
