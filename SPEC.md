@@ -966,3 +966,13 @@ Goal: at a glance, nobody should mistake Hop Brawl for another voxel crossing ga
 6. Logo preview and an in-game Home screenshot side by side — colors and outline must match.
 7. Home screenshots at 390×844 and 1440×900.
 8. All models closed geometry (no stray planes), total models < 2 MB, measured load time.
+
+### 29.10 Loading screen (replaces §8.2 #1)
+- **Tiny and instant:** the loading layer is inline HTML/CSS/SVG in `index.html` (< 15 KB, no external requests, fonts not required — uses an inline SVG wordmark), so it paints on the very first frame before any JS/model downloads.
+- **Look:** sky gradient background (same as the Home sky, so there's no color jump), the HOP BRAWL wordmark as an inline SVG matching the 3D logo (cream HOP, yellow BRAWL, thick Ink outline), and below it **two SVG boxing gloves in coral** doing the **glove tap** on a loop (knock together → spring apart, 600 ms cycle, tiny spark on contact).
+- **Progress:** a chunky rounded bar (Ink outline, Brawl Yellow fill) driven by **real bytes loaded** (models + fonts + required sounds), eased so it never jumps backwards or stalls visually. Small text under it rotates gameplay tips every 2.5 s: "Hop into a friend to shove them", "Last one hopping wins the round", "The leader can't grab ? crates", "Fall off the bottom and you lose a heart".
+- **Exit transition (seamless into Home):** when everything is loaded and shaders are warmed up, the gloves do one big **punch toward the camera**, the loading layer splits diagonally and slides away (300 ms, easeInQuart) revealing the live 3D Home already rendering underneath; the 3D logo then drops in letter by letter (§29.5). No blank frame, no flash, no blur stage.
+- **Fast loads:** if loading finishes in under 400 ms (cached), skip the gloves and progress bar; do only the diagonal reveal.
+- **Slow loads:** after 8 s show "Still loading… slow connection" under the bar. On an asset error show "Couldn't load the game" + **Retry** button (re-fetches only the failed files).
+- Respect Reduce Motion: no punch, the layer just fades (200 ms).
+- Remove the current blurred-gradient intro.
