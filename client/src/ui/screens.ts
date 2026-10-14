@@ -148,7 +148,7 @@ export class Screens {
   private show(screen: Screen): void {
     this.screen = screen;
     this.motion.show(this.panels[screen]);
-    this.game.go('home');
+    if (this.game.rig.station !== 'home') this.game.go('home');
     this.panels[screen].querySelector<HTMLElement>('input, button, a')?.focus({ preventScroll: true });
   }
   private save(): void { savePreferences(storage, this.preferences); }

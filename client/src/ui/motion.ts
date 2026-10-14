@@ -9,9 +9,11 @@ export class Motion {
   private transition: gsap.core.Timeline | null = null;
   private flip: gsap.core.Timeline | null = null;
   private readonly tiles: HTMLElement[] = [];
+  private readonly items = new Map<HTMLElement, HTMLElement[]>();
   private readonly toasts: Pool<{ element: HTMLElement; timeline: gsap.core.Timeline | null }>;
 
   constructor(private readonly panels: readonly HTMLElement[], private readonly cover: HTMLElement, toastRoot: HTMLElement) {
+    for (const panel of panels) this.items.set(panel, Array.from(panel.querySelectorAll<HTMLElement>('.mode-buttons > button, .panel > label, .panel > button')));
     for (let i = 0; i < VIEW.TILE_FLIP_COLUMNS * VIEW.TILE_FLIP_ROWS; i++) {
       const tile = document.createElement('i');
       cover.append(tile); this.tiles.push(tile);
@@ -33,17 +35,25 @@ export class Motion {
     this.current = next;
     for (const panel of this.panels) {
       gsap.killTweensOf(panel);
+      gsap.killTweensOf(this.items.get(panel)!);
       panel.inert = panel !== next;
       if (panel !== next && panel !== previous) panel.hidden = true;
     }
     const fresh = next.hidden;
     next.hidden = false;
-    if (fresh) gsap.set(next, { opacity: 0, y: this.reduced ? 0 : 24 });
+    const enterItems = this.items.get(next)!;
+    if (fresh) {
+      gsap.set(next, { opacity: 0, y: this.reduced ? 0 : VIEW.PANEL_ENTER_PX });
+      gsap.set(enterItems, { opacity: 0, y: this.reduced ? 0 : VIEW.PANEL_ENTER_PX });
+    }
     const timeline = gsap.timeline();
     this.transition = timeline;
-    if (previous) timeline.to(previous, { opacity: 0, y: this.reduced ? 0 : -16,
+    if (previous) timeline.to(previous, { opacity: 0, y: this.reduced ? 0 : -VIEW.PANEL_EXIT_PX,
       duration: VIEW.PANEL_EXIT_MS / 1000, ease: 'power2.in', overwrite: 'auto', onComplete: () => { previous.hidden = true; } }, 0);
     timeline.to(next, { opacity: 1, y: 0, duration: VIEW.PANEL_ENTER_MS / 1000,
+      ease: this.reduced ? 'none' : `back.out(${VIEW.PANEL_OVERSHOOT})`, overwrite: 'auto' }, previous ? VIEW.PANEL_EXIT_MS * VIEW.PANEL_OVERLAP / 1000 : 0);
+    timeline.to(enterItems, { opacity: 1, y: 0, duration: VIEW.PANEL_ENTER_MS / 1000,
+      stagger: this.reduced ? 0 : VIEW.STAGGER_MS / 1000,
       ease: this.reduced ? 'none' : `back.out(${VIEW.PANEL_OVERSHOOT})`, overwrite: 'auto' }, previous ? VIEW.PANEL_EXIT_MS * VIEW.PANEL_OVERLAP / 1000 : 0);
   }
 
@@ -81,9 +91,9 @@ export class Motion {
     if (index < 0) { index = 0; this.toasts.items[index]!.timeline?.kill(); }
     const slot = this.toasts.items[index]!;
     slot.element.textContent = text; slot.element.hidden = false;
-    gsap.set(slot.element, { opacity: 0, y: this.reduced ? 0 : -16 });
+    gsap.set(slot.element, { opacity: 0, y: this.reduced ? 0 : -VIEW.PANEL_EXIT_PX });
     slot.timeline = gsap.timeline({ onComplete: () => { slot.element.hidden = true; this.toasts.release(index); } })
       .to(slot.element, { opacity: 1, y: 0, duration: VIEW.TOAST_IN_MS / 1000, ease: `back.out(${VIEW.PANEL_OVERSHOOT})` })
-      .to(slot.element, { opacity: 0, y: this.reduced ? 0 : -16, duration: VIEW.TOAST_OUT_MS / 1000, ease: 'power2.in' }, `+=${VIEW.TOAST_HOLD_MS / 1000}`);
+      .to(slot.element, { opacity: 0, y: this.reduced ? 0 : -VIEW.PANEL_EXIT_PX, duration: VIEW.TOAST_OUT_MS / 1000, ease: 'power2.in' }, `+=${VIEW.TOAST_HOLD_MS / 1000}`);
   }
 }
