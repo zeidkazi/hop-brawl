@@ -1,4 +1,4 @@
-import { Color, Group, InstancedMesh, Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial, Object3D, PointLight, Sphere, Vector3 } from 'three';
+import { Color, Float32BufferAttribute, Group, InstancedMesh, Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial, Object3D, PointLight, Sphere, Vector3 } from 'three';
 import type { Material } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COLORS, CONFIG, HOME, STREET } from '../../../shared/config';
@@ -28,7 +28,17 @@ export class Arena {
 
   constructor(assets: Group, private readonly standard: MeshStandardMaterial, private readonly lambert: MeshLambertMaterial) {
     const batch = (name: string, count: number): InstancedMesh => {
-      const pieces = assets.children.filter((obj): obj is Mesh => obj instanceof Mesh && obj.userData.arena_kind === name).map(obj => obj.geometry.clone());
+      const pieces = assets.children.filter((obj): obj is Mesh => obj instanceof Mesh && obj.userData.arena_kind === name).map(obj => {
+        const geometry = obj.geometry.clone();
+        if (name === 'spectator' || name === 'scarf') {
+          const color = geometry.getAttribute('color'), count = color.count;
+          const arms = new Float32Array(count), shirts = new Float32Array(count);
+          arms.fill(obj.userData.part === 'arm_left' ? -1 : obj.userData.part === 'arm_right' ? 1 : 0);
+          for (let i = 0; i < count; i++) shirts[i] = Math.abs(color.getX(i) - color.getY(i)) < 0.01 && Math.abs(color.getX(i) - color.getZ(i)) < 0.01 && color.getX(i) > 0.2 ? 1 : 0;
+          geometry.setAttribute('armSide', new Float32BufferAttribute(arms, 1)); geometry.setAttribute('shirt', new Float32BufferAttribute(shirts, 1));
+        }
+        return geometry;
+      });
       const geometry = mergeGeometries(pieces)!; for (const piece of pieces) piece.dispose();
       const mesh = new InstancedMesh(geometry, standard, count);
       mesh.name = `arena_${name}`; mesh.userData.arena = true;
@@ -46,27 +56,27 @@ export class Arena {
       const side = i % 2, x = STREET.ARENA_SIDE_X[side]!, z = STREET.ARENA_ROWS[Math.floor(i / 2)]!;
       const rotation = side ? -Math.PI / 2 : Math.PI / 2;
       for (const name of ['bleacher', 'snow_bleacher']) this.place(this.batches.get(name)!, i, x, 0, z, rotation);
-      this.place(this.batches.get('bunting')!, i, x, 0, z - 2, rotation);
-      this.place(this.batches.get('barrier')!, i, x, 0, z + 2, rotation);
+      this.place(this.batches.get('bunting')!, i, x + (side ? 1.6 : -1.6), 0, z, rotation);
+      this.place(this.batches.get('barrier')!, i, x + (side ? -1.3 : 1.3), 0, z, rotation);
       this.place(this.batches.get('hay')!, i, x, 0, z + 2.8);
       this.place(this.batches.get('pumpkin')!, i, x + (side ? 0.7 : -0.7), 0, z + 2.8);
       this.place(this.batches.get('neon_sign')!, i, x, 1.1, z - 1.4, rotation);
-      for (let j = 0; j < 2; j++) this.place(this.batches.get('cone')!, i * 2 + j, x, 0, z + 1.3 + j * 1.5);
+      for (let j = 0; j < 2; j++) this.place(this.batches.get('cone')!, i * 2 + j, x + (side ? -1.3 : 1.3), 0, z + (j ? 1.3 : -1.3));
       for (let j = 0; j < 6; j++) {
         const tier = Math.floor(j / 2), localX = (j % 2 ? 0.65 : -0.65), localZ = 0.5 - tier * 0.5;
         const px = x + Math.cos(rotation) * localX + Math.sin(rotation) * localZ;
         const pz = z - Math.sin(rotation) * localX + Math.cos(rotation) * localZ;
         const y = (2 - tier) / 3 + 0.25;
-        this.place(spectators, i * 6 + j, px, y, pz, rotation, 0.68);
+        this.place(spectators, i * 6 + j, px, y, pz, rotation, STREET.CROWD_SCALE);
         spectators.setColorAt(i * 6 + j, this.color.set(COLORS.players[(i + j) % 4]!));
-        this.place(this.batches.get('scarf')!, i * 6 + j, px, y + 0.32, pz, rotation, 0.68);
+        this.place(this.batches.get('scarf')!, i * 6 + j, px, y + 0.5, pz, rotation, STREET.CROWD_SCALE);
       }
     }
     for (let i = 0; i < 2; i++) {
-      const x = STREET.ARENA_SIDE_X[i]!;
-      this.place(this.batches.get('spotlight')!, i, x, 0, -5, i ? -Math.PI / 2 : Math.PI / 2);
+      const x = STREET.SPOT_SIDE_X[i]!, z = STREET.SPOT_ROWS[i]!;
+      this.place(this.batches.get('spotlight')!, i, x, 0, z, i ? -Math.PI / 2 : Math.PI / 2);
       const light = new PointLight(STREET.RIM_COLOR, STREET.SPOT_INTENSITY, STREET.SPOT_DISTANCE);
-      light.position.set(x, 3, -5); this.lamps.push(light); this.root.add(light);
+      light.position.set(x, 3, z); this.lamps.push(light); this.root.add(light);
     }
     const random = mulberry32(CONFIG.HOME_DIORAMA_SEED + 1);
     for (const [name, count] of [['tuft', STREET.TUFT_COUNT], ['flower', STREET.FLOWER_COUNT]] as const) {
@@ -87,8 +97,14 @@ export class Arena {
   private animateMaterial(material: Material): void {
     material.onBeforeCompile = shader => {
       shader.uniforms.uCrowdTime = this.clock; shader.uniforms.uCheer = this.cheer;
-      shader.vertexShader = 'uniform float uCrowdTime; uniform float uCheer;\n' + shader.vertexShader;
-      shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\nfloat phase = uCrowdTime * ${STREET.CROWD_SPEED.toFixed(1)} + instanceMatrix[3].x * 2.0 + instanceMatrix[3].z; transformed.y += sin(phase) * ${STREET.CROWD_BOB} + abs(sin(phase * 2.0)) * uCheer;`);
+      shader.vertexShader = 'attribute float armSide; attribute float shirt; uniform float uCrowdTime; uniform float uCheer;\n' + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n#ifdef USE_INSTANCING_COLOR\nvColor.xyz /= max(instanceColor, vec3(0.001)); vColor.xyz *= mix(vec3(1.0), instanceColor, shirt);\n#endif');
+      shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\nfloat phase = uCrowdTime * ${STREET.CROWD_SPEED.toFixed(1)} + instanceMatrix[3].x * 2.0 + instanceMatrix[3].z;
+        float angle = armSide * 3.14159265 * min(1.0, uCheer / ${STREET.CHEER_HEIGHT});
+        vec2 pivot = vec2(armSide * ${STREET.CROWD_ARM_X}, ${STREET.CROWD_ARM_Y});
+        vec2 arm = transformed.xy - pivot;
+        if (armSide != 0.0) transformed.xy = mat2(cos(angle), sin(angle), -sin(angle), cos(angle)) * arm + pivot;
+        transformed.y += sin(phase) * ${STREET.CROWD_BOB} + abs(sin(phase * 2.0)) * uCheer;`);
     };
     material.customProgramCacheKey = () => 'street-crowd';
   }

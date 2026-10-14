@@ -15,11 +15,11 @@ def recipes():
             for x in (1, 27): v.box(x, x + 1, 0, h, d, d + 1, ink)
             v.box(0, 29, h + 2, h + 2, d + 1, d + 2, '#C4E5F8' if snowy else coral)
         result[name] = v
-    v = VoxelSource([6, 10, 5])
-    v.box(1, 4, 2, 5, 1, 3, '#FFFFFF').box(1, 4, 6, 9, 1, 3, '#D7A97D')
-    for x in (0, 5): v.box(x, x, 3, 6, 1, 2, '#FFFFFF')
-    for x in (1, 4): v.box(x, x, 0, 1, 2, 3, ink)
-    for x in (1, 3): v.box(x, x, 7, 7, 4, 4, ink)
+    v = VoxelSource([10, 12, 7])
+    v.box(3, 6, 2, 6, 2, 5, '#FFFFFF').box(2, 7, 7, 11, 2, 6, '#D7A97D')
+    for x, side in [(0, 'left'), (8, 'right')]: v.box(x, x + 1, 3, 7, 2, 4, '#FFFFFF', 'arm_' + side)
+    for x in (3, 6): v.box(x, x, 0, 1, 3, 4, ink)
+    for x in (3, 6): v.box(x, x, 9, 9, 6, 6, ink)
     result['spectator'] = v
     v = VoxelSource([6, 10, 6]); v.box(0, 5, 0, 0, 0, 5, ink)
     v.box(1, 4, 1, 4, 1, 4, '#FF7A32').box(2, 3, 5, 9, 2, 3, '#FF7A32')
@@ -29,12 +29,12 @@ def recipes():
     v.box(0, 23, 6, 10, 1, 3, yellow)
     for x in range(0, 24, 6): v.box(x, x + 2, 6, 10, 4, 4, ink)
     result['barrier'] = v
-    v = VoxelSource([36, 26, 3])
-    for x in (0, 35): v.box(x, x, 0, 25, 1, 1, ink)
-    v.box(0, 35, 23, 23, 1, 1, white)
+    v = VoxelSource([36, 18, 3])
+    for x in (0, 35): v.box(x, x, 0, 17, 1, 1, ink)
+    v.box(0, 35, 16, 16, 1, 1, white)
     for i, color in enumerate([coral, yellow, '#4D96FF', '#C77DFF', '#6BCB77']):
         x = 3 + i * 6
-        for row in range(4): v.box(x + row // 2, x + 4 - row // 2, 22 - row, 22 - row, 1, 1, color)
+        for row in range(4): v.box(x + row // 2, x + 4 - row // 2, 15 - row, 15 - row, 1, 1, color)
     result['bunting'] = v
     v = VoxelSource([14, 40, 10])
     v.box(2, 11, 0, 1, 1, 8, ink)
