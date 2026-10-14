@@ -6,6 +6,9 @@ import { mulberry32 } from '../../../shared/rng';
 import { Outlines } from './outlines';
 import type { Tier } from './quality';
 import type { Biome } from '../../../shared/types';
+import type { Row } from '../../../shared/types';
+import { grassSceneryAllowed } from '../../../shared/scenery';
+import { Box3, Matrix4 } from 'three';
 
 export type ArenaBiome = Biome;
 /** Static instance buffers + shared GPU crowd clock, no spectator update objects. */
@@ -25,6 +28,9 @@ export class Arena {
   private tier: Tier = 'high';
   private cheerEnd = -1;
   private reduced = false;
+  private readonly originals = new Map<InstancedMesh, Float32Array>();
+  private readonly placement = new Matrix4();
+  private readonly footprint = new Box3();
 
   constructor(assets: Group, private readonly standard: MeshStandardMaterial, private readonly lambert: MeshLambertMaterial) {
     const batch = (name: string, count: number): InstancedMesh => {
@@ -88,7 +94,29 @@ export class Arena {
       }
     }
     this.foam = batch('foam', HOME.LOG_COUNT * 2);
+    for (const mesh of this.batches.values()) {
+      mesh.geometry.computeBoundingBox();
+      this.originals.set(mesh, new Float32Array(mesh.instanceMatrix.array));
+    }
     this.applyTier('high');
+  }
+  fitGameplay(rowAt: (z: number) => Row | undefined): void {
+    this.root.updateMatrixWorld(true);
+    for (const [name, mesh] of this.batches) {
+      const original = this.originals.get(mesh)!;
+      for (let i = 0; i < mesh.count; i++) {
+        this.placement.fromArray(original, i * 16).premultiply(this.root.matrixWorld);
+        this.footprint.copy(mesh.geometry.boundingBox!).applyMatrix4(this.placement);
+        const b = this.footprint;
+        if (name !== 'foam' && grassSceneryAllowed(rowAt, b.min.x, b.max.x, -b.max.z, -b.min.z, STREET.MIN_BLEACHER_GAP)) this.placement.fromArray(original, i * 16);
+        else this.placement.makeScale(0, 0, 0);
+        mesh.setMatrixAt(i, this.placement);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+  restoreHome(): void {
+    for (const [mesh, original] of this.originals) { mesh.instanceMatrix.array.set(original); mesh.instanceMatrix.needsUpdate = true; }
   }
   private place(mesh: InstancedMesh, index: number, x: number, y: number, z: number, angle = 0, scale = 1): void {
     this.transform.position.set(x, y, z); this.transform.rotation.set(0, angle, 0); this.transform.scale.setScalar(scale);

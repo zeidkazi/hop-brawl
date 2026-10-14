@@ -330,7 +330,7 @@ export class WorldView {
         this.grounds[3]!.instanceColor!.needsUpdate = true;
       }
       // Decorative scenery uses stable row hashes and cannot be stood on.
-      this.put(this.trees, (hash32(this.seed, row.z) & 1) ? -3 : 11, 0, row.z, 14 / 12, 20 / 12, 14 / 12, this.modelsReady ? '#FFFFFF' : COLORS.tree);
+      if (row.kind === 'grass') this.put(this.trees, (hash32(this.seed, row.z) & 1) ? -3 : 11, 0, row.z, 14 / 12, 20 / 12, 1, this.modelsReady ? '#FFFFFF' : COLORS.tree);
     }
     const size = ANIMAL_SIZES[this.animal]!;
     if (this.deathCause === 'FLATTENED!') {

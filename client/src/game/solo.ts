@@ -32,6 +32,8 @@ export class Solo {
   private countdownEnd = 0; private previousWall = 0; private roundTime = 0; private poseTime = 0;
   private countdownDuration: number = SOLO.COUNTDOWN_MS;
   private warned = false;
+  private arenaRow = NaN;
+  private readonly sceneryRow = (z: number) => this.game.world.rows.find(slot => slot.z === z)?.row ?? undefined;
   private deathAt = 0; private bonkAt = -Infinity; private bonkDirection: HopDirection = 'up';
   private heading = 0; private lastScore = -1; private lastCountdown = '';
   private boxer: Boxer | null = null;
@@ -96,7 +98,7 @@ export class Solo {
     game.rig.resetScroll(retry); game.go('gameplay'); game.desaturation.value = 0;
     game.home.setActorOpacity(1); game.world.deathCause = null;
     this.roundTime = this.poseTime = 0; this.runBest = this.best ?? 0; this.newBest = false; this.lastScore = -1;
-    this.warned = false;
+    this.warned = false; this.arenaRow = NaN;
     this.heading = 0; this.bonkAt = -Infinity; this.cause.hidden = true;
     this.name.textContent = this.preferences.name; this.bestLabel.textContent = `BEST ${this.runBest}`;
     this.flag.hidden = this.runBest === 0; this.heart.style.opacity = '1'; this.heart.style.transform = '';
@@ -135,7 +137,7 @@ export class Solo {
     const home = this.game.home; home.root.add(home.animalRoot);
     home.root.add(home.effects.root);
     home.effects.root.scale.setScalar(HOME.ANIMAL_SCALE);
-    if (home.arena) { home.root.add(home.arena.root); home.arena.root.position.set(0, 0, 0); home.arena.root.rotation.y = 0; }
+    if (home.arena) { home.root.add(home.arena.root); home.arena.root.position.set(0, 0, 0); home.arena.root.rotation.y = 0; home.arena.restoreHome(); }
     home.animalRoot.position.set(4, 0, HOME.ANIMAL_Z); home.animalRoot.scale.setScalar(HOME.ANIMAL_SCALE);
     home.animalRoot.rotation.set(0, HOME.ANIMAL_YAW, 0); home.animalRoot.visible = true;
     this.boxer?.play('idle');
@@ -243,7 +245,11 @@ export class Solo {
     }
     this.game.home.updateGameActor(this.poseTime);
     const arena = this.game.home.arena;
-    if (arena) { arena.root.position.z = -Math.floor(player.camZ / SOLO.ARENA_SPAN) * SOLO.ARENA_SPAN; arena.update(this.poseTime); }
+    if (arena) {
+      arena.root.position.z = -Math.floor(player.camZ / SOLO.ARENA_SPAN) * SOLO.ARENA_SPAN;
+      if (this.arenaRow !== Math.floor(player.camZ)) { this.arenaRow = Math.floor(player.camZ); arena.fitGameplay(this.sceneryRow); }
+      arena.update(this.poseTime);
+    }
   }
   private project(element: HTMLElement, x: number, y: number, z: number, offsetY = 0): void {
     this.point.set(x, y, -z).project(this.game.rig.camera);
