@@ -163,4 +163,14 @@ export const COLORS = Object.freeze({
 } as const);
 
 export const ANIMALS = ['chicken', 'frog', 'fox', 'penguin', 'pig', 'cat'] as const;
+/** Offline Blender bake/preview settings, passed by the launcher as JSON. */
+export const ART = Object.freeze({
+  BAKE_SAMPLES: 64, PREVIEW_SAMPLES: 64, PREVIEW_SIZE: 768,
+  LOGO_PREVIEW_WIDTH: 1200, LOGO_PREVIEW_HEIGHT: 768,
+  AO_STRENGTH: 0.65, AO_FLOOR: 0.35, AO_DISTANCE: 0.4,
+  PREVIEW_MARGIN: 1.25, PREVIEW_WORLD_STRENGTH: 0.7,
+  KEY_ENERGY: 450, FILL_ENERGY: 180, RIM_ENERGY: 260,
+  KEY_SIZE: 4, PREVIEW_FOCAL_LENGTH: 50,
+  TOTAL_GLB_BUDGET: 3000000,
+} as const);
 export const ANIMAL_SIZES = [[8, 11, 8], [9, 7, 9], [8, 10, 10], [8, 11, 8], [9, 9, 10], [8, 10, 9]] as const;
