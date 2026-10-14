@@ -22,6 +22,7 @@ def build(root, config):
         curve.align_x = 'CENTER'; curve.align_y = 'CENTER'
         obj = bpy.data.objects.new('label_' + name, curve); bpy.context.collection.objects.link(obj)
         obj.rotation_euler.x = 1.5707963267948966
+        obj.rotation_euler.z = 3.141592653589793
         obj.location = (0, 0.23, 1.09)
         bpy.ops.object.select_all(action='DESELECT'); obj.select_set(True); bpy.context.view_layer.objects.active = obj
         bpy.ops.object.convert(target='MESH'); bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
@@ -33,7 +34,7 @@ def build(root, config):
     bpy.ops.object.select_all(action='DESELECT'); bake(objects, config)
     for obj in objects: obj.select_set(True)
     bpy.ops.export_scene.gltf(filepath=str(root / 'client/public/models/home_controls.glb'), export_format='GLB',
-        use_selection=True, export_texcoords=False, export_extras=True, export_animations=False,
+        use_selection=True, export_texcoords=False, export_extras=True, export_animations=False, export_all_vertex_colors=False,
         export_vertex_color='NAME', export_vertex_color_name='COLOR_0')
     for obj in objects:
         if obj.name.startswith('label_') and obj.name != 'label_chicken': obj.hide_render = True
