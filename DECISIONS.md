@@ -1,5 +1,7 @@
 # Hop Brawl decisions
 
+- 2026-10-15, latest owner steering supersedes section 32's deployment instruction: finish steps 1–4 and cover step 7 locally, use npm run dev plus wrangler dev --local, keep single-Worker deployment configured in wrangler.toml, verify normal/incognito/owner phone on Wi-Fi, then stop. Owner will log in and deploy later. Do not deploy or tag an undeployed commit as v0.9-submission.
+
 - 2026-10-15, owner sections 31–32 supersede previous milestone gates: ship the listed Solo corrections and Private Rooms, then PLAY-to-Friends, minimum sounds, single-Worker static-assets deployment, live verification and cover. No Vercel, DNS, Quick Play, boosts, awards, sinking logs, new biome art or full audio today. Existing approved models remain unchanged.
 - Section 31's full-frustum, angled lower-third camera supersedes the old identical eleven-row view. To keep one authoritative death line without mid-screen deaths on taller screens, the server kills a player as left behind only once every connected player's clamped viewport projection places that player below the screen. Clients predict the same conservative shared rule; clients cannot submit camera positions.
 - Section 32 limits the river change to nearest-slot aim assist and T2+ speed ranges. The existing segment lengths and adjacent-row schedule remain; sinking logs, new two-tile-log weighting and extra adjacent-speed contrast are deferred with the remainder of section 31.3.

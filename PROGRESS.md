@@ -4,10 +4,10 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 
 ## Ship today: sections 31–32 (current, overrides historical gates below)
 
-- Owner authorized immediate implementation and deployment on 2026-10-15. No M3/M6/pre-deploy review stops apply to this submission. Single Cloudflare Worker with static assets, SQLite Room Durable Objects and lobby WebSocket hibernation. No Vercel or DNS setup today.
+- Latest owner instruction (2026-10-15): complete steps 1–4 and cover step 7, verify everything locally including owner phone on Wi-Fi, then STOP. Do not deploy or wait for Cloudflare login. Keep the single-Worker static-assets/SQLite DO setup ready in wrangler.toml; the owner will log in and deploy afterward. No submission tag until there is a deployed commit.
 - Step 1 complete: 64 recycled rows cover the angled camera frustum, lower-third player, 1.0-tile log-slot assist and T2–T4 log speeds. Painted boundaries remain. Desktop playfield 48.6%; phone 92.1%; player anchor 65% from top. Rows 5/35/70/150 have zero missing ground and at least seven rows ahead on both viewports. No screenshot sets generated.
 - Step 2 implemented, verification underway: private-room authority, lobby, unique animal picks, player-colored gloves, clock sync, predicted local hops, 100 ms remote interpolation, hearts/respawn/protection/shove, three-round matches, rematch, host handoff and forfeit. 131 unit tests and both client/server typechecks pass. Local Worker runs on 8787; Vite proxies API/WebSocket requests on 5173.
-- Remaining in order: finish multiplayer browser checks; PLAY → Friends; minimum procedural sounds; build and deploy single Worker; live full-match/rematch checks; 1800×1200 cover; final tag `v0.9-submission` on deployed commit.
+- Steps 2–4 implemented and checked: a complete three-round match, rematch, host handoff, forfeit and Back to lobby passed between independent desktop/phone-sized browser contexts. PLAY opens Friends. Original procedural sounds cover bell/horn/hop/splash/squash/bonk/punch/round win. Remaining: expanded local verification, owner phone test and 1800×1200 cover. Deployment and the final tag are deferred by the latest instruction.
 - Physical-phone live testing requires the owner's device. Automated touch/mobile tests are reported separately.
 
 ## Historical status (superseded by section 32)
@@ -160,7 +160,7 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Next exact step
 
-Finish the section 32 multiplayer browser verification, then execute steps 3–7 in order without review stops. Do not implement deferred M12 punch/tail polish. The current submission scope and authorization are listed at the top of this file.
+Finish local verification and cover; ask the owner to test the phone on the same Wi-Fi; STOP with local URLs, test results and known issues. Do not deploy. Do not implement deferred M12 punch/tail polish. Current scope is at the top of this file.
 
 ## Milestone plan / gates
 

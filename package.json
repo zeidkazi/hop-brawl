@@ -9,7 +9,7 @@
   "scripts": {
     "art:build": "node scripts/build-art.mjs",
     "dev": "vite",
-    "dev:server": "wrangler dev",
+    "dev:server": "wrangler dev --local",
     "deploy": "npm run check && wrangler deploy",
     "build": "npm run typecheck && npm run build:client",
     "build:client": "vite build",
