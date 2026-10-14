@@ -4,8 +4,8 @@ import {
   Scene, SRGBColorSpace, WebGLRenderer, WebGLRenderTarget, LinearToneMapping,
   Material,
 } from 'three';
-import { COLORS, CONFIG, QUALITY, STREET, VIEW } from '../../../shared/config';
-import { CameraRig } from './camera';
+import { COLORS, CONFIG, QUALITY, SOLO, STREET, VIEW } from '../../../shared/config';
+import { CameraRig, gameplayDistance } from './camera';
 import type { Station } from './camera';
 import { Particles } from './particles';
 import { QualityController } from './quality';
@@ -91,6 +91,7 @@ export class GameRenderer {
   private readonly resize = (): void => {
     this.width = Math.max(1, window.innerWidth); this.height = Math.max(1, window.innerHeight);
     this.rig.resize(this.width / this.height);
+    this.updateFog();
     if (this.home.root.children.length) this.home.layout(this.rig.camera);
     this.applyQuality();
   };
@@ -121,8 +122,15 @@ export class GameRenderer {
   setGraphics(choice: GraphicsChoice): void { this.quality.setChoice(choice); this.applyQuality(); }
   go(station: Station): void {
     this.world.station = station; this.rig.go(station);
+    this.updateFog();
     this.home.root.visible = station !== 'gameplay' && station !== 'soloEnd';
     this.world.root.visible = !this.home.root.visible;
+  }
+  private updateFog(): void {
+    if (!(this.scene.fog instanceof Fog)) return;
+    const playing = this.rig.station === 'gameplay' || this.rig.station === 'soloEnd';
+    this.scene.fog.near = playing ? gameplayDistance(this.width / this.height) + SOLO.FOG_MARGIN : VIEW.LOBBY_DISTANCE;
+    this.scene.fog.far = playing ? this.scene.fog.near + VIEW.FAR / 2 : VIEW.FAR / 2;
   }
   setReducedMotion(value: boolean): void { this.rig.reducedMotion = value; this.particles.reducedMotion = value; this.home.setReduced(value); }
 

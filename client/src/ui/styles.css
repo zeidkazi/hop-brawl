@@ -77,6 +77,8 @@ a { color: inherit; }
 .solo-result { text-align:center; }.solo-result p { font:32px 'Lilita One',sans-serif; margin:12px; }
 #solo-new-best { display:block; color:#EE4266; font:28px 'Lilita One',sans-serif; }
 .practice { position:relative; }.practice::after { content:'New? Practice here first!'; position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font:800 11px Nunito,sans-serif; color:var(--cream); white-space:nowrap; -webkit-text-stroke:0; text-shadow:0 1px 2px var(--ink); }
+#ui-root[data-screen='solo'] #toasts { top:130px; }
+#game-canvas { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
 @media (orientation: portrait) {
   .screen { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
   .home-toolbar { top: max(16px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right)); }

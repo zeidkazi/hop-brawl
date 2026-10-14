@@ -55,7 +55,7 @@ export class Screens {
           <div class="mode-buttons">
             <button class="yellow primary" data-mode="play" disabled>PLAY</button>
             <button class="green" data-screen="friends">FRIENDS</button>
-            <button class="blue" data-mode="solo">SOLO</button>
+            <button class="blue" data-mode="solo" aria-label="SOLO">SOLO</button>
           </div>
         </div>
       </section>

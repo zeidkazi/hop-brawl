@@ -19,6 +19,8 @@ async function boot(): Promise<void> {
   try {
     performance.mark('hop-boot-start');
     const transfer = downloads.load();
+    // The renderer can fail synchronously before Promise.all attaches its handlers.
+    void transfer.catch(() => {});
     game ??= new GameRenderer(document.querySelector<HTMLCanvasElement>('#game-canvas')!);
     performance.mark('hop-renderer-ready');
     await Promise.all([transfer, preloadFonts(), game.warmup()]);
