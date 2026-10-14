@@ -4,6 +4,7 @@ class VoxelSource:
         self.size = size
         self.cells = {}
         self.pivots = {}
+        self.transforms = {}
 
     def box(self, x0, x1, h0, h1, d0, d1, color, part='body'):
         for x in range(x0, x1 + 1):
@@ -34,4 +35,7 @@ class VoxelSource:
             if part != 'body':
                 parts.setdefault(part, []).append(len(voxels))
             voxels.append([x, h, d, palette.index(color)])
-        return {'size': self.size, 'palette': palette, 'voxels': voxels, 'parts': parts, 'pivots': self.pivots}
+        data = {'size': self.size, 'palette': palette, 'voxels': voxels, 'parts': parts, 'pivots': self.pivots}
+        if self.transforms:
+            data['transforms'] = self.transforms
+        return data

@@ -68,6 +68,16 @@ def mesh_parts(name, source, config):
         mesh.update()
         obj = bpy.data.objects.new(f'{name}_{part}', mesh)
         bpy.context.collection.objects.link(obj)
+        if part in source.get('transforms', {}):
+            transform = source['transforms'][part]
+            x, h, d = transform['center']
+            center = Vector(((x - size[0] / 2) * unit, (d - size[2] / 2) * unit, h * unit))
+            angle = math.radians(transform['tilt_deg'])
+            for vertex in mesh.vertices:
+                relative = vertex.co - center
+                vertex.co.x = center.x + relative.x * math.cos(angle) - relative.z * math.sin(angle)
+                vertex.co.z = center.z + relative.x * math.sin(angle) + relative.z * math.cos(angle)
+            mesh.update()
         # The body origin is bottom-center; tails pivot at their attachment.
         if part in source.get('pivots', {}):
             x, h, d = source['pivots'][part]
@@ -83,6 +93,12 @@ def mesh_parts(name, source, config):
         obj['part'] = part
         obj['surface_mesher'] = 'closed-part-greedy-v1'
         objects.append(obj)
+    if source.get('transforms'):
+        # Keep the whole word's bottom-center origin after individual letter tilts.
+        bottom = min(vertex.co.z for obj in objects for vertex in obj.data.vertices)
+        for obj in objects:
+            for vertex in obj.data.vertices:
+                vertex.co.z -= bottom
     return objects
 
 
