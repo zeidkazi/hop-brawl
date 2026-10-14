@@ -64,6 +64,19 @@ a { color: inherit; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .debug-metrics { position: fixed; left: 8px; bottom: 8px; margin: 0; padding: 8px; background: #FFF6E5ed; border: 2px solid var(--ink); font: 12px monospace; pointer-events: none; z-index: 50; }
 .lil-gui.lil-auto-place { top: 80px; }
+.solo-hud { pointer-events:none; user-select:none; -webkit-user-select:none; }
+.solo-score { position:absolute; top:max(16px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); display:grid; text-align:center; color:white; -webkit-text-stroke:4px var(--ink); paint-order:stroke fill; text-shadow:0 3px var(--ink); }
+.solo-score strong { font:64px/1 'Lilita One',sans-serif; }.solo-score span { font:20px/1.5 'Lilita One',sans-serif; -webkit-text-stroke:3px var(--ink); }
+.solo-menu { position:absolute; right:max(20px,env(safe-area-inset-right)); top:max(20px,env(safe-area-inset-top)); pointer-events:auto; }
+#solo-heart { position:absolute; top:24px; left:24px; font-size:38px; color:#FF6B6B; -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; transition:transform .4s,opacity .4s; }
+.solo-slam { position:absolute; left:50%; top:42%; transform:translate(-50%,-50%) rotate(-5deg); font:clamp(40px,10vw,100px)/1 'Lilita One',sans-serif; color:var(--yellow); -webkit-text-stroke:7px var(--ink); paint-order:stroke fill; text-shadow:0 6px var(--ink); white-space:nowrap; }
+#solo-cause { font-size:clamp(34px,8vw,76px); color:#FFF6E5; }
+#solo-danger { position:absolute; inset:60% 0 0; background:linear-gradient(transparent,#EE4266); opacity:0; pointer-events:none; }
+.world-label { position:absolute; top:0; left:0; font:18px 'Lilita One',sans-serif; color:white; -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; white-space:nowrap; }
+#solo-you { color:var(--yellow); }.best-flag { background:var(--yellow); color:var(--ink); border-left:3px solid var(--ink); padding:6px 9px; -webkit-text-stroke:0; }
+.solo-result { text-align:center; }.solo-result p { font:32px 'Lilita One',sans-serif; margin:12px; }
+#solo-new-best { display:block; color:#EE4266; font:28px 'Lilita One',sans-serif; }
+.practice { position:relative; }.practice::after { content:'New? Practice here first!'; position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font:800 11px Nunito,sans-serif; color:var(--cream); white-space:nowrap; -webkit-text-stroke:0; text-shadow:0 1px 2px var(--ink); }
 @media (orientation: portrait) {
   .screen { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
   .home-toolbar { top: max(16px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right)); }

@@ -3,9 +3,11 @@ import { ANIMALS, VIEW } from '../../../shared/config';
 import type { GameRenderer } from '../game/renderer';
 import { Motion } from './motion';
 import { readPreferences, savePreferences } from './settings';
+import { Solo } from '../game/solo';
+import { SOLO_MARKUP } from './solo-markup';
 
-type Screen = 'home' | 'friends' | 'settings' | 'how' | 'credits' | 'name';
-const SCREENS: readonly Screen[] = ['home', 'friends', 'settings', 'how', 'credits', 'name'];
+type Screen = 'home' | 'friends' | 'settings' | 'how' | 'credits' | 'name' | 'solo' | 'pause' | 'soloEnd';
+const SCREENS: readonly Screen[] = ['home', 'friends', 'settings', 'how', 'credits', 'name', 'solo', 'pause', 'soloEnd'];
 const CARDS = [
   ['Hop forward. Survive.', "Tap or swipe on phone · Arrow keys / WASD on PC. Dodge cars and trains, ride logs, and don't fall off the bottom of the screen."],
   ['Shove to win.', "Hop into your opponent to shove them one tile — into traffic, if you're lucky. Shoving has a short cooldown."],
@@ -21,6 +23,7 @@ const storage = {
 export class Screens {
   readonly preferences = readPreferences(storage, matchMedia('(prefers-reduced-motion: reduce)').matches);
   readonly motion: Motion;
+  readonly solo: Solo;
   private screen: Screen = 'home';
   private readonly panels: Record<Screen, HTMLElement>;
   private readonly names: HTMLInputElement[];
@@ -52,7 +55,7 @@ export class Screens {
           <div class="mode-buttons">
             <button class="yellow primary" data-mode="play" disabled>PLAY</button>
             <button class="green" data-screen="friends">FRIENDS</button>
-            <button class="blue" data-mode="solo" disabled>SOLO</button>
+            <button class="blue" data-mode="solo">SOLO</button>
           </div>
         </div>
       </section>
@@ -95,9 +98,13 @@ export class Screens {
           <button class="yellow" data-back>Back</button>
         </div>
       </section>
+      ${SOLO_MARKUP}
       <div id="tile-cover" aria-hidden="true" hidden></div><div id="toasts" role="status" aria-live="polite"></div>`;
     this.panels = Object.fromEntries(SCREENS.map(key => [key, root.querySelector<HTMLElement>(`#${key}`)!])) as Record<Screen, HTMLElement>;
     this.motion = new Motion(Object.values(this.panels), root.querySelector('#tile-cover')!, root.querySelector('#toasts')!);
+    this.solo = new Solo(root, game, this.preferences, this.motion, screen => {
+      history.replaceState({ screen }, '', '/'); this.show(screen);
+    });
     this.names = Array.from(root.querySelectorAll<HTMLInputElement>('.name'));
     this.animalLabel = root.querySelector('#animal-label')!;
     this.names.forEach(input => {
@@ -130,6 +137,7 @@ export class Screens {
       if (!button) return;
       this.game.home.sound.unlock();
       if (button.dataset.screen) this.navigate(button.dataset.screen as Screen);
+      else if (button.dataset.mode === 'solo') this.navigate('solo');
       else if (button.hasAttribute('data-back')) this.back();
       else if (button.dataset.animal) this.changeAnimal(Number(button.dataset.animal));
       else if (button.hasAttribute('data-combo')) this.game.home.move('combo');
@@ -179,7 +187,7 @@ export class Screens {
     return SCREENS.includes(value as Screen) ? value as Screen : new URL(location.href).searchParams.has('room') ? 'friends' : 'home';
   }
   navigate(screen: Screen): void {
-    if (screen === 'friends' && !this.preferences.name.trim()) { this.afterName = screen; screen = 'name'; }
+    if ((screen === 'friends' || screen === 'solo') && !this.preferences.name.trim()) { this.afterName = screen; screen = 'name'; }
     if (screen === this.screen) return;
     history.pushState({ screen }, '', screen === 'friends' ? location.href : '/');
     this.show(screen);
@@ -192,10 +200,13 @@ export class Screens {
     } else history.back();
   }
   private show(screen: Screen): void {
+    if (screen === 'solo' && !this.solo.active) { this.solo.start(); return; }
+    if (screen === 'home' && this.solo.active) { this.solo.quit(); return; }
     if (screen !== 'name') this.afterName = null;
     this.screen = screen;
+    this.root.dataset.screen = screen;
     this.motion.show(this.panels[screen]);
-    if (this.game.rig.station !== 'home') this.game.go('home');
+    if (!this.solo.active && this.game.rig.station !== 'home') this.game.go('home');
     this.panels[screen].querySelector<HTMLElement>('input, button, a')?.focus({ preventScroll: true });
   }
   private save(): void { savePreferences(storage, this.preferences); }
