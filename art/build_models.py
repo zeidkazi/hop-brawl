@@ -302,10 +302,15 @@ def main():
     parser.add_argument('--author', action='store_true')
     parser.add_argument('--self-test', action='store_true')
     parser.add_argument('--silhouette-only', action='store_true')
+    parser.add_argument('--logo-poses', action='store_true')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     config = json.loads(Path(args.config).read_text(encoding='utf-8'))
     for path in ('art/voxels', 'art/previews', 'client/public/models'):
         (ROOT / path).mkdir(parents=True, exist_ok=True)
+    if args.logo_poses:
+        from logo_poses import render_review
+        render_review(ROOT, config)
+        return
     if args.self_test:
         bpy.ops.wm.read_factory_settings(use_empty=True)
         bpy.context.scene.world = bpy.data.worlds.new('TestWorld')

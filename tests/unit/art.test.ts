@@ -19,6 +19,27 @@ describe('Blender deliverables', () => {
   it('keeps the logo below the owner-approved byte budget', () => {
     expect(statSync(join(modelDir, 'logo.glb')).size).toBeLessThan(ART.LOGO_GLB_BUDGET);
   });
+  it('exports the complete named logo rig with independent letters and blinkable eyes', () => {
+    const bytes = readFileSync(join(modelDir, 'logo.glb'));
+    const doc = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString()) as Gltf;
+    for (const name of ['HOP_H', 'HOP_O', 'HOP_P', 'BRAWL_B', 'letter_R', 'BRAWL_A', 'BRAWL_W', 'BRAWL_L',
+      'chicken', 'chicken_eyes', 'glove', 'starburst', 'road_strip', 'dust_H', 'dust_O', 'dust_P']) {
+      expect(doc.nodes.some(node => node.name === `logo_${name}`)).toBe(true);
+    }
+    for (const [name, expected] of [
+      ['chicken', ['chicken_body', 'chicken_eyes']],
+      ['letter_R', ['BRAWL_R', 'BRAWL_R_diagonal']],
+    ] as const) {
+      const parent = doc.nodes.find(node => node.name === `logo_${name}`)!;
+      expect(parent.children!.map(index => doc.nodes[index]!.name).sort()).toEqual(expected.map(part => `logo_${part}`).sort());
+    }
+    const source = JSON.parse(readFileSync('art/voxels/logo.json', 'utf8')) as { transforms: Record<string, { tilt_deg: number; shear_x?: number }> };
+    expect(source.transforms.BRAWL_R_diagonal!.shear_x).not.toBe(0);
+    for (const transform of Object.values(source.transforms)) expect(Math.abs(transform.tilt_deg)).toBeLessThanOrEqual(4);
+    const strip = readFileSync('art/previews/logo-intro.png');
+    expect(strip.readUInt32BE(16)).toBe(ART.LOGO_POSE_WIDTH * 4);
+    expect(strip.readUInt32BE(20)).toBe(ART.LOGO_POSE_HEIGHT);
+  });
   it('keeps the complete model library below the shared byte budget', () => {
     expect(models.reduce((sum, file) => sum + statSync(join(modelDir, file)).size, 0)).toBeLessThan(ART.TOTAL_GLB_BUDGET);
   });
