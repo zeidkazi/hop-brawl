@@ -21,6 +21,7 @@ for (const name of HOME_MODELS) registerAsset(`/models/${name}.glb`, `${name}.gl
 
 /** Loaded once into the persistent world scene. Repeated scenery is instanced. */
 export class HomeScene {
+  readonly models = new Map<string, Group>();
   readonly root = new Group();
   readonly outlines = new Outlines();
   arena: Arena | null = null;
@@ -80,6 +81,7 @@ export class HomeScene {
       catch (error) { downloads.invalidate(url); throw error; }
     }));
     const assets = new Map<string, Group>(loaded);
+    for (const [name, asset] of assets) this.models.set(name, asset);
     for (const [name, model] of assets) {
       model.traverse(obj => {
         if (!(obj instanceof Mesh)) return;

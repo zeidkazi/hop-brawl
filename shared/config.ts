@@ -164,7 +164,7 @@ export const COLORS = Object.freeze({
 } as const);
 
 export const ANIMALS = ['chicken', 'frog', 'fox', 'penguin', 'pig', 'cat'] as const;
-export const HOME_MODELS = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls', 'arena'] as const;
+export const HOME_MODELS = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls', 'arena', 'crate', 'train_engine', 'train_carriage'] as const;
 export const LOADING = Object.freeze({
   INLINE_BUDGET: 15000, FAST_MS: 400, TAP_MS: 600, TIP_MS: 2500, SLOW_MS: 8000,
   PUNCH_MS: 180, REVEAL_MS: 300, FADE_MS: 200, EASE_MS: 160,

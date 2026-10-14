@@ -122,6 +122,7 @@ export class GameRenderer {
 
   async warmup(): Promise<void> {
     await this.home.load();
+    this.world.installModels(this.home.models);
     performance.mark('hop-assets-ready');
     this.scene.add(this.home.root);
     this.home.layout(this.rig.camera);
