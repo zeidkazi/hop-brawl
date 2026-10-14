@@ -66,6 +66,8 @@ All six animal model/source/preview entries above now include original CC0 boxin
 | `art/previews/fox-player-2.png` | Same fox geometry with blue gear; brawler_gear.py above, CC0 1.0 |
 | `art/previews/fox-player-3.png` | Same fox geometry with green gear; brawler_gear.py above, CC0 1.0 |
 | `art/previews/fox-player-4.png` | Same fox geometry with purple gear; brawler_gear.py above, CC0 1.0 |
+| `art/previews/boxing-lineup.png` | Contact sheet of the six Blender renders above; original CC0 1.0 artwork |
+| `art/previews/fox-team-colors.png` | Contact sheet of the four fox player-color renders above; original CC0 1.0 artwork |
 
 ## Announcer acquisition (milestone 11)
 
