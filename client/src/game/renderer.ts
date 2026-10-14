@@ -10,12 +10,14 @@ import { Particles } from './particles';
 import { QualityController } from './quality';
 import type { GraphicsChoice, Tier } from './quality';
 import { WorldView } from './world-view';
+import { HomeScene } from './home-scene';
 
 export class GameRenderer {
   readonly scene = new Scene();
   readonly renderer: WebGLRenderer;
   readonly rig: CameraRig;
   readonly world = new WorldView();
+  readonly home = new HomeScene();
   readonly particles = new Particles();
   readonly quality: QualityController;
   readonly sun = new DirectionalLight(COLORS.sun, VIEW.SUN_INTENSITY);
@@ -76,6 +78,7 @@ export class GameRenderer {
   private readonly resize = (): void => {
     this.width = Math.max(1, window.innerWidth); this.height = Math.max(1, window.innerHeight);
     this.rig.resize(this.width / this.height);
+    if (this.home.root.children.length) this.home.layout(this.rig.camera);
     this.applyQuality();
   };
   private readonly visibility = (): void => {
@@ -87,6 +90,7 @@ export class GameRenderer {
     const tier = this.quality.tier;
     if (tier !== this.appliedTier) {
       this.world.applyTier(tier);
+      this.home.applyTier(tier);
       this.particles.tier = tier;
       this.renderer.shadowMap.enabled = tier !== 'low';
       this.renderer.shadowMap.autoUpdate = tier !== 'low';
@@ -102,10 +106,18 @@ export class GameRenderer {
   }
 
   setGraphics(choice: GraphicsChoice): void { this.quality.setChoice(choice); this.applyQuality(); }
-  go(station: Station): void { this.world.station = station; this.rig.go(station); }
-  setReducedMotion(value: boolean): void { this.rig.reducedMotion = value; this.particles.reducedMotion = value; }
+  go(station: Station): void {
+    this.world.station = station; this.rig.go(station);
+    this.home.root.visible = station !== 'gameplay';
+    this.world.root.visible = !this.home.root.visible;
+  }
+  setReducedMotion(value: boolean): void { this.rig.reducedMotion = value; this.particles.reducedMotion = value; this.home.setReduced(value); }
 
   async warmup(): Promise<void> {
+    await this.home.load();
+    this.scene.add(this.home.root);
+    this.home.layout(this.rig.camera);
+    this.home.warmAll(true);
     const initialTier = this.quality.tier;
     for (const tier of ['high', 'medium', 'low'] as const) {
       this.quality.tier = tier; this.applyQuality();
@@ -114,6 +126,8 @@ export class GameRenderer {
       this.draw();
     }
     this.renderer.compile(this.output, this.outputCamera);
+    this.home.warmAll(false);
+    this.world.root.visible = false;
     this.quality.tier = initialTier; this.applyQuality();
     this.draw();
   }
@@ -138,6 +152,7 @@ export class GameRenderer {
   start(): void {
     if (this.frameId) return;
     this.clockStart = performance.now();
+    this.home.playIntro();
     this.frameId = requestAnimationFrame(this.frame);
   }
 
@@ -156,6 +171,7 @@ export class GameRenderer {
     this.world.requestWindow(this.rig.camZ);
     this.world.setView(this.rig.camera);
     this.world.update(time);
+    if (this.home.root.visible) this.home.update(time);
     this.particles.mesh.boundingSphere!.center.set(4, 0, -this.rig.camZ);
     this.particles.mesh.boundingSphere!.radius = VIEW.POOL_ROWS;
     this.particles.update(dt);

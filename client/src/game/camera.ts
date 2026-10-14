@@ -1,5 +1,5 @@
 import { CatmullRomCurve3, MathUtils, PerspectiveCamera, Vector3 } from 'three';
-import { CONFIG, VIEW } from '../../../shared/config';
+import { CONFIG, HOME, VIEW } from '../../../shared/config';
 
 export type Station = 'home' | 'lobby' | 'search' | 'vs' | 'gameplay' | 'roundEnd' | 'matchEnd' | 'soloEnd';
 export const STATIONS: readonly Station[] = ['home', 'lobby', 'search', 'vs', 'gameplay', 'roundEnd', 'matchEnd', 'soloEnd'];
@@ -55,6 +55,10 @@ export class CameraRig {
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
     this.go(this.station);
+    if (this.station === 'home') {
+      this.camera.position.copy(this.goal); this.focus.copy(this.goalFocus);
+      this.camera.lookAt(this.focus); this.flight = 1;
+    }
   }
 
   go(station: Station): void {
@@ -71,17 +75,15 @@ export class CameraRig {
   }
 
   private destination(): void {
-    const mobile = this.aspect < 1;
     const baseDistance = this.station === 'gameplay' ? gameplayDistance(this.aspect)
       : this.station === 'lobby' ? VIEW.LOBBY_DISTANCE
         : this.station === 'search' ? VIEW.SEARCH_DISTANCE
           : this.station === 'vs' ? VIEW.VS_DISTANCE
-            : this.station === 'roundEnd' ? VIEW.WINNER_DISTANCE : VIEW.HOME_DISTANCE;
-    const distance = this.station === 'gameplay' ? baseDistance : baseDistance * Math.max(1, VIEW.PORTRAIT_DISTANCE_FACTOR / this.aspect);
+            : this.station === 'roundEnd' ? VIEW.WINNER_DISTANCE : HOME.DISTANCE;
+    const distance = this.station === 'gameplay' ? baseDistance : baseDistance * Math.max(1, HOME.PORTRAIT_FIT / this.aspect);
     this.goalFocus.set(this.station === 'matchEnd' ? VIEW.PODIUM_X : 4,
-      this.station === 'home' && mobile ? VIEW.HOME_PORTRAIT_Y : 0,
+      this.station === 'home' ? HOME.FOCUS_Y : 0,
       this.station === 'gameplay' ? -this.camZ - (CONFIG.VIEW_ROWS - 1) / 2 : -1);
-    if (this.station === 'home' && !mobile) this.goalFocus.x += VIEW.HOME_DESKTOP_X;
     this.goal.copy(back).multiplyScalar(distance).add(this.goalFocus);
   }
 

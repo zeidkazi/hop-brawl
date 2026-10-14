@@ -185,3 +185,21 @@ export const ART = Object.freeze({
   LOGO_YELLOW: '#FFD23F', LOGO_HIGHLIGHT: '#FFE680', LOGO_SIDE: '#E0A800',
 } as const);
 export const ANIMAL_SIZES = [[8, 11, 8], [9, 7, 9], [8, 10, 10], [8, 11, 8], [9, 9, 10], [8, 10, 9]] as const;
+
+/** Home composition and animation; kept separate from gameplay collision sizes. */
+export const HOME = Object.freeze({
+  DISTANCE: 13, PORTRAIT_FIT: 0.62, FOCUS_Y: 0.7,
+  GROUND_MIN: -24, GROUND_MAX: 32, GROUND_WIDTH: 64,
+  ROAD_ROWS: [-4, -3, 4, 5], RIVER_ROWS: [9, 10, 11],
+  TREE_COUNT: 40, VEHICLE_COUNT: 12, LOG_COUNT: 12,
+  LOOP_WIDTH: 32, LOOP_LEFT: -12, TRAFFIC_SPEED: 1.6, LOG_SPEED: 1,
+  ANIMAL_SCALE: 1.5, ANIMAL_YAW: Math.PI + Math.PI / 12,
+  ARROW_OFFSET: 1.65, ARROW_HEIGHT: 0.8, ARROW_SCALE: 0.8,
+  SIGN_SCALE: 0.8, SIGN_X: 5.25, SIGN_Z: -0.2,
+  LOGO_WIDTH_RATIO: 0.86, LOGO_HEIGHT_RATIO: 0.75, LOGO_NDC_Y: 0.49,
+  LOGO_TILT_X: 0.12, LOGO_TILT_Y: -0.12, LOGO_BOB: 0.035,
+  LOGO_DROP: 2.5, LOGO_STAGGER_S: 0.095, LOGO_DROP_S: 0.52,
+  CHICKEN_LAND_S: 0.5, BLINK_PERIOD_S: 3.3, BLINK_S: 0.11,
+  HOP_PERIOD_S: 6.5, HOP_DURATION_S: 0.5, HOP_HEIGHT: 0.35,
+  TAIL_WAG: 0.12, TAIL_SPEED: 3, DASH_LENGTH: 0.6, DASH_WIDTH: 0.045,
+} as const);
