@@ -45,8 +45,8 @@ export class Screens {
         <div class="scene-controls" aria-label="Choose your animal">
           <button class="scene-hit" data-animal="-1" aria-label="Previous animal"></button>
           <button class="scene-hit" data-animal="1" aria-label="Next animal"></button>
-          <button class="scene-hit animal-hit" data-animal="1" aria-label="Change animal"></button>
-          <strong id="animal-label" class="sr-only" aria-live="polite"></strong>
+          <button class="scene-hit animal-hit" data-combo aria-label="Throw boxing combo"></button>
+          <strong id="animal-label" class="animal-name" aria-live="polite"></strong>
         </div>
         <div class="home-actions">
           <div class="mode-buttons">
@@ -128,9 +128,11 @@ export class Screens {
     root.addEventListener('click', event => {
       const button = event.target instanceof Element ? event.target.closest('button') : null;
       if (!button) return;
+      this.game.home.sound.unlock();
       if (button.dataset.screen) this.navigate(button.dataset.screen as Screen);
       else if (button.hasAttribute('data-back')) this.back();
       else if (button.dataset.animal) this.changeAnimal(Number(button.dataset.animal));
+      else if (button.hasAttribute('data-combo')) this.game.home.move('combo');
       else if (button.dataset.card) this.changeCard(Number(button.dataset.card));
     });
     const hits = root.querySelectorAll<HTMLElement>('.scene-hit');
@@ -139,6 +141,8 @@ export class Screens {
         hits[i]!.style.left = `${points[i * 2]! * 100}%`;
         hits[i]!.style.top = `${points[i * 2 + 1]! * 100}%`;
       }
+      this.animalLabel.style.left = `${points[4]! * 100}%`;
+      this.animalLabel.style.top = `calc(${points[5]! * 100}% + 70px)`;
     };
     this.game.home.layout(this.game.rig.camera);
     root.querySelector('#name form')!.addEventListener('submit', event => {
@@ -202,6 +206,7 @@ export class Screens {
   private applyPreferences(): void {
     this.motion.reduced = this.preferences.reducedMotion;
     this.game.setReducedMotion(this.preferences.reducedMotion);
+    this.game.home.sound.volume = this.preferences.sfx;
   }
   private updateAnimal(): void { this.animalLabel.textContent = ANIMALS[this.preferences.animal]!; }
   private updateName(): void { this.root.querySelector('#name-caption')!.textContent = this.preferences.name.trim() || 'Tap to set name'; }
@@ -209,9 +214,12 @@ export class Screens {
     this.preferences.animal = (this.preferences.animal + direction + ANIMALS.length) % ANIMALS.length;
     this.save(); this.updateAnimal(); this.carousel?.kill();
     const home = this.game.home;
+    if (this.preferences.reducedMotion) {
+      this.game.world.animal = this.preferences.animal; home.select(this.preferences.animal); home.swap = 0; home.landed(); return;
+    }
     this.carousel = gsap.timeline().to(home, { swap: -direction * VIEW.CAROUSEL_TRAVEL, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.in', overwrite: 'auto' })
       .call(() => { this.game.world.animal = this.preferences.animal; home.select(this.preferences.animal); home.swap = direction * VIEW.CAROUSEL_TRAVEL; })
-      .to(home, { swap: 0, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.out' });
+      .to(home, { swap: 0, duration: VIEW.CAROUSEL_MS / 2000, ease: 'power2.out' }).call(() => home.landed());
   }
   private changeCard(direction: number): void {
     this.card = (this.card + direction + CARDS.length) % CARDS.length;

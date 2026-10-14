@@ -41,6 +41,7 @@ a { color: inherit; }
 .text-button { background: none; box-shadow: none; border: 0; text-decoration: underline; font: 800 16px Nunito, sans-serif; }
 .scene-hit { position: absolute; width: 64px; height: 64px; translate: -50% -50%; border: 0; border-radius: 12px; background: transparent; box-shadow: none !important; padding: 0; pointer-events: auto; }
 .scene-hit.animal-hit { width: 112px; height: 140px; }
+.animal-name { position: absolute; translate: -50% -50%; color: white; font: 28px 'Lilita One', sans-serif; text-transform: uppercase; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); pointer-events: none; }
 .scene-hit:focus-visible { outline-offset: 0; background: #fff6e526; }
 .name { text-align: center; }
 .name-editor .panel { max-width: 360px; }

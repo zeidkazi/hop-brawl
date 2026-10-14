@@ -25,8 +25,9 @@ test('Home keeps its loaded scene through animal and name controls', async ({ pa
     await page.getByRole('button', { name: 'Next animal', exact: true }).click();
     await expect(page.locator('#animal-label')).toHaveText(ANIMALS[(index + STREET.DEFAULT_ANIMAL) % ANIMALS.length]!);
   }
-  await page.getByRole('button', { name: 'Change animal', exact: true }).click();
-  await expect(page.locator('#animal-label')).toHaveText('penguin');
+  await page.getByRole('button', { name: 'Throw boxing combo', exact: true }).click();
+  await expect(page.locator('#animal-label')).toHaveText('fox');
+  await page.getByRole('button', { name: 'Next animal', exact: true }).click();
   await page.keyboard.press('ArrowLeft');
   await expect(page.locator('#animal-label')).toHaveText('fox');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
@@ -89,7 +90,7 @@ test('carousel follows arrows and finger direction; crowd cheers without replaci
     expect(samples.some(sample => sample.animal !== first && sample.offset * incoming > 0.1)).toBe(true);
     expect(Math.abs(samples.at(-1)!.offset)).toBeLessThan(0.01);
   }
-  const hit = page.getByRole('button', { name: 'Change animal', exact: true });
+  const hit = page.getByRole('button', { name: 'Throw boxing combo', exact: true });
   await hit.dispatchEvent('pointerdown', { clientX: 200 });
   await hit.dispatchEvent('pointerup', { clientX: 150 });
   await expect(page.locator('#animal-label')).toHaveText('penguin');

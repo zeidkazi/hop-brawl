@@ -6,13 +6,14 @@ import type { Station } from './camera';
 import type { GameRenderer } from './renderer';
 import type { GraphicsChoice } from './quality';
 import type { Screens } from '../ui/screens';
+import type { BoxerMove } from './boxer';
 
 export interface DebugApi {
   snapshot(): {
     frames: number; calls: number; triangles: number; geometries: number; textures: number; delta: number;
     tier: string; choice: string; resolution: number; pixelRatio: number; p95: number; worst: number;
     programs: number; rows: number; generatedRows: number; particles: number; station: Station; mobile: boolean;
-    animal: string; animalOffset: number; crowdCheering: boolean;
+    animal: string; animalOffset: number; crowdCheering: boolean; move: BoxerMove;
   };
   station(value: Station): void;
   graphics(value: GraphicsChoice): void;
@@ -22,6 +23,9 @@ export interface DebugApi {
   particles(): void;
   cheer(): void;
   punch(): void;
+  move(value: BoxerMove): void;
+  reviewAnimal(index: number): void;
+  reviewPose(move: BoxerMove, elapsed: number): void;
 }
 declare global { interface Window { __HOP_DEBUG__?: DebugApi } }
 
@@ -35,7 +39,8 @@ export function setupDebug(game: GameRenderer, screens: Screens): void {
       worst: game.quality.frames.worst, programs: game.renderer.info.programs?.length ?? 0,
       rows: game.world.rows.length, generatedRows: game.world.generatedRows,
       particles: game.particles.pool.count, station: game.rig.station, mobile: game.quality.mobile,
-      animal: game.home.selectedAnimal, animalOffset: game.home.swap, crowdCheering: game.home.arena?.cheering ?? false }),
+      animal: game.home.selectedAnimal, animalOffset: game.home.swap, crowdCheering: game.home.arena?.cheering ?? false,
+      move: game.home.boxers.find(boxer => boxer.body.visible)?.move ?? 'idle' }),
     station: value => game.go(value),
     graphics: value => game.setGraphics(value),
     scroll: value => { game.rig.targetCamZ = value; },
@@ -44,6 +49,9 @@ export function setupDebug(game: GameRenderer, screens: Screens): void {
     particles: () => game.particles.burst(game.world.animalX, game.world.animalZ),
     cheer: () => game.home.arena?.cheerKO(),
     punch: () => game.home.punch(),
+    move: value => { game.home.sound.unlock(); game.home.move(value); },
+    reviewAnimal: index => { game.home.select(index); game.rig.reducedMotion = true; game.home.reviewMove('guard', 0); },
+    reviewPose: (move, elapsed) => { game.rig.reducedMotion = true; game.home.reviewMove(move, elapsed); },
   };
   window.__HOP_DEBUG__ = api;
   const gui = new GUI({ title: 'Hop Brawl · debug' });
@@ -55,6 +63,8 @@ export function setupDebug(game: GameRenderer, screens: Screens): void {
   gui.add(controls, 'menus').onChange((value: boolean) => { screens.root.hidden = !value; });
   gui.add(controls, 'Tile flip'); gui.add(controls, 'Dust burst'); gui.add(controls, 'Toast');
   gui.add(controls, 'Crowd K.O.'); gui.add(controls, 'Glove punch');
+  const boxer = { move: 'tap', Play: () => api.move(boxer.move as BoxerMove) };
+  gui.add(boxer, 'move', ['idle', 'tap', 'combo', 'shake', 'hop', 'punch', 'stunned', 'guard', 'victory']); gui.add(boxer, 'Play');
   gui.close();
   let nextReadout = 0;
   game.onFrame = now => {
