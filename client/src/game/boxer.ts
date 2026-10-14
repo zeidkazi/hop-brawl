@@ -1,4 +1,4 @@
-import { Object3D, Vector3 } from 'three';
+import { Box3, Object3D, Vector3 } from 'three';
 import { BOXER } from '../../../shared/config';
 
 export type BoxerMove = 'idle' | 'tap' | 'combo' | 'shake' | 'hop' | 'punch' | 'stunned' | 'guard' | 'victory';
@@ -14,6 +14,7 @@ export class Boxer {
   private readonly leftRest: Vector3;
   private readonly rightRest: Vector3;
   private readonly bodyRest: Vector3;
+  private readonly touchX: number;
   move: BoxerMove = 'idle';
   reduced = false;
   private start = 0;
@@ -32,6 +33,7 @@ export class Boxer {
     });
     this.left = left ?? new Object3D(); this.right = right ?? new Object3D();
     this.leftRest = this.left.position.clone(); this.rightRest = this.right.position.clone(); this.bodyRest = body.position.clone();
+    this.touchX = (new Box3().setFromObject(this.left).getSize(new Vector3()).x + new Box3().setFromObject(this.right).getSize(new Vector3()).x) / 4;
   }
   play(move: BoxerMove, side: -1 | 1 = -1): void {
     this.review = null; this.move = move; this.start = this.clock; this.previous = -1; this.side = side;
@@ -54,12 +56,12 @@ export class Boxer {
     left.position.copy(this.leftRest); right.position.copy(this.rightRest);
     left.rotation.set(0, 0, 0); right.rotation.set(0, 0, 0);
     this.body.position.copy(this.bodyRest); this.body.rotation.set(0, 0, 0);
-    const bounce = Math.sin(time * Math.PI * 2 * BOXER.BOUNCE_HZ);
+    const bounce = Math.sin((this.review?.elapsed ?? time) * Math.PI * 2 * BOXER.BOUNCE_HZ);
     this.body.position.y += bounce * BOXER.BOUNCE_HEIGHT * (this.reduced ? 0.5 : 1);
     if (move === 'idle') { left.rotation.x = bounce * BOXER.GUARD_SWAY; right.rotation.x = -left.rotation.x; }
     if (move === 'tap') {
       const amount = Math.max(pulse(t, BOXER.TAP_CONTACTS[0], 0.12), pulse(t, BOXER.TAP_CONTACTS[1], 0.12));
-      const gap = (this.rightRest.x - this.leftRest.x) / 2 - 0.12;
+      const gap = (this.rightRest.x - this.leftRest.x) / 2 - this.touchX;
       left.position.x += gap * amount; right.position.x -= gap * amount;
       left.position.z -= BOXER.TAP_FORWARD * amount; right.position.z -= BOXER.TAP_FORWARD * amount;
       this.cueAt('tock', t, BOXER.TAP_CONTACTS[0]); this.cueAt('tock', t, BOXER.TAP_CONTACTS[1]);

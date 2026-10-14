@@ -54,7 +54,7 @@ export class Arena {
     this.outlines.add(spectators, 'animal'); this.animateMaterial(this.outlines.material);
     for (let i = 0; i < stands; i++) {
       const side = i % 2, x = STREET.ARENA_SIDE_X[side]!, z = STREET.ARENA_ROWS[Math.floor(i / 2)]!;
-      const rotation = side ? -Math.PI / 2 : Math.PI / 2;
+      const rotation = side ? Math.PI / 2 : -Math.PI / 2;
       for (const name of ['bleacher', 'snow_bleacher']) this.place(this.batches.get(name)!, i, x, 0, z, rotation);
       this.place(this.batches.get('bunting')!, i, x + (side ? 1.6 : -1.6), 0, z, rotation);
       this.place(this.batches.get('barrier')!, i, x + (side ? -1.3 : 1.3), 0, z, rotation);
@@ -74,7 +74,7 @@ export class Arena {
     }
     for (let i = 0; i < 2; i++) {
       const x = STREET.SPOT_SIDE_X[i]!, z = STREET.SPOT_ROWS[i]!;
-      this.place(this.batches.get('spotlight')!, i, x, 0, z, i ? -Math.PI / 2 : Math.PI / 2);
+      this.place(this.batches.get('spotlight')!, i, x, 0, z, i ? Math.PI / 2 : -Math.PI / 2);
       const light = new PointLight(STREET.RIM_COLOR, STREET.SPOT_INTENSITY, STREET.SPOT_DISTANCE);
       light.position.set(x, 3, z); this.lamps.push(light); this.root.add(light);
     }
