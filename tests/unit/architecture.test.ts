@@ -3,6 +3,7 @@ import { Vector3 } from 'three';
 import { CameraRig } from '../../client/src/game/camera';
 import { Pool } from '../../client/src/game/pool';
 import { WorldView } from '../../client/src/game/world-view';
+import { CONFIG } from '../../shared/config';
 
 describe('bounded pools', () => {
   it('reuses slots, refuses overflow and tolerates duplicate releases', () => {
@@ -46,12 +47,19 @@ describe('camera stations', () => {
     rig.update(0.7, 0.7);
     rig.camera.updateMatrixWorld();
     expect(rig.screenY(4, 0)).toBeCloseTo(1, 8);
-    for (const x of [-0.5, 8.5]) for (const z of [0, -12.5]) {
+    for (const x of [-0.5, 8.5]) for (const z of [0, -CONFIG.VIEW_ROWS]) {
       const projected = new Vector3(x, 0, z).project(rig.camera);
       expect(Math.abs(projected.x)).toBeLessThan(1);
     }
     rig.targetCamZ = 10; rig.update(1 / 60, 1);
     expect(rig.camZ).toBe(10); expect(rig.screenY(4, 10)).toBeCloseTo(1, 8);
+  });
+  it.each([390 / 844, 1440 / 900])('meets section 30 width framing at %s', aspect => {
+    const rig = new CameraRig(aspect); rig.go('gameplay'); rig.update(.7, .7);
+    const margin = aspect < 1 ? .5 : 0;
+    const left = new Vector3(-.5 - margin, 0, -CONFIG.VIEW_ROWS / 2).project(rig.camera);
+    const right = new Vector3(8.5 + margin, 0, -CONFIG.VIEW_ROWS / 2).project(rig.camera);
+    expect((right.x - left.x) / 2).toBeGreaterThanOrEqual(aspect < 1 ? .92 : .45);
   });
   it('redirects flights from the current position without resetting the camera', () => {
     const rig = new CameraRig(1.6);

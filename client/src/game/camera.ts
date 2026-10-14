@@ -6,21 +6,15 @@ export const STATIONS: readonly Station[] = ['home', 'lobby', 'search', 'vs', 'g
 const pitch = MathUtils.degToRad(VIEW.PITCH_DEG);
 const yaw = MathUtils.degToRad(VIEW.YAW_DEG);
 const back = new Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
-const right = new Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
-const up = new Vector3().crossVectors(back, right);
+const gameplayBack = new Vector3(0, Math.sin(pitch), Math.cos(pitch));
 
 /** Exact perspective fit of the four gameplay corners at the fixed viewing angle. */
 export function gameplayDistance(aspect: number): number {
-  const tangent = Math.tan(MathUtils.degToRad(VIEW.FOV / 2)) / VIEW.FIT_MARGIN;
-  let distance = 0;
-  for (let corner = 0; corner < 4; corner++) {
-    const x = (corner & 1 ? 1 : -1) * CONFIG.COLUMNS / 2;
-    const z = (corner & 2 ? 1 : -1) * CONFIG.VIEW_ROWS / 2;
-    const depth = x * back.x + z * back.z;
-    distance = Math.max(distance, Math.abs(x * right.x + z * right.z) / (tangent * aspect) + depth,
-      Math.abs(x * up.x + z * up.z) / tangent + depth);
-  }
-  return distance;
+  const tangent = Math.tan(MathUtils.degToRad(VIEW.FOV / 2));
+  const half = CONFIG.VIEW_ROWS / 2;
+  const b = Math.sin(pitch) * CONFIG.VIEW_ROWS / (2 * tangent * VIEW.PLAY_HEIGHT_RATIO);
+  const heightFit = (b + Math.sqrt(b * b + 4 * (half * Math.cos(pitch)) ** 2)) / 2;
+  return aspect < 1 ? (CONFIG.COLUMNS + 2 * VIEW.PLAY_MARGIN) / (2 * tangent * aspect * VIEW.PLAY_WIDTH_RATIO) : heightFit;
 }
 
 export class CameraRig {
@@ -93,8 +87,8 @@ export class CameraRig {
     const distance = this.station === 'gameplay' ? baseDistance : baseDistance * Math.max(1, HOME.PORTRAIT_FIT / this.aspect);
     this.goalFocus.set(this.station === 'matchEnd' ? VIEW.PODIUM_X : 4,
       this.station === 'home' ? HOME.FOCUS_Y : 0,
-      this.station === 'gameplay' ? -this.camZ - (CONFIG.VIEW_ROWS - 1) / 2 : -1);
-    this.goal.copy(back).multiplyScalar(distance).add(this.goalFocus);
+      this.station === 'gameplay' ? -this.camZ - CONFIG.VIEW_ROWS / 2 : -1);
+    this.goal.copy(this.station === 'gameplay' ? gameplayBack : back).multiplyScalar(distance).add(this.goalFocus);
   }
 
   update(dt: number, time: number): void {
