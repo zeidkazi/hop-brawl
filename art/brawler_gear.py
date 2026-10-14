@@ -32,11 +32,11 @@ def equip(name, original):
         v.box(x, x + 2, 2, 3, front - 1, front - 1, '#DADDE5', part)
         v.pivots[part] = [x + 1.5, 3, front - 0.5]
     # White wrap with a color stripe across the forehead, clear of the eyes.
-    v.box(left, right, forehead, forehead, front + 1, front + 1, '#FFFFFF', 'headband')
+    v.box(left, right, forehead, forehead, front, front, '#FFFFFF', 'headband')
     v.box(left - 1, left - 1, forehead, forehead, back, front, '#FFFFFF', 'headband')
     v.box(right + 1, right + 1, forehead, forehead, back, front, '#FFFFFF', 'headband')
     v.box(left, right, forehead, forehead, back - 1, back - 1, '#FFFFFF', 'headband')
-    v.box(left + 1, right - 1, forehead, forehead, front + 1, front + 1, '#FFFFFF', 'headband_stripe')
+    v.box(left + 1, right - 1, forehead, forehead, front, front, '#FFFFFF', 'headband_stripe')
     v.box(right, right + 1, forehead - 1, forehead, back - 2, back - 2, '#FFFFFF', 'headband_stripe')
     return v
 
