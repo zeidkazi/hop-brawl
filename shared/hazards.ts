@@ -104,7 +104,7 @@ export function logSlotX(row: RiverRow, log: number, slot: number, t: number, wi
   const item = row.logs[log]!;
   return laneItemX(row, item, t, windows) - (item.length - SEGMENTS.LOG_SLOT_WIDTH) / 2 + slot * SEGMENTS.LOG_SLOT_WIDTH;
 }
-/** Nearest slot at actual landing time. Stable ties prefer the earlier log/slot. */
+/** Nearest slot at landing time. Equal distances favor the log's direction of travel. */
 export function logSlotAtLanding(row: RiverRow, x: number, t: number, out: LogSlot,
   windows: readonly SlowMoWindow[] = NO_SLOW_MO): LogSlot {
   out.log = -1; out.slot = -1; out.x = x;
@@ -113,7 +113,10 @@ export function logSlotAtLanding(row: RiverRow, x: number, t: number, out: LogSl
     const item = row.logs[i]!;
     for (let slot = 0; slot < item.length; slot++) {
       const centre = logSlotX(row, i, slot, t, windows), distance = Math.abs(x - centre);
-      if (distance < best) { best = distance; out.log = i; out.slot = slot; out.x = centre; }
+      if (distance < best - Number.EPSILON * 8 || (Math.abs(distance - best) <= Number.EPSILON * 8
+        && distance <= SEGMENTS.LOG_SLOT_REACH && (out.log < 0 || (centre - out.x) * row.direction > 0))) {
+        best = distance; out.log = i; out.slot = slot; out.x = centre;
+      }
     }
   }
   return out;

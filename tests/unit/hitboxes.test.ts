@@ -32,8 +32,10 @@ describe('forgiving hitboxes', () => {
   it('accepts landing points within 0.6 of a slot, including exact edges', () => {
     expect(logAtLanding(river, 1.1, 0)).toBe(0);
     expect(logAtLanding(river, -1.1, 0)).toBe(0);
-    expect(logAtLanding(river, 1.10001, 0)).toBe(-1);
-    expect(logAtLanding(river, -1.10001, 0)).toBe(-1);
+    expect(logAtLanding(river, 1.5, 0)).toBe(0);
+    expect(logAtLanding(river, -1.5, 0)).toBe(0);
+    expect(logAtLanding(river, 1.50001, 0)).toBe(-1);
+    expect(logAtLanding(river, -1.50001, 0)).toBe(-1);
     expect(logAtLanding(river, 2, 1)).toBe(0);
     expect(logAtLanding(river, 0, 1)).toBe(-1);
   });

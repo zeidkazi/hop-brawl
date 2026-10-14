@@ -17,7 +17,15 @@ it('curves to the nearest slot at landing time and carries the exact slot therea
   player.advance(1); expect(player.x).toBe(logSlotX(river, player.logIndex, player.slotIndex, 1));
   const slot = player.slotIndex; player.input('right'); player.advance(1.14);
   expect(player.slotIndex).toBe(slot + 1); expect(player.onLog).toBe(true);
-  player.input('right'); player.advance(1.28); expect(player.dead).toBe('SPLASH!');
+  player.input('right'); player.advance(1.28); expect(player.dead).toBeNull(); expect(player.onLog).toBe(true);
+});
+it('assists up to one tile and breaks equal-distance ties toward travel', () => {
+  const out = { log: -1, slot: -1, x: 0 };
+  const row = { ...river, logs: [{ offset: 10, length: 2 }] };
+  expect(logSlotAtLanding(row, 4, 0, out).x).toBe(4.5);
+  expect(logSlotAtLanding({ ...row, direction: -1 }, 4, 0, out).x).toBe(3.5);
+  expect(logSlotAtLanding(row, 5.5, 0, out).log).toBe(0);
+  expect(logSlotAtLanding(row, 5.501, 0, out).log).toBe(-1);
 });
 it('chooses the nearest of neighbouring logs, and evaluates a moving target at landing', () => {
   const row = { ...river, logs: [{ offset: 6, length: 2 }, { offset: 9, length: 2 }] };
