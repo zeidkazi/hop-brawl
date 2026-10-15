@@ -15,7 +15,7 @@ export interface PlayerState {
 }
 type Player = Omit<PlayerState, 'movement'> & { move: Movement };
 export interface RoomSnapshot {
-  code: string; now: number; phase: RoomPhase; seed: number; camZ: number; leaderZ: number; startAt: number;
+  quick: boolean; rematchReady: string[]; rematchUntil: number; code: string; now: number; phase: RoomPhase; seed: number; camZ: number; leaderZ: number; startAt: number;
   nextAt: number; round: number; winner: string; reason: string; host: string; players: PlayerState[];
   events: RoomEvent[]; eventSequence: number; joinedSequence: number; lastTick: number; decidingAt: number;
 }
@@ -23,6 +23,7 @@ export function validDirection(value: unknown): value is HopDirection { return v
 
 /** Pure server authority, also used by room/shove/round tests. No browser or Worker globals. */
 export class RoomGame {
+  quick = false; rematchReady: string[] = []; rematchUntil = 0;
   phase: RoomPhase = 'lobby'; seed = 0; camZ = 0; leaderZ = 1; startAt = 0; nextAt = 0; round = 0;
   winner = ''; reason = ''; host = ''; now = 0; lastTick = 0; decidingAt = 0;
   eventSequence = 0; joinedSequence = 0;
@@ -41,7 +42,7 @@ export class RoomGame {
     return move;
   }
   join(id: string, name: string, animal: number, aspect: number, now: number, creator = false): string | null {
-    if (this.players.filter(p => p.connected).length >= CONFIG.MAX_PLAYERS_PRIVATE) return 'ROOM_FULL';
+    if (this.players.filter(p => p.connected).length >= (this.quick ? CONFIG.MAX_PLAYERS_QUICK : CONFIG.MAX_PLAYERS_PRIVATE)) return 'ROOM_FULL';
     if (!name.trim() || name.length > VIEW.NAME_MAX_LENGTH || !Number.isInteger(animal) || animal < 0 || animal >= ANIMALS.length) return 'BAD_PLAYER';
     const used = this.players.filter(p => p.connected);
     if (used.some(p => p.animal === animal)) animal = ANIMALS.findIndex((_, i) => !used.some(p => p.animal === i));
@@ -52,8 +53,8 @@ export class RoomGame {
       slot, joined: ++this.joinedSequence, connected: true, waiting: this.phase !== 'lobby', hearts: CONFIG.HEARTS_VERSUS,
       lifeId: 0, deadLifeId: -1, wins: 0, totalDistance: 0, reachedAt: now, eliminatedAt: 0, respawnAt: 0, stunUntil: 0, proofUntil: 0,
       cooldownUntil: 0, shoverId: '', shovedAt: -CONFIG.SHOVE_KO_WINDOW_MS, sequence: 0, queued: null, move: this.movement() });
-    if (!this.host || creator) this.host = id;
-    this.now = now; return null;
+    if (!this.quick && (!this.host || creator)) this.host = id;
+    this.now = now; if (this.quick && this.players.filter(p => p.connected).length === 2) this.beginMatch(now); return null;
   }
   leave(id: string, now: number): void {
     const player = this.players.find(p => p.id === id); if (!player || !player.connected) return;
@@ -61,10 +62,13 @@ export class RoomGame {
     const connected = this.players.filter(p => p.connected);
     if (this.host === id) this.host = connected[0]?.id ?? '';
     if (this.phase === 'lobby') this.players = connected;
-    else if (this.phase === 'countdown' && connected.filter(p => !p.waiting).length < 2) this.lobby(this.host, now);
+    else if (this.phase === 'countdown' && connected.filter(p => !p.waiting).length < 2) {
+      if (this.quick) { this.phase = 'lobby'; this.reason = 'Opponent disconnected — still searching'; }
+      else this.lobby(this.host, now);
+    }
     else if (this.active && connected.filter(p => !p.waiting).length === 1) {
       this.phase = 'matchEnd'; this.winner = connected.find(p => !p.waiting)!.id;
-      this.reason = 'Opponent left — you win!'; this.event('forfeit', this.winner);
+      this.rematchUntil = now + CONFIG.REMATCH_TIMEOUT_S * 1000; this.reason = 'Opponent left — you win!'; this.event('forfeit', this.winner);
     }
     this.now = now;
   }
@@ -75,17 +79,28 @@ export class RoomGame {
     player.animal = animal; return true;
   }
   lobby(id: string, now: number): boolean {
-    if (id !== this.host) return false;
+    if (this.quick || id !== this.host) return false;
     this.players = this.players.filter(p => p.connected);
     for (const p of this.players) { p.waiting = false; p.move.reset(); }
     this.phase = 'lobby'; this.now = now; this.winner = ''; this.reason = '';
     this.camZ = 0; this.leaderZ = 1; this.startAt = 0; this.nextAt = 0; return true;
   }
   start(id: string, now: number): boolean {
-    if (id !== this.host || (this.phase !== 'lobby' && this.phase !== 'matchEnd') || this.players.filter(p => p.connected).length < 2) return false;
+    if (this.quick || id !== this.host || (this.phase !== 'lobby' && this.phase !== 'matchEnd') || this.players.filter(p => p.connected).length < 2) return false;
+    this.beginMatch(now); return true;
+  }
+  rematch(id: string, now: number): boolean {
+    if (!this.quick || this.phase !== 'matchEnd' || !this.players.some(p => p.id === id && p.connected)
+      || this.players.filter(p => p.connected).length !== 2 || now >= this.rematchUntil) return false;
+    if (!this.rematchReady.includes(id)) this.rematchReady.push(id);
+    if (this.rematchReady.length === 2) this.beginMatch(now);
+    return true;
+  }
+  private beginMatch(now: number): void {
+    this.rematchReady = []; this.rematchUntil = 0;
     this.players = this.players.filter(p => p.connected);
     for (const p of this.players) { p.waiting = false; p.wins = p.totalDistance = 0; }
-    this.round = 1; this.prepareRound(now); return true;
+    this.round = 1; this.prepareRound(now);
   }
   private prepareRound(now: number): void {
     this.seed = this.nextSeed(); this.rows.clear(); this.camZ = 0; this.leaderZ = 1;
@@ -178,7 +193,7 @@ export class RoomGame {
       const won = this.players.find(p => p.wins >= CONFIG.ROUNDS_TO_WIN);
       if (won || this.round >= ROOM.MAX_ROUNDS && this.winner) {
         const ranked = this.players.filter(p => p.connected && !p.waiting).sort((a, b) => b.wins - a.wins || b.totalDistance - a.totalDistance || a.joined - b.joined);
-        this.winner = won?.id ?? ranked[0]?.id ?? ''; this.phase = 'matchEnd';
+        this.winner = won?.id ?? ranked[0]?.id ?? ''; this.phase = 'matchEnd'; this.rematchReady = []; this.rematchUntil = now + CONFIG.REMATCH_TIMEOUT_S * 1000;
       } else { if (this.winner) this.round++; this.prepareRound(now); }
     }
     if (this.phase !== 'playing') return;
@@ -217,7 +232,7 @@ export class RoomGame {
     this.phase = 'freeze'; this.nextAt = now + ROOM.FREEZE_MS; this.event('round', winner);
   }
   snapshot(): RoomSnapshot {
-    return { code: this.code, now: this.now, phase: this.phase, seed: this.seed, camZ: this.camZ, leaderZ: this.leaderZ,
+    return { quick: this.quick, rematchReady: this.rematchReady, rematchUntil: this.rematchUntil, code: this.code, now: this.now, phase: this.phase, seed: this.seed, camZ: this.camZ, leaderZ: this.leaderZ,
       startAt: this.startAt, nextAt: this.nextAt, round: this.round, winner: this.winner, reason: this.reason, host: this.host,
       eventSequence: this.eventSequence, joinedSequence: this.joinedSequence, lastTick: this.lastTick, decidingAt: this.decidingAt,
       events: this.events, players: this.players.map(({ move, ...p }) => ({ ...p, movement: move.save() })) };
