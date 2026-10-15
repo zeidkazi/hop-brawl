@@ -218,14 +218,14 @@ export const QUALITY = Object.freeze({
 export const COLORS = Object.freeze({
   yellow: '#FFD23F', red: '#EE4266', green: '#3BCEAC', blue: '#4EA8DE', ink: '#1B1B2F', cream: '#FFF6E5',
   grass: '#66D44D', grassAlt: '#53BD3D', road: '#292D38', water: '#22CFCA',
-  sky: '#FFE9C7', skyTop: '#7FD3FF', sun: '#FFF0CB', tree: '#397D46', rock: '#596776',
+  sky: '#FFE9C7', skyTop: '#7FD3FF', sun: '#FFE3B1', tree: '#397D46', rock: '#596776',
   log: '#99633E', rail: '#8B7864', steel: '#BDC9D0', sleeper: '#72503A', crate: '#CC944C', groundSide: '#597D44',
   players: ['#FF6B6B', '#4D96FF', '#6BCB77', '#C77DFF'],
   animals: ['#FFF6E5', '#6BCB77', '#E98E3D', '#354050', '#F5A3B9', '#929CAB'],
 } as const);
 
 export const ANIMALS = ['chicken', 'frog', 'fox', 'penguin', 'pig', 'cat'] as const;
-export const HOME_MODELS = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls', 'arena', 'crate', 'train_engine', 'train_carriage', 'rail_post'] as const;
+export const HOME_MODELS = [...ANIMALS, 'logo', 'oak', 'car', 'hatchback', 'taxi', 'truck', 'log', 'home_controls', 'arena', 'crate', 'train_engine', 'train_carriage', 'rail_post', 'detail_props'] as const;
 export const RAIL = Object.freeze({
   SLEEPER_SPACING: .5, SLEEPER_WIDTH: .13, SLEEPER_HEIGHT: .04, SLEEPER_LENGTH: .85,
   RAIL_OFFSET: .29, RAIL_WIDTH: .05, RAIL_HEIGHT: .07,

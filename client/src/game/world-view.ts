@@ -1,3 +1,5 @@
+import { WorldDetails } from './world-details';
+import { vehicleStyle } from '../../../shared/world-detail';
 import {
   Box3, BoxGeometry, CircleGeometry, Color, DynamicDrawUsage, Float32BufferAttribute, Frustum,
   Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial,
@@ -45,6 +47,8 @@ function groundGeometry(outside = false): ReturnType<typeof mergeGeometries> {
 /** All meshes, matrices and row slots exist before Loading ends. */
 export class WorldView {
   readonly root = new Group();
+  details: WorldDetails | null = null;
+  reducedMotion = false; weather = true;
   readonly outlines = new Outlines();
   readonly standard = new MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 });
   readonly lambert = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
@@ -198,6 +202,7 @@ export class WorldView {
       const source = node.parent;
       if (source instanceof InstancedMesh) node.geometry = source.geometry.clone().scale(STREET.OUTLINE_SCALE, STREET.OUTLINE_SCALE, STREET.OUTLINE_SCALE);
     } });
+    this.details = new WorldDetails(models); this.root.add(this.details.root); this.details.applyTier(this.tier);
     this.modelsReady = true;
   }
   readonly rowAt = (z: number): Row => {
@@ -281,7 +286,7 @@ export class WorldView {
   }
 
   applyTier(tier: Tier): void {
-    this.tier = tier;
+    this.tier = tier; this.details?.applyTier(tier);
     this.outlines.applyTier(tier);
     const material = tier === 'high' ? this.standard : this.lambert;
     for (const mesh of [...this.grounds, ...this.outsideGrounds]) mesh.material = material;
@@ -333,7 +338,8 @@ export class WorldView {
   }
 
   update(time: number): void {
-    this.waterUniform.value = time;
+    this.waterUniform.value = this.reducedMotion ? 0 : time;
+    this.details?.begin(this.rows, this.seed, time, this.reducedMotion, this.weather);
     this.vehicles.count = this.logs.count = this.animals.count = this.blobs.count = 0;
     if (this.staticDirty) for (const mesh of this.staticMeshes) mesh.count = 0;
     this.trucks.count = this.trains.count = this.carriages.count = 0;
@@ -375,7 +381,8 @@ export class WorldView {
         for (let j = 0; j < row.vehicles.length; j++) {
           const car = row.vehicles[j]!;
           const x = laneItemX(row, car, time);
-          this.put(car.kind === 'car' ? this.vehicles : this.trucks, x, 0, row.z, car.length, (car.kind === 'car' ? 9 : 13) / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.players[j % COLORS.players.length]!, row.direction < 0 ? Math.PI : 0);
+          if (this.details) this.details.vehicle(vehicleStyle(row, car), x, row.z, car.length, row.direction, j);
+          else this.put(car.kind === 'car' ? this.vehicles : this.trucks, x, 0, row.z, car.length, (car.kind === 'car' ? 9 : 13) / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.players[j % COLORS.players.length]!, row.direction < 0 ? Math.PI : 0);
           this.blob(x, row.z, car.length / 2, 0.45);
         }
       } else if (row.kind === 'river') {
@@ -474,6 +481,7 @@ export class WorldView {
       }
     }
     this.staticDirty = false;
+    this.details?.finish();
     this.outlines.sync();
   }
 }

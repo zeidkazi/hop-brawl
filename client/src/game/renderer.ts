@@ -4,7 +4,7 @@ import {
   Scene, SRGBColorSpace, WebGLRenderer, WebGLRenderTarget, LinearToneMapping,
   Material,
 } from 'three';
-import { COLORS, CONFIG, FEEL, QUALITY, QUALITY_DEGRADE, SOLO, STREET, VIEW } from '../../../shared/config';
+import { COLORS, CONFIG, DETAIL, FEEL, QUALITY, QUALITY_DEGRADE, SOLO, STREET, VIEW } from '../../../shared/config';
 import { CameraRig, gameplayDistance } from './camera';
 import type { Station } from './camera';
 import { Particles } from './particles';
@@ -55,6 +55,7 @@ export class GameRenderer {
   worldTime: number | null = null;
 
   constructor(readonly canvas: HTMLCanvasElement) {
+    const vignette = document.createElement('div'); vignette.style.cssText = `position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse,transparent 55%,rgba(27,27,47,${DETAIL.VIGNETTE_OPACITY}) 100%)`; document.body.append(vignette);
     this.speedLines.className = 'super-hop-lines'; this.speedLines.hidden = true;
     this.speedLines.style.cssText = 'position:fixed;inset:0;pointer-events:none;background:repeating-conic-gradient(from 10deg,transparent 0deg 14deg,#fff6e599 14deg 15deg,transparent 15deg 30deg);mask-image:radial-gradient(ellipse,transparent 50%,black 100%)'; document.body.append(this.speedLines);
     this.flash.className = 'impact-flash'; this.flash.style.cssText = 'position:fixed;inset:0;background:white;opacity:0;pointer-events:none;z-index:4'; document.body.append(this.flash);
@@ -135,8 +136,9 @@ export class GameRenderer {
       this.sun.shadow = tier === 'high' ? this.highShadow : this.mediumShadow;
       this.appliedTier = tier;
     }
+    this.world.weather = this.quality.weatherCount > 0;
     this.particles.density = this.quality.particleScale;
-    for (const outlines of [this.world.outlines, this.home.outlines, this.home.arena?.outlines]) {
+    for (const outlines of [this.world.outlines, this.world.details?.outlines, this.home.outlines, this.home.arena?.outlines]) {
       outlines?.applyTier(tier);
       if (!this.quality.propOutlines) for (const entry of outlines?.entries ?? []) if (entry.kind === 'prop') entry.shell.visible = false;
     }
@@ -174,7 +176,7 @@ export class GameRenderer {
     this.scene.fog.near = playing ? gameplayDistance(this.width / this.height) + SOLO.FOG_MARGIN : VIEW.LOBBY_DISTANCE;
     this.scene.fog.far = playing ? this.scene.fog.near + VIEW.FAR / 2 : VIEW.FAR / 2;
   }
-  setReducedMotion(value: boolean): void { this.rig.reducedMotion = value; this.particles.reducedMotion = value; this.home.setReduced(value); this.setSuperHop(this.superHop); }
+  setReducedMotion(value: boolean): void { this.rig.reducedMotion = value; this.world.reducedMotion = value; this.particles.reducedMotion = value; this.home.setReduced(value); this.setSuperHop(this.superHop); }
 
   async warmup(): Promise<void> {
     await this.home.load();
