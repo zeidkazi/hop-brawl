@@ -1,4 +1,10 @@
-import { CONFIG } from './config';
+import { CONFIG, ROOM } from './config';
+
+export function quickName(name: string, random: number): string {
+  const normalized = name.toLowerCase().replace(/[^a-z]/g, '');
+  return ROOM.QUICK_NAME_BLOCKLIST.some(word => normalized.includes(word))
+    ? `Hopper${String(random % (10 ** ROOM.QUICK_NAME_DIGITS)).padStart(ROOM.QUICK_NAME_DIGITS, '0')}` : name;
+}
 
 export interface SearchPlayer { id: string; name: string; animal: number; joinedAt: number }
 export interface Pairing { code: string; players: SearchPlayer[]; tokens: string[]; deadline: number }

@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { MatchQueue } from '../../shared/matchmaking';
+import { MatchQueue, quickName } from '../../shared/matchmaking';
 import { RoomGame } from '../../shared/room';
 import { CONFIG, ROOM } from '../../shared/config';
 
 const player = (id: string) => ({ id, name: id, animal: 2, joinedAt: Number(id) });
 describe('Quick Match FIFO and connection timeout', () => {
+  it('keeps ordinary names and replaces blocklisted public names with Hopper plus four digits', () => {
+    expect(quickName('Fox friend', 7)).toBe('Fox friend');
+    expect(quickName('S.H.I.T', 10007)).toBe('Hopper0007');
+  });
   it('pairs the first two live players and never pairs a player twice', () => {
     const q = new MatchQueue(); ['1', '2', '3', '4'].forEach(id => q.add(player(id)));
     const live = new Set(['1', '3', '4']); const pair = q.candidates(live);

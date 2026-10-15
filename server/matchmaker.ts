@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { ANIMALS, ROOM, VIEW } from '../shared/config';
-import { MatchQueue } from '../shared/matchmaking';
+import { MatchQueue, quickName } from '../shared/matchmaking';
 import type { SearchPlayer } from '../shared/matchmaking';
 import type { Env } from './index';
 
@@ -36,7 +36,7 @@ export class Matchmaker extends DurableObject<Env> {
       }
       const name = url.searchParams.get('name')?.trim() ?? '', animal = Number(url.searchParams.get('animal'));
       if (!name || name.length > VIEW.NAME_MAX_LENGTH || !Number.isInteger(animal) || animal < 0 || animal >= ANIMALS.length) return new Response('Invalid player', { status: 400 });
-      const pair = new WebSocketPair(), player = { id: crypto.randomUUID(), name, animal, joinedAt: Date.now() };
+      const pair = new WebSocketPair(), player = { id: crypto.randomUUID(), name: quickName(name, crypto.getRandomValues(new Uint32Array(1))[0]!), animal, joinedAt: Date.now() };
       this.ctx.acceptWebSocket(pair[1], [player.id]); pair[1].serializeAttachment({ player, canceled: false } satisfies Attachment);
       this.queue.add(player); await this.pair();
       return new Response(null, { status: 101, webSocket: pair[0] });
