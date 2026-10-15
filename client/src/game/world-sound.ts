@@ -6,6 +6,7 @@ import { spatial } from './audio-policy';
 import { RailSound } from './rail-sound';
 import type { Arena } from './arena';
 export class WorldSound {
+  idleWarning = 0;
   onNearMiss: (() => void) | null = null;
   private next = -Infinity; private readonly rail = new RailSound(); private readonly honks = new Set<string>();
   private crowd(sound: BoxingSound, arena: Arena | null, x: number, z: number): void {
@@ -43,6 +44,7 @@ export class WorldSound {
       }
     }
     for (const key of this.honks) if (Number(key.split('-')[0]) < camZ - 1) this.honks.delete(key);
+    if (this.idleWarning > 0) sound.loop('idle-warning', 'rumble', 0, this.idleWarning);
     sound.endWorld();
   }
 }

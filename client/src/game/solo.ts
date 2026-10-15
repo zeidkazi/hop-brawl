@@ -226,8 +226,8 @@ export class Solo {
       this.roundTime += elapsed;
       this.pacing.update(this.roundTime, this.movement.z, this.movement.firstHopAt); this.movement.camZ = this.pacing.camZ;
       this.movement.advance(this.roundTime);
+      this.railSound.idleWarning = this.pacing.warning ? Math.min(1, this.pacing.idle - FEEL.IDLE_WARNING_S) * FEEL.IDLE_GAIN : 0;
       if (!this.movement.dead) this.railSound.update(this.game.world.rows, this.movement.camZ, this.movement.time, this.game.home.sound, this.movement.x, this.movement.z, !this.movement.dead, this.game.home.arena);
-      if (this.pacing.warning) this.game.home.sound.loop('idle-warning', 'rumble', 0, Math.min(1, this.pacing.idle - FEEL.IDLE_WARNING_S) * .3);
       for (const slot of this.game.world.rows) if (slot.row?.kind === 'rail' && slot.z >= this.movement.camZ && slot.z <= this.movement.camZ + CONFIG.VIEW_ROWS) {
         const train = trainX(slot.row, this.movement.time);
         if (train !== null && Math.abs(train - this.movement.x) < WORLD.TRAIN_LENGTH / 2 + CONFIG.COLUMNS
