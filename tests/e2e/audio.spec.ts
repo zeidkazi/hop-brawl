@@ -78,7 +78,8 @@ test('Solo crosses to gameplay at HOP and filters music on pause and death', asy
   await page.getByRole('button', { name: 'Resume', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.solo.phase)).toBe('playing');
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.solo.movement.hopping)).toBe(false);
-  await page.evaluate(() => { const solo = window.__HOP_DEBUG__!.solo; for (let i = 0; i < 20; i++) { const z = Math.floor(solo.movement.camZ) - i; if (solo.game.rig.screenY(solo.movement.x, z) >= 1.1) { solo.movement.z = z; break; } } });
+  await page.evaluate(() => { const solo = window.__HOP_DEBUG__!.solo; Reflect.set(Reflect.get(solo, 'railSound'), 'next', -Infinity); for (let i = 0; i < 20; i++) { const z = Math.floor(solo.movement.camZ) - i; if (solo.game.rig.screenY(solo.movement.x, z) >= 1.1) { solo.movement.z = z; break; } } });
   await expect(page.locator('#soloEnd')).toBeVisible();
   expect(await page.evaluate(() => window.__HOP_DEBUG__!.solo.game.home.sound.diagnostics.muffled)).toBe(true);
+  expect(await page.evaluate(() => { const sound = window.__HOP_DEBUG__!.solo.game.home.sound; return Reflect.get(sound, 'voices').filter((v: { id: number; loop: boolean }) => v.loop && Reflect.get(sound, 'sfx').playing(v.id)).length; })).toBe(0);
 });
