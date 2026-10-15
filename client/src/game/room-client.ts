@@ -15,6 +15,7 @@ export class RoomClient {
   readonly history: RoomSnapshot[] = [];
   onState: ((state: RoomSnapshot) => void) | null = null;
   onPredictedDeath: ((lifeId: number, cause: DeathCause) => void) | null = null;
+  onPredictedHop: (() => void) | null = null;
   private reportedLife = -1;
   onError: ((error: string) => void) | null = null;
   private socket: WebSocket | null = null;
@@ -93,10 +94,12 @@ export class RoomClient {
     const occupied = state.players.some(p => p.id !== this.id && p.connected && !p.waiting && !p.movement.dead && p.hearts > 0
       && Math.round(p.movement.x) === Math.round(this.prediction.toX) && Math.round(p.movement.z) === this.prediction.toZ);
     if (occupied) this.prediction.restore(before);
-    else this.pending.push({ direction, sequence, time });
+    else { this.pending.push({ direction, sequence, time }); if (this.prediction.hopStart !== before.hopStart) this.onPredictedHop?.(); }
   }
   advance(): void {
+    const before = this.prediction.hopStart;
     if (this.ready && this.state?.phase === 'playing') this.prediction.advance(Math.max(this.prediction.time, this.time));
+    if (this.prediction.hopStart !== before) this.onPredictedHop?.();
   }
   pair(): { a: RoomSnapshot; b: RoomSnapshot; mix: number } | null {
     if (!this.history.length) return null;

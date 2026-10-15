@@ -10,7 +10,8 @@ Last updated: 2026-10-16 (Asia/Calcutta).
 - How to run: npm run dev plus npm run dev:server; http://localhost:5173/. Both servers are running locally.
 - Step 2 complete: antialiased persistent canvas; Medium/Low explicitly render directly to it; High MSAA target exactly matches the drawing buffer. Medium cap is now 2. Effects degrade in the required order (particles, weather, prop outlines, shadow size, blob shadows), then resolution; the ratio never falls below min(DPR, 1), and menus retain full resolution. 183 unit tests, typechecks/build and all four architecture browser checks pass.
 - Before/after crops and measurements: output/playwright/feel/{before,after}-dpr-{1,1.25,2,3}.png and *-crisp.json; reproduce with node scripts/review-feel-crisp.mjs before|after. DPR 1.25 remains 488x1055 with antialiasing added; DPR 2/3 changes from 585x1266 to 780x1688. All captures have no browser errors. Tag feel-stable-2.
-- Next exact step: step 3 instant 120 ms hops, input-frame feedback, score bounce and instant retry; then step 4 profiling/optimization/interpolation, step 5 pacing/clarity/juice, step 6 preview new Blender models before placing them, then stop.
+- Step 3 complete: 120 ms shared hop, translation during takeoff squash, 0.45 tile arc and independent 30 ms landing squash. Predicted local sound/dust happens immediately; server echoes do not duplicate it. New-row score bounce/tick and any-key/blank-tap retry use a 400 ms total reveal. 183 unit tests, typechecks/build and desktop/mobile instant-feedback/retry checks pass (tmp/feel-3-*-check.log, tmp/feel-3-browser.log). Tag feel-stable-3.
+- Next exact step: step 4 mobile 4x CPU profiling/optimization/interpolation, step 5 pacing/clarity/juice, step 6 preview new Blender models before placing them, then stop.
 
 ## Live deployment verification (complete; STOP before Batch C)
 

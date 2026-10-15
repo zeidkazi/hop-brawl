@@ -38,10 +38,13 @@ export class Versus {
   private readonly scenery = (z: number) => this.game.world.rows.find(slot => slot.z === z)?.row ?? undefined;
   constructor(private readonly root: HTMLElement, readonly game: GameRenderer, private readonly preferences: Preferences,
     private readonly motion: Motion, private readonly show: (screen: RoomScreen) => void) {
-    this.input = new HopInput(game.canvas, direction => {
-      const before = this.client.prediction.hopStart; this.client.hop(direction);
-      if (this.client.prediction.hopStart !== before) this.actors.get(this.client.id)?.boxer.play('hop');
-    });
+    this.input = new HopInput(game.canvas, direction => this.client.hop(direction));
+    this.client.onPredictedHop = () => {
+      const move = this.client.prediction;
+      this.actors.get(this.client.id)?.boxer.play('hop');
+      this.game.home.sound.play('hop', 0, undefined, this.preferences.animal);
+      this.game.particles.burst(move.fromX, move.fromZ, BIOME_PALETTES[this.game.world.rowAt(move.fromZ).biome].grass[0]);
+    };
     const priorFrame = game.beforeFrame;
     game.beforeFrame = (now, dt) => { if (this.active) this.frame(dt); else priorFrame?.(now, dt); };
     this.client.onPredictedDeath = (lifeId, cause) => this.animateDeath(this.client.id, lifeId, cause);
@@ -166,7 +169,10 @@ export class Versus {
       const player = state.players.find(p => p.id === event.id);
       const pan = player ? (player.movement.x - this.client.prediction.x) / SOUND.PAN_TILES : 0;
       const sound = this.game.home.sound;
-      if (event.kind === 'hop') sound.play('hop', pan, undefined, player?.animal);
+      if (event.kind === 'hop' && event.id !== this.client.id) {
+        sound.play('hop', pan, undefined, player?.animal);
+        if (player) this.game.particles.burst(player.movement.fromX, player.movement.fromZ, BIOME_PALETTES[this.game.world.rowAt(player.movement.fromZ).biome].grass[0]);
+      }
       else if (event.kind === 'bonk') sound.play('bonk', pan);
       else if (event.kind === 'shove') { sound.play('punch', pan); sound.play(`grunt${player?.animal ?? 2}` as 'grunt2', pan); }
       else if (event.kind === 'round') sound.sting('roundWin');
@@ -299,7 +305,6 @@ export class Versus {
       if (lobby) { x = ROOM.SPAWNS[2]![p.slot]!; z = SOLO.SPAWN_Z; pose.y = 0; pose.sx = pose.sy = 1; pose.roll = 0; }
       if (!lobby && !movement.dead && !pose.hopping && movement.hops > 0 && actor.landedHop !== movement.hopStart) {
         actor.landedHop = movement.hopStart;
-        this.game.particles.burst(x, z, BIOME_PALETTES[this.game.world.rowAt(z).biome].grass[0]);
         if (movement.onLog) { this.game.world.dipLog(z, movement.logIndex, time); this.game.home.sound.play('log', (x - this.client.prediction.x) / SOUND.PAN_TILES); }
       }
       actor.root.visible = p.connected && !p.waiting;

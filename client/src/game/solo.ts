@@ -81,14 +81,16 @@ export class Solo {
       else if (action === 'restart') this.restart();
       else if (action === 'quit') this.quit();
     });
+    window.addEventListener('pointerup', event => {
+      if (this.phase === 'over' && !(event.target instanceof Element && event.target.closest('button, input'))) this.restart();
+    });
     window.addEventListener('keydown', event => {
       if (!this.active || event.repeat || event.target instanceof HTMLInputElement) return;
       if (!['solo', 'pause', 'soloEnd'].includes(root.dataset.screen ?? '')) return;
+      if (this.phase === 'over') { event.preventDefault(); event.stopImmediatePropagation(); this.restart(); return; }
       if (event.key === 'Escape') {
         event.preventDefault(); event.stopImmediatePropagation();
         if (this.phase === 'paused') this.resume(); else this.pause();
-      } else if (this.phase === 'over' && (event.key === ' ' || event.key === 'Enter')) {
-        event.preventDefault(); this.restart();
       }
     });
     window.addEventListener('blur', () => this.pause());
@@ -167,12 +169,13 @@ export class Solo {
   }
   private readonly hop = (direction: HopDirection): void => { if (this.phase === 'playing') this.movement.input(direction); };
   private readonly hopped = (): void => {
+    const player = this.movement;
+    this.game.particles.burst(player.x, player.z, BIOME_PALETTES[this.game.world.rowAt(Math.round(player.z)).biome].grass[0]);
     this.boxer?.play('hop'); this.game.home.sound.unlock(); this.game.home.sound.play('hop', 0, undefined, this.preferences.animal);
     if (this.preferences.haptics) navigator.vibrate?.(SOLO.HAPTIC_HOP_MS);
   };
   private readonly landed = (): void => {
     const player = this.movement;
-    this.game.particles.burst(player.x, player.z, BIOME_PALETTES[this.game.world.rowAt(player.z).biome].grass[0]);
     if (player.onLog) { this.game.world.dipLog(player.z, player.logIndex, player.time); this.game.home.sound.play('log'); }
     if (player.distance > this.runBest && !this.newBest) {
       this.newBest = true; this.motion.toast('NEW BEST!');
@@ -235,7 +238,13 @@ export class Solo {
     this.game.rig.leaderZ = Math.max(SOLO.SPAWN_Z, this.movement.distance);
     this.game.world.animalX = this.movement.x; this.game.world.animalZ = this.movement.z;
     this.renderPose(dt);
-    if (this.lastScore !== this.movement.distance) { this.lastScore = this.movement.distance; this.score.textContent = String(this.lastScore); }
+    if (this.lastScore !== this.movement.distance) {
+      if (this.lastScore >= 0 && this.movement.distance > this.lastScore) {
+        this.game.home.sound.play('tock');
+        if (!this.preferences.reducedMotion) this.score.animate([{ transform: `scale(${SOLO.SCORE_SCALE})` }, { transform: 'scale(1)' }], { duration: SOLO.SCORE_BOUNCE_MS, easing: 'ease-out' });
+      }
+      this.lastScore = this.movement.distance; this.score.textContent = String(this.lastScore);
+    }
     this.game.world.boundaryWarning = this.movement.onLog ? (this.movement.x < VIEW.LOG_EDGE_WARNING - .5 ? -1 : this.movement.x > 8.5 - VIEW.LOG_EDGE_WARNING ? 1 : 0) : 0;
     this.marker.textContent = this.game.world.boundaryWarning ? '!' : 'YOU ▼';
     this.danger.style.opacity = this.phase === 'playing' && this.game.rig.screenY(this.movement.x, this.movement.z) > VIEW.DANGER_SCREEN_Y
