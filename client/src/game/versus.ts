@@ -264,7 +264,7 @@ export class Versus {
       if (!lobby && !movement.dead && !pose.hopping && movement.hops > 0 && actor.landedHop !== movement.hopStart) {
         actor.landedHop = movement.hopStart;
         this.game.particles.burst(x, z, BIOME_PALETTES[this.game.world.rowAt(z).biome].grass[0]);
-        if (movement.onLog) { this.game.world.logDipRow = z; this.game.world.logDipUntil = time + CONFIG.HOP_MS / 1000; }
+        if (movement.onLog) this.game.world.dipLog(z, movement.logIndex, time);
       }
       actor.root.visible = p.connected && !p.waiting;
       actor.root.position.set(x, pose.y + respawnHeight(this.poseTime - actor.respawnAt, this.preferences.reducedMotion), -z);

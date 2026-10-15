@@ -169,7 +169,7 @@ export class Solo {
   private readonly landed = (): void => {
     const player = this.movement;
     this.game.particles.burst(player.x, player.z, BIOME_PALETTES[this.game.world.rowAt(player.z).biome].grass[0]);
-    if (player.onLog) { this.game.world.logDipRow = player.z; this.game.world.logDipUntil = player.time + CONFIG.HOP_MS / 1000; }
+    if (player.onLog) this.game.world.dipLog(player.z, player.logIndex, player.time);
     if (player.distance > this.runBest && !this.newBest) {
       this.newBest = true; this.motion.toast('NEW BEST!');
       this.game.home.sound.play('win');

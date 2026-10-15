@@ -8,6 +8,14 @@ import { trainWarning, trainX } from '../../shared/hazards';
 import { gameplayScreenY } from '../../shared/camera';
 
 describe('bounded pools', () => {
+  it('dips only each landed log, including simultaneous landings, then eases back to rest', () => {
+    const world = new WorldView(); world.dipLog(10, 0, 1); world.dipLog(10, 1, 1);
+    expect(world.logDip(10, 0, 1.07)).toBeCloseTo(.05);
+    expect(world.logDip(10, 1, 1.07)).toBeCloseTo(.05);
+    expect(world.logDip(10, 2, 1.07)).toBe(0);
+    expect(world.logDip(10, 0, 1.14)).toBeCloseTo(0);
+    expect(world.logDip(10, 0, 2)).toBe(0);
+  });
   it('keeps obstacle and roadside tree canopies within their grass-row footprint', () => {
     const view = new WorldView(), matrix = new Matrix4();
     for (let bottom = 0; bottom < 100; bottom += 10) {

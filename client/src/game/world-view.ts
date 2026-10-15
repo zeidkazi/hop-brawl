@@ -97,8 +97,17 @@ export class WorldView {
   modelsReady = false;
   actorVisible = true;
   showCrates = true;
-  logDipRow = -1;
-  logDipUntil = 0;
+  private readonly logDips = Array.from({ length: CONFIG.MAX_PLAYERS_PRIVATE }, () => ({ row: -1, index: -1, at: -Infinity }));
+  dipLog(row: number, index: number, time: number): void {
+    const slot = this.logDips.find(v => v.row === row && v.index === index)
+      ?? this.logDips.reduce((oldest, v) => v.at < oldest.at ? v : oldest);
+    slot.row = row; slot.index = index; slot.at = time;
+  }
+  logDip(row: number, index: number, time: number): number {
+    const slot = this.logDips.find(v => v.row === row && v.index === index);
+    const p = slot ? (time - slot.at) * 1000 / CONFIG.HOP_MS : 1;
+    return p >= 0 && p < 1 ? SOLO.LOG_DIP * Math.sin(Math.PI * p) : 0;
+  }
   deathCause: DeathCause | null = null;
   deathX = 0; deathZ = 0; deathProgress = 0;
 
@@ -256,6 +265,7 @@ export class WorldView {
 
   reset(seed: number): void {
     this.seed = seed;
+    for (const dip of this.logDips) { dip.row = dip.index = -1; dip.at = -Infinity; }
     this.viewBottom = NaN;
     this.preparedBottom = NaN;
     for (const slot of this.rows) slot.z = NaN;
@@ -371,7 +381,7 @@ export class WorldView {
       } else if (row.kind === 'river') {
         for (let j = 0; j < row.logs.length; j++) {
           const log = row.logs[j]!;
-          this.put(this.logs, laneItemX(row, log, time), -0.1 - (row.z === this.logDipRow && time < this.logDipUntil ? SOLO.LOG_DIP * Math.sin(Math.PI * Math.max(0, 1 - (this.logDipUntil - time) * 1000 / CONFIG.HOP_MS)) : 0), row.z, log.length, 5 / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.log);
+          this.put(this.logs, laneItemX(row, log, time), -0.1 - this.logDip(row.z, j, time), row.z, log.length, 5 / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.log);
         }
       } else {
         for (let x = VIEW.DECOR_MIN_X; x <= VIEW.DECOR_MAX_X; x += RAIL.SLEEPER_SPACING)
