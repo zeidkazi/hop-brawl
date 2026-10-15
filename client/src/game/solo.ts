@@ -92,6 +92,7 @@ export class Solo {
       }
     });
     window.addEventListener('blur', () => this.pause());
+    window.addEventListener('pagehide', () => this.pause());
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.pause(); });
     root.querySelector('[data-mode="solo"]')?.classList.toggle('practice', this.best === null);
   }

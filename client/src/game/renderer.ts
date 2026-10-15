@@ -40,7 +40,7 @@ export class GameRenderer {
   private clockStart = 0;
   private nextFrame = 0;
   private resizeTimer = 0;
-  private frameId = 0;
+  private frameId = 0; private started = false; private background = false;
   private appliedTier: Tier | null = null;
   playing = false;
   onFrame: ((now: number) => void) | null = null;
@@ -83,6 +83,8 @@ export class GameRenderer {
     this.renderer.compile(this.output, this.outputCamera);
     window.addEventListener('resize', this.queueResize);
     document.addEventListener('visibilitychange', this.visibility);
+    window.addEventListener('pagehide', this.hide);
+    window.addEventListener('pageshow', this.visibility);
   }
 
   private readonly queueResize = (): void => {
@@ -96,8 +98,14 @@ export class GameRenderer {
     if (this.home.root.children.length) this.home.layout(this.rig.camera);
     this.applyQuality();
   };
+  private readonly hide = (): void => {
+    this.background = true; cancelAnimationFrame(this.frameId); this.frameId = 0;
+  };
   private readonly visibility = (): void => {
-    if (!document.hidden) { this.home.finishIntro(); this.onDiscontinuity?.(); }
+    if (document.hidden) { this.hide(); return; }
+    this.background = false;
+    this.home.finishIntro(); this.onDiscontinuity?.();
+    if (this.started && !this.frameId) this.frameId = requestAnimationFrame(this.frame);
     this.previous = 0; this.nextFrame = 0;
     this.quality.reset();
   };
@@ -177,15 +185,18 @@ export class GameRenderer {
   }
 
   start(intro = true): void {
-    if (this.frameId) return;
+    if (this.started) return;
+    this.started = true;
     this.clockStart = performance.now();
     if (intro) this.home.playIntro();
-    this.frameId = requestAnimationFrame(this.frame);
+    if (!document.hidden && !this.background) this.frameId = requestAnimationFrame(this.frame);
   }
 
   private readonly frame = (now: number): void => {
+    this.frameId = 0;
+    if (this.background || document.hidden) return;
     this.frameId = requestAnimationFrame(this.frame);
-    if (document.hidden || now + VIEW.FRAME_TOLERANCE_MS < this.nextFrame) return;
+    if (now + VIEW.FRAME_TOLERANCE_MS < this.nextFrame) return;
     const step = 1000 / VIEW.FPS_CAP;
     this.nextFrame = now + step - (this.nextFrame ? Math.max(0, now - this.nextFrame) % step : 0);
     const delta = this.previous ? now - this.previous : step;

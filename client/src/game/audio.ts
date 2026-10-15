@@ -28,12 +28,40 @@ export class BoxingSound {
   private rate = 1; private muffled = false; private paused = false; private ducked = false;
   private delayed = new Set<number>();
   private duckTimer = 0; private fanfareTimer = 0;
-  constructor() { if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) this.stopWorld(); }); }
+  private background = false; private audioTransition = Promise.resolve(); private playingTrack: Track | null = null;
+  constructor() {
+    if (typeof document === 'undefined') return;
+    document.addEventListener('visibilitychange', () => this.setBackground(document.hidden));
+    window.addEventListener('pagehide', () => this.setBackground(true));
+    window.addEventListener('pageshow', () => this.setBackground(document.hidden));
+  }
+  private setBackground(hidden: boolean): void {
+    this.background = hidden;
+    const ctx = Howler.ctx;
+    if (!ctx) return;
+    // Silence synchronously, then serialize suspend/resume to survive rapid tab swaps.
+    if (hidden) {
+      Howler.masterGain.gain.cancelScheduledValues(ctx.currentTime);
+      Howler.masterGain.gain.setValueAtTime(0, ctx.currentTime);
+      this.sfx?.stop(); this.voices.length = 0;
+      for (const timer of this.delayed) clearTimeout(timer); this.delayed.clear();
+    }
+    this.audioTransition = this.audioTransition.then(async () => {
+      if (this.background) { await ctx.suspend(); return; }
+      if (!this.unlocked) return;
+      await ctx.resume();
+      if (this.background) { await ctx.suspend(); return; }
+      if (this.musicId < 0 || this.playingTrack !== this.track) this.startMusic(0);
+      const gain = Howler.masterGain.gain;
+      gain.cancelScheduledValues(ctx.currentTime); gain.setValueAtTime(0, ctx.currentTime);
+      gain.linearRampToValueAtTime(Howler.volume(), ctx.currentTime + SOUND.BACKGROUND_FADE_MS / 1000);
+    }).catch(() => { /* A browser may require the next user gesture to resume. */ });
+  }
   get volume(): number { return this.sfxVolume; }
   set volume(value: number) { this.sfxVolume = value; this.sfx?.mute(value === 0); for (const v of this.voices) this.sfx?.volume(value * v.level, v.id); }
   get musicVolume(): number { return this.musicLevel; }
   set musicVolume(value: number) { this.musicLevel = value; this.music?.mute(value === 0); this.mix(); }
-  get diagnostics() { return { loaded: this.loaded, unlocked: this.unlocked, track: this.track, musicId: this.musicId,
+  get diagnostics() { return { background: this.background, context: Howler.ctx?.state, loaded: this.loaded, unlocked: this.unlocked, track: this.track, musicId: this.musicId,
     musicRate: this.rate, muffled: this.muffled, paused: this.paused, ducked: this.ducked,
     voices: this.voices.filter(v => this.sfx?.playing(v.id)).length + (this.music?.playing(this.musicId) ? 1 : 0) + (this.music?.playing(this.fadingId) ? 1 : 0),
     filterHz: this.filter?.frequency.value ?? SOUND.MUSIC_OPEN_HZ, musicVolume: this.musicLevel, sfxVolume: this.volume }; }
@@ -52,15 +80,15 @@ export class BoxingSound {
     const [sfx, music] = await Promise.all([load('/sfx/brawl.mp3', 'mp3', manifest.sfx as unknown as Sprite), load(`/music/${musicFile}`, musicFile.endsWith('ogg') ? 'ogg' : 'm4a', manifest.music as unknown as Sprite)]);
     this.sfx = sfx; this.music = music;
     if (Howler.ctx) { this.filter = Howler.ctx.createBiquadFilter(); this.filter.type = 'lowpass'; this.filter.frequency.value = SOUND.MUSIC_OPEN_HZ; this.filter.connect(Howler.masterGain); }
-    this.loaded = true;
+    this.loaded = true; if (this.background || document.hidden) this.setBackground(true);
   }
   unlock(): void {
-    if (!this.loaded || this.unlocked && Howler.ctx?.state === 'running') return;
+    if (this.background || document.hidden || !this.loaded || this.unlocked && Howler.ctx?.state === 'running') return;
     const start = () => { this.unlocked = true; if (this.musicId < 0) this.startMusic(SOUND.MUSIC_INTRO_MS); };
     if (Howler.ctx?.state !== 'running') void Howler.ctx?.resume().then(start).catch(() => {}); else start();
   }
   play(cue: Cue | 'hop' | 'win', pan = 0, level = SOUND.PLAYER_GAIN as number, animal = 2): number {
-    if (!this.unlocked || !this.sfx || !this.volume || document.hidden) return -1;
+    if (!this.unlocked || !this.sfx || !this.volume || this.background || document.hidden) return -1;
     const key: Cue = cue === 'hop' ? `hop${Math.floor(Math.random() * 3)}` as Cue : cue === 'win' ? 'roundWin' : cue;
     const priority = key === 'bell' || key === 'horn' ? 3 : 2;
     const id = this.allocate(key, pan, level, priority, false, '');
@@ -78,7 +106,7 @@ export class BoxingSound {
   }
   beginWorld(): void { this.seen.clear(); }
   loop(key: string, cue: Cue, pan: number, level: number): void {
-    if (!this.unlocked || !this.sfx || document.hidden || this.volume === 0 || level <= 0) return;
+    if (!this.unlocked || !this.sfx || this.background || document.hidden || this.volume === 0 || level <= 0) return;
     this.seen.add(key);
     const existing = this.voices.find(v => v.key === key && this.sfx!.playing(v.id));
     if (existing) { existing.level = level; this.sfx.volume(this.volume * level, existing.id); this.sfx.stereo(pan, existing.id); }
@@ -126,7 +154,8 @@ export class BoxingSound {
     this.track = track; if (this.unlocked) this.startMusic(ms);
   }
   private startMusic(ms: number): void {
-    if (!this.music) return;
+    if (!this.music || this.background || document.hidden) return;
+    this.playingTrack = this.track;
     if (this.fadingId >= 0) this.music.stop(this.fadingId);
     const previous = this.musicId;
     const id = this.music.play(this.track); this.musicId = id;

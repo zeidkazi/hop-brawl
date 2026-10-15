@@ -66,6 +66,7 @@ export class Versus {
       }
     });
     document.addEventListener('visibilitychange', () => { if (this.active && !document.hidden) this.client.sync(); });
+    window.addEventListener('pageshow', () => { if (this.active && !document.hidden) this.client.sync(); });
     window.addEventListener('resize', () => { if (this.active) this.client.sync(); });
   }
   private element(id: string): HTMLElement { return this.root.querySelector<HTMLElement>(`#${id}`)!; }
