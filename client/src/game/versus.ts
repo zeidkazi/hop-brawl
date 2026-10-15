@@ -291,6 +291,8 @@ export class Versus {
       actor.effects.root.position.copy(actor.root.position);
       actor.effects.update(this.poseTime, actor.boxer.move, this.preferences.reducedMotion);
       actor.boxer.reduced = this.preferences.reducedMotion;
+      actor.boxer.comboYaw = Math.atan2(this.game.rig.camera.position.x - actor.root.position.x, -(this.game.rig.camera.position.z - actor.root.position.z)) + actor.root.rotation.y;
+      actor.boxer.comboLift = BOXER.COMBO_LIFT;
       // Hop rig follows the same delayed/predicted clock as the body, including buffered hops.
       actor.boxer.review = pose.hopping && !dying ? { move: 'hop', elapsed: drawTime - movement.hopStart } : null;
       actor.boxer.update(this.poseTime);

@@ -1,11 +1,12 @@
 import { Box3, Object3D, Vector3 } from 'three';
 import { BOXER } from '../../../shared/config';
+import { ease } from '../../../shared/hop';
 
 export type BoxerMove = 'idle' | 'tap' | 'combo' | 'shake' | 'hop' | 'punch' | 'stunned' | 'guard' | 'victory';
 export type BoxerCue = 'tock' | 'whoosh' | 'hit' | 'win';
 const durations: Record<BoxerMove, number> = { idle: Infinity, guard: Infinity, tap: BOXER.TAP_S,
   combo: BOXER.COMBO_S, shake: BOXER.SHAKE_S, hop: BOXER.HOP_S, punch: BOXER.PUNCH_S, stunned: BOXER.STUN_S, victory: BOXER.VICTORY_S };
-const pulse = (t: number, peak: number, width: number): number => Math.max(0, 1 - Math.abs(t - peak) / width);
+const pulse = (t: number, peak: number, width: number): number => ease(1 - Math.abs(t - peak) / width);
 
 /** One reusable procedural rig for Home, lobby joins and authoritative match events. */
 export class Boxer {
@@ -17,6 +18,7 @@ export class Boxer {
   private readonly touchX: number;
   move: BoxerMove = 'idle';
   reduced = false;
+  comboYaw = 0; comboLift = 0;
   private start = 0;
   private previous = -1;
   private nextFlourish: number = BOXER.FLOURISH_MIN_S;
@@ -64,11 +66,15 @@ export class Boxer {
       const amount = Math.max(pulse(t, BOXER.TAP_CONTACTS[0], 0.12), pulse(t, BOXER.TAP_CONTACTS[1], 0.12));
       const gap = (this.rightRest.x - this.leftRest.x) / 2 - this.touchX;
       left.position.x += gap * amount; right.position.x -= gap * amount;
+      left.position.y += BOXER.TAP_LIFT * amount; right.position.y += BOXER.TAP_LIFT * amount;
       left.position.z -= BOXER.TAP_FORWARD * amount; right.position.z -= BOXER.TAP_FORWARD * amount;
       this.cueAt('tock', t, BOXER.TAP_CONTACTS[0]); this.cueAt('tock', t, BOXER.TAP_CONTACTS[1]);
     } else if (move === 'combo') {
       const jab = pulse(t, BOXER.COMBO_CONTACTS[0], 0.09), cross = pulse(t, BOXER.COMBO_CONTACTS[1], 0.09);
-      left.position.z -= jab * BOXER.JAB_DISTANCE; right.position.z -= cross * BOXER.JAB_DISTANCE;
+      const x = Math.sin(this.comboYaw) * BOXER.JAB_DISTANCE, z = -Math.cos(this.comboYaw) * BOXER.JAB_DISTANCE;
+      left.position.x += jab * x; right.position.x += cross * x;
+      left.position.z += jab * z; right.position.z += cross * z;
+      left.position.y += jab * this.comboLift; right.position.y += cross * this.comboLift;
       this.body.rotation.y = (jab - cross) * BOXER.PUNCH_LEAN;
       this.cueAt('whoosh', t, 0.03); this.cueAt('whoosh', t, 0.19);
     } else if (move === 'shake') {
@@ -76,13 +82,14 @@ export class Boxer {
     } else if (move === 'hop') {
       const swing = Math.sin(t / BOXER.HOP_S * Math.PI * 2) * BOXER.HOP_SWING;
       left.rotation.x = right.rotation.x = swing;
+      left.position.z += swing * BOXER.HOP_FOLLOW_DISTANCE; right.position.z += swing * BOXER.HOP_FOLLOW_DISTANCE;
     } else if (move === 'punch') {
       const amount = pulse(t, BOXER.PUNCH_CONTACT, BOXER.PUNCH_CONTACT);
       (this.side < 0 ? left : right).position.z -= BOXER.PUNCH_DISTANCE * amount;
       this.body.rotation.x = -BOXER.PUNCH_LEAN * amount;
       this.cueAt('hit', t, BOXER.PUNCH_CONTACT);
     } else if (move === 'stunned' || move === 'victory') {
-      const amount = Math.min(1, t / 0.08);
+      const amount = ease(t / 0.08);
       left.position.y += BOXER.RAISE_HEIGHT * amount; right.position.y += BOXER.RAISE_HEIGHT * amount;
       left.rotation.z = -0.4 * amount; right.rotation.z = 0.4 * amount;
       if (move === 'stunned') this.body.rotation.z = Math.sin(t * 40) * BOXER.STUN_WOBBLE;

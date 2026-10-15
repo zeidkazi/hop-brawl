@@ -11,6 +11,14 @@ function rig(random = () => 0): Boxer {
   return new Boxer(body, random);
 }
 describe('boxer event choreography', () => {
+  it('projects the combo toward the gameplay camera with visible travel and follows through on hops', () => {
+    const boxer = rig(); boxer.comboYaw = Math.PI; boxer.comboLift = BOXER.COMBO_LIFT;
+    boxer.play('combo'); boxer.update(.1);
+    expect(boxer.left.position.z).toBeCloseTo(-.1 + BOXER.JAB_DISTANCE);
+    expect(boxer.left.position.y).toBeGreaterThan(.5);
+    boxer.play('hop'); boxer.update(.135); expect(boxer.left.position.z).toBeGreaterThan(-.1);
+    boxer.update(.205); expect(boxer.left.position.z).toBeLessThan(-.1);
+  });
   it('taps twice and returns both wrist pivots to guard', () => {
     const boxer = rig(), cues: string[] = []; boxer.onCue = cue => cues.push(cue);
     boxer.play('tap'); boxer.update(0.13); expect(boxer.left.position.x).toBeGreaterThan(-0.2);

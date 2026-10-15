@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { BIOME_PALETTES, COLORS, CONFIG, HOME, RAIL, SOLO, VIEW, WORLD } from '../../../shared/config';
+import { BIOME_PALETTES, BOXER, COLORS, CONFIG, HOME, RAIL, SOLO, VIEW, WORLD } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
 import { trainX } from '../../../shared/hazards';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
@@ -152,7 +152,7 @@ export class Solo {
     if (home.arena) { home.root.add(home.arena.root); home.arena.root.position.set(0, 0, 0); home.arena.root.rotation.y = 0; home.arena.restoreHome(); }
     home.animalRoot.position.set(4, 0, HOME.ANIMAL_Z); home.animalRoot.scale.setScalar(HOME.ANIMAL_SCALE);
     home.animalRoot.rotation.set(0, HOME.ANIMAL_YAW, 0); home.animalRoot.visible = true;
-    this.boxer?.play('idle');
+    if (this.boxer) { this.boxer.review = null; this.boxer.comboYaw = this.boxer.comboLift = 0; this.boxer.play('idle'); }
     this.game.rig.resetScroll(); this.game.go('home'); this.show('home');
     this.root.querySelector('[data-mode="solo"]')?.classList.toggle('practice', this.best === null);
   }
@@ -256,6 +256,11 @@ export class Solo {
       actor.scale.set(death.sx, death.sy, death.sx); this.game.home.setActorOpacity(death.opacity);
       actor.visible = t < 1;
       if (this.poseTime - this.deathAt < SOLO.DEATH_SHAKE_S) this.game.rig.shake = SOLO.DEATH_SHAKE * (1 - (this.poseTime - this.deathAt) / SOLO.DEATH_SHAKE_S);
+    }
+    if (this.boxer) {
+      this.boxer.comboYaw = Math.atan2(this.game.rig.camera.position.x - actor.position.x, -(this.game.rig.camera.position.z - actor.position.z)) + this.heading;
+      this.boxer.comboLift = BOXER.COMBO_LIFT;
+      this.boxer.review = player.hopping && !player.dead ? { move: 'hop', elapsed: player.time - player.hopStart } : null;
     }
     this.game.home.updateGameActor(this.poseTime);
     const arena = this.game.home.arena;
