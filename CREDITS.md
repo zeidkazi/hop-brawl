@@ -180,3 +180,25 @@ Announcer search: [Kenney Voiceover Pack (Fighter)](https://kenney.nl/assets/voi
 Bubbles are shipped and used after splash deaths; sinking-log warning playback waits for Batch D's sinking-log mechanic. The four biome music arrangements are ready now; biome visuals/ambience swapping remain Batch E.
 
 - `art/review/batch-b/flattened.png` and `art/review/batch-b/splash.png`: original six-frame 390x844 phone-viewport game captures, CC0 1.0; source https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-death-corrections.mjs. The manifest records actual animation times, seeded collisions and poses.
+
+## Section 34 original detail library (CC0 1.0)
+
+All thirteen shapes below were authored for Hop Brawl in Blender, with no downloaded mesh, texture or third-party source. They are dedicated to [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). Authoring source: [build_detail.py](https://github.com/zeidkazi/hop-brawl/blob/main/art/build_detail.py). Editable source: `art/voxels/detail_props.json` and `art/detail_props.blend`. Runtime file: [detail_props.glb](https://github.com/zeidkazi/hop-brawl/blob/main/client/public/models/detail_props.glb), 80,972 bytes. Preview: `art/previews/detail_props.png`.
+
+| Named shape in the runtime file | License |
+|---|---|
+| `flowers` | CC0 1.0 |
+| `grass_tuft` | CC0 1.0 |
+| `small_bush` | CC0 1.0 |
+| `stump` | CC0 1.0 |
+| `pebbles` | CC0 1.0 |
+| `fence_piece` | CC0 1.0 |
+| `lily_pad` | CC0 1.0 |
+| `duck` | CC0 1.0 |
+| `bird` | CC0 1.0 |
+| `butterfly` | CC0 1.0 |
+| `bus` | CC0 1.0 |
+| `ice_cream_van` | CC0 1.0 |
+| `sports_car` | CC0 1.0 |
+
+Foam edges, crossing-arm animation, cloud-shadow circles, vignette and speed lines are original procedural geometry/CSS, CC0 1.0; no image textures or additional recordings. Existing approved sedan/hatchback/taxi/truck meshes retain their earlier credits.
