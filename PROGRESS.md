@@ -7,6 +7,7 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 - Added monotonic life IDs, one server death-commit path and validated client reports. Every live player is simulated on the server, independent of browser frames. Regression tests cover idle players, both report/backstop orders, stale reports and respawn IDs. 137 unit tests and build pass.
 - Local predicted deaths now animate immediately and report their life ID; confirmation owns the single toast/sound. Animation and confirmation gates reject repeated or older lives.
 - Duplicate names now receive the first available numeric suffix, including collisions with already numbered names.
+- Countdown/gameplay no longer focuses Leave. Window capture handles movement keys even over focused buttons, suppressing button activation and repeat hops; editable fields remain excluded.
 - Next: controls/lobby/toasts, scenery, results/HUD and replacement cover; then stop for owner playtest.
 
 ## Ship today: sections 31–32 (current, overrides historical gates below)

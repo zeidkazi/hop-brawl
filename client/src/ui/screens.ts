@@ -221,7 +221,9 @@ export class Screens {
     this.root.dataset.screen = screen;
     this.motion.show(this.panels[screen]);
     if (!this.solo.active && !this.versus.active && this.game.rig.station !== 'home') this.game.go('home');
-    this.panels[screen].querySelector<HTMLElement>('input, button, a')?.focus({ preventScroll: true });
+    if (screen === 'versus' || screen === 'solo') {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    } else this.panels[screen].querySelector<HTMLElement>('input, button, a')?.focus({ preventScroll: true });
   }
   private save(): void { savePreferences(storage, this.preferences); }
   private focusName(): void {

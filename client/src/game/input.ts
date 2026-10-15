@@ -21,7 +21,8 @@ export class HopInput {
     canvas.addEventListener('pointerup', this.up);
     canvas.addEventListener('pointercancel', event => { if (event.pointerId === this.pointer) this.clear(); });
     canvas.addEventListener('contextmenu', event => { if (this.enabled) event.preventDefault(); });
-    window.addEventListener('keydown', this.key);
+    window.addEventListener('keydown', this.key, true);
+    window.addEventListener('keyup', this.keyup, true);
     window.addEventListener('blur', this.clear);
   }
   readonly clear = (): void => { this.pointer = -1; this.consumed = false; };
@@ -43,10 +44,17 @@ export class HopInput {
     }
     this.clear();
   };
+  private readonly keyup = (event: KeyboardEvent): void => {
+    if (this.enabled && (KEYS[event.key] || event.key === 'Enter')) { event.preventDefault(); event.stopImmediatePropagation(); }
+  };
   private readonly key = (event: KeyboardEvent): void => {
-    if (!this.enabled || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (!this.enabled || event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || (event.target instanceof HTMLElement && event.target.isContentEditable)) return;
     const direction = KEYS[event.key];
-    if (direction) { event.preventDefault(); this.hop(direction); }
+    if (direction || event.key === 'Enter') {
+      event.preventDefault(); event.stopImmediatePropagation();
+      if (event.target instanceof HTMLElement) event.target.blur();
+      if (direction && !event.repeat) this.hop(direction);
+    }
   };
 }
