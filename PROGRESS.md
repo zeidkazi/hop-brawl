@@ -2,7 +2,18 @@
 
 Last updated: 2026-10-15 (Asia/Calcutta).
 
-## Batch B feedback fixes (stable locally; deployment awaiting Cloudflare login)
+## Batch B2 Quick Match (complete locally; awaiting login confirmation)
+
+- QUICK MATCH is first in the MULTIPLAYER sheet. Search shows elapsed time, live searching count and Cancel. The sixty-second client prompt repeats after Keep searching; Play Solo exits the queue, and Invite a friend creates a private room with its code.
+- One global SQLite Matchmaker DO uses the WebSocket Hibernation API and FIFO ordering. Assignments use one-use join tokens; quick rooms are strictly 1v1, hostless and return ROOM_NOT_FOUND for code-only joins. Both connections automatically start countdown. Ten-second failures return the connected survivor to the queue front with one toast; countdown departures also recover. Arrivals just before the deadline can finish countdown safely.
+- Quick Match End offers mutual Rematch within twenty seconds, opponent-ready feedback, New opponent and Menu. Same-animal picks stay selected, with a golden second-player variant; the specified small public-name blocklist falls back to Hopper plus four digits. Retired room sockets cannot overwrite a new search/match.
+- Validation: 181 unit tests across 38 files, client/server typechecks and production build pass. All 62 desktop/mobile browser scenarios now have passing results. The full run passed 61/62: the remaining no-opponent prompt test was matched with a separate local player on the shared global queue, so it correctly entered a game. That case passed on an isolated local Worker. Logs: tmp/quick-check.log, tmp/batch-b2-e2e.log, tmp/batch-b2-production.log.
+- Packaged Worker verification on port 8788 passed Quick Match through three rounds, mutual rematch, New opponent and Menu; private room through three rounds, rematch and host handoff; the sixty-second Solo fallback; and Solo movement/pause/death/retry. Match checks used a persistent normal profile and isolated incognito context. A private-room verification timeout came with a roughly 200 MB recording; disabling recording only for HOP_PERSISTENT_REVIEW let the same assertions pass in 1.1 minutes (tmp/batch-b2-production-private.log). Ordinary tests retain failure traces.
+- Packaging dry run passes: 35 static assets, 70.33 KiB Worker / 20.21 KiB gzip, ROOMS + MATCHMAKER + ASSETS bindings, SQLite v2 migration. No deployment or live URL yet. No known Quick Match gameplay defect from local checks; physical-phone performance remains unverified, and the existing frontend bundle-size warning remains.
+- How to run: npm run dev plus npm run dev:server; open http://localhost:5173/. For isolated QA, build once, start `npx wrangler dev --local --port 8788 --persist-to tmp/batch-b2-isolated`, set HOP_TEST_URL=http://127.0.0.1:8788 and run browser tests. This avoids pairing automated tests with somebody playing on the normal local server. Keep only one test runner on a given global queue.
+- Next exact step: wait for the owner to explicitly confirm Wrangler login succeeded. Then run `npx wrangler whoami`, deploy the already-authorized single Worker/static-assets build, and capture its returned URL. Set HOP_TEST_URL to that URL and HOP_PERSISTENT_REVIEW=1; run desktop multiplayer, quick-match and solo files filtered to `private room:|Quick Match: two windows|Solo plays`. Verify normal/incognito Quick Match, private room and Solo, fix/redeploy if necessary, report the verified URL, and STOP before Batch C. Do not infer login confirmation from a generic continuation message.
+
+## Batch B feedback fixes (historical batch-b-stable checkpoint)
 
 - Latest owner instruction authorizes deploying this stable build as the single Cloudflare Worker with static assets. Batch C remains gated. The previous local-only restriction is superseded for this deployment.
 - Camera follows the complete ground-plane anchor with `1 - exp(-dt / .22)`, without the old .05-tile snap clamp or unsmoothed leader movement. Its x/y stay fixed because the playfield fits; only death/train shake remains, capped at .1 tile. Solo LEFT BEHIND is checked against the actual rendered bottom edge.
@@ -214,15 +225,14 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Known bugs / unresolved checks
 
-- Models/Home are signed off. Solo and Private Rooms are enabled. Physical-phone verification on the owner's Wi-Fi is still pending; automated mobile viewports do not certify actual device performance.
-- M12 owner polish notes (do not implement early): make 1–2 combo punches visibly travel toward the gameplay camera; improve the fox tail silhouette from that camera.
-- On Windows, a production rebuild can invalidate Wrangler's asset-directory watcher. Restart npm run dev:server after rebuilding client/dist. This is a local tooling limitation; the Vite frontend stays current without production rebuilds.
-- Full two-player transition traces, 60-second 4× CPU-throttled gameplay, GC-pause analysis and real-device performance remain for the gameplay/network milestones and pre-deployment validation. Current FPS numbers cover only Home on the host GPU.
-- No deployment was performed and v0.9-submission was not tagged. The owner will handle Cloudflare login/deployment later; Vercel/DNS are outside today's scope. Worker packaging dry-run succeeds with static assets and the SQLite DO binding.
+- No known new Quick Match gameplay defect from local verification. Physical-phone checks on the owner's Wi-Fi are still pending; automated mobile viewports do not certify actual device performance.
+- Existing production bundle-size warning remains. Real-device performance, 4x CPU-throttled gameplay and GC-pause analysis remain unverified.
+- On Windows, a production rebuild can invalidate Wrangler's asset-directory watcher. Restart the local Worker after rebuilding client/dist if assets stop responding.
+- Deployment is authorized but explicitly gated on the owner's login confirmation. No live URL or v0.9-submission tag yet; Vercel/DNS are outside the current single-Worker scope.
 
 ## Next exact step
 
-Await the owner's full match/rematch check from a normal window, incognito and phone at http://192.168.7.7:5173/ on the same Wi-Fi. Local implementation, automated verification and cover are complete. STOP; do not deploy. Fix only any reported bugs, with focused checks and commits. Do not implement deferred M12 punch/tail polish.
+Wait for the owner's explicit Wrangler login confirmation, then deploy and perform the live normal/incognito Quick Match, private-room and Solo checks described in the Batch B2 section above. Do not start Batch C. The local build is ready at http://localhost:5173/; the isolated production verification server is on port 8788.
 
 ## Milestone plan / gates
 
@@ -233,7 +243,7 @@ Await the owner's full match/rematch check from a normal window, incognito and p
 - M4: Worker + hibernating Room DO, create/join, lobby, clock sync.
 - M5: Authoritative movement, prediction, interpolation, shared camera.
 - M6: Hearts, respawn, shove, rounds/matches, results.
-- M8: Hibernating Quick Play matchmaker, timeout prompts, rematch.
+- M8: Hibernating Quick Play matchmaker, timeout prompts, rematch. COMPLETE early as Batch B2; tag batch-b2-stable.
 - M9: Crates/boosts, awards, session scoreboard, emotes.
 - M10: Remaining Blender voxel models, biomes, lighting, particles; repeat performance checks. STOP for owner testing/approval.
 - M11: Audio assets, crossfades, SFX, licensed same-voice announcer clips or owner recordings for missing lines.
@@ -257,7 +267,7 @@ npm run dev
 npm run dev:server
 ```
 
-Open http://localhost:5173/ in a normal and an incognito window. PLAY → Create Room in one; PLAY → Join with the code in the other. A phone on the same Wi-Fi can join at http://192.168.7.7:5173/. Pick animals, host START, complete a match and Rematch. Test arrow keys/WASD, taps/swipes, shoves, two-heart respawns and sounds. SOLO remains available with one heart, pause, Retry and local best score. Keep both the Vite and local Wrangler processes running.
+Open http://localhost:5173/ in a normal and an incognito window. MULTIPLAYER → Create Room in one; MULTIPLAYER → Join with the code in the other. For Quick Match, choose MULTIPLAYER → QUICK MATCH in both windows; it starts automatically. A phone on the same Wi-Fi can join at http://192.168.7.7:5173/. Pick animals, host START, complete a match and Rematch. Test arrow keys/WASD, taps/swipes, shoves, two-heart respawns and sounds. SOLO remains available with one heart, pause, Retry and local best score. Keep both the Vite and local Wrangler processes running.
 
 Open http://localhost:5173/?debug=1 for the FPS overlay. Expand the debug panel to change stations, toggle menu visibility, scroll camZ, and trigger Tile flip/Dust burst/Toast/Crowd K.O./Glove punch. In Settings switch Graphics High/Low/Auto and Reduce motion. Resize or rotate: the canvas should remain visible with smooth reframing. Next must exit left and enter right; Previous must do the reverse. Swipes follow the finger.
 
