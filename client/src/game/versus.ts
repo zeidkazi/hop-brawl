@@ -1,10 +1,11 @@
 import { Group, Mesh, MeshLambertMaterial, MeshStandardMaterial, Vector3 } from 'three';
-import { ANIMALS, COLORS, CONFIG, HOME, ROOM, SOLO, SOUND } from '../../../shared/config';
+import { ANIMALS, BOXER, COLORS, CONFIG, HOME, ROOM, SOLO, SOUND } from '../../../shared/config';
 import type { PlayerState, RoomSnapshot } from '../../../shared/room';
 import type { HopDirection } from '../../../shared/movement';
 import type { GameRenderer } from './renderer';
 import type { Preferences } from '../ui/settings';
 import type { Motion } from '../ui/motion';
+import { BoxingEffects } from './boxing-feedback';
 import { Boxer } from './boxer';
 import { HopInput } from './input';
 import { RoomClient } from './room-client';
@@ -14,7 +15,7 @@ import { LifeEvents } from './life-events';
 import { RailSound } from './rail-sound';
 
 export type RoomScreen = 'lobby' | 'versus' | 'roundEnd' | 'matchEnd' | 'friends' | 'home';
-interface Actor { root: Group; boxer: Boxer; animal: number; id: string; heading: number; materials: (MeshStandardMaterial | MeshLambertMaterial)[]; deathAt: number }
+interface Actor { effects: BoxingEffects; root: Group; boxer: Boxer; animal: number; id: string; heading: number; materials: (MeshStandardMaterial | MeshLambertMaterial)[]; deathAt: number }
 const ANGLE: Record<HopDirection, number> = { up: 0, down: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 };
 
 export class Versus {
@@ -86,7 +87,7 @@ export class Versus {
     if (arena) { this.game.home.root.add(arena.root); arena.root.position.set(0, 0, 0); arena.root.rotation.y = 0; arena.restoreHome(); }
     this.game.go('home'); this.element('room-error').textContent = ''; this.show(screen);
   }
-  private dispose(actor: Actor): void { actor.root.removeFromParent(); for (const material of actor.materials) material.dispose(); }
+  private dispose(actor: Actor): void { actor.root.removeFromParent(); actor.effects.dispose(); for (const material of actor.materials) material.dispose(); }
   private actor(p: PlayerState): Actor {
     let actor = this.actors.get(p.id);
     if (actor?.animal === p.animal) return actor;
@@ -95,7 +96,7 @@ export class Versus {
     const sourceBoxer = this.game.home.boxers[p.animal]!;
     sourceBoxer.review = { move: 'guard', elapsed: 0 }; sourceBoxer.update(0); sourceBoxer.review = null;
     const body = source.clone(true); body.visible = true; body.position.set(0, 0, 0); body.rotation.set(0, 0, 0);
-    const root = new Group(); root.add(body); this.game.scene.add(root);
+    const root = new Group(); root.name = `room-player-${p.id}`; root.add(body); this.game.scene.add(root);
     const materials: Actor['materials'] = [];
     body.traverse(node => {
       if (!(node instanceof Mesh) || node.userData.outline) return;
@@ -105,7 +106,13 @@ export class Versus {
       node.material = material; materials.push(material); node.castShadow = this.game.quality.tier !== 'low';
     });
     const boxer = new Boxer(body); boxer.reduced = this.preferences.reducedMotion; boxer.joined();
-    actor = { root, boxer, animal: p.animal, id: p.id, heading: 0, materials, deathAt: 0 };
+    const effects = new BoxingEffects(); this.game.scene.add(effects.root);
+    boxer.onCue = cue => {
+      if (cue !== 'hit') return;
+      const glove = boxer.punchSide < 0 ? boxer.left : boxer.right;
+      glove.getWorldPosition(this.point); effects.contact(this.poseTime, this.point);
+    };
+    actor = { effects, root, boxer, animal: p.animal, id: p.id, heading: 0, materials, deathAt: 0 };
     this.actors.set(p.id, actor); return actor;
   }
   private receive(state: RoomSnapshot): void {
@@ -237,6 +244,9 @@ export class Versus {
       actor.heading += turn * Math.min(1, dt * 1000 / SOLO.TURN_MS); actor.root.rotation.y = lobby ? HOME.ANIMAL_YAW : actor.heading;
       const stretch = 1 + Math.sin(hop * Math.PI) * (SOLO.STRETCH_Y - 1); actor.root.scale.set(1 + (1 - stretch) / 2, stretch, 1 + (1 - stretch) / 2);
       if (movement.dead) actor.root.scale.y = SOLO.FLATTEN_Y;
+      actor.effects.root.position.copy(actor.root.position);
+      actor.effects.root.scale.setScalar(BOXER.SHOVE_EFFECT_SCALE);
+      actor.effects.update(this.poseTime, actor.boxer.move, this.preferences.reducedMotion);
       actor.boxer.reduced = this.preferences.reducedMotion; actor.boxer.update(this.poseTime);
       const label = this.element(`match-name-${p.slot}`); label.hidden = !actor.root.visible || lobby;
       label.textContent = `${p.name}${p.id === this.client.id ? ' ▼' : ''}${movement.invulnerableUntil > time ? ' ✦' : ''}`;

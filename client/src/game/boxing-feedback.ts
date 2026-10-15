@@ -63,6 +63,10 @@ export class BoxingEffects {
     const material = new MeshBasicMaterial({ color: COLORS.yellow, toneMapped: false, fog: false });
     for (let i = 0; i < 3; i++) { const star = new Mesh(geometry, material); star.userData.effect = true; star.frustumCulled = false; star.scale.setScalar(BOXER.STAR_SIZE); this.stars.push(star); this.root.add(star); }
   }
+  dispose(): void {
+    this.root.removeFromParent(); this.stars[0]?.geometry.dispose();
+    (this.stars[0]?.material as MeshBasicMaterial | undefined)?.dispose();
+  }
   contact(time: number, point: Vector3): void { this.until = time + BOXER.STAR_LIFE; this.contactPoint.copy(point); }
   warmAll(value: boolean): void { for (const star of this.stars) star.visible = value; }
   update(time: number, move: BoxerMove, reduced: boolean): void {
