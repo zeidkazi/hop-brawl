@@ -1,0 +1,211 @@
+{
+  "viewport": [
+    390,
+    844
+  ],
+  "fixtures": [
+    {
+      "kind": "flattened",
+      "x": 4.985836647709217,
+      "z": 5,
+      "start": 0.21000000000000005,
+      "cause": "FLATTENED!",
+      "toX": 4.985836647709217,
+      "toZ": 5,
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "frames": [
+        {
+          "path": "output/playwright/batch-b/flattened-0.png",
+          "ms": 0,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-b/flattened-80.png",
+          "ms": 80,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.07612416,
+            0.7825024,
+            1.07612416
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-b/flattened-180.png",
+          "ms": 180,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.25474176,
+            0.27216640000000003,
+            1.25474176
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-b/flattened-350.png",
+          "ms": 350,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.315,
+            0.09999999999999998,
+            1.315
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-b/flattened-600.png",
+          "ms": 600,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.315,
+            0.09999999999999998,
+            1.315
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-b/flattened-1100.png",
+          "ms": 1100,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.315,
+            0.09999999999999998,
+            1.315
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        }
+      ]
+    },
+    {
+      "kind": "splash",
+      "x": 1,
+      "z": 39,
+      "start": 0,
+      "cause": "SPLASH!",
+      "toX": 1,
+      "toZ": 39,
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "frames": [
+        {
+          "path": "output/playwright/batch-b/splash-0.png",
+          "ms": 0,
+          "x": 1,
+          "y": 0,
+          "z": -39,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-b/splash-80.png",
+          "ms": 80,
+          "x": 1,
+          "y": -0.8248888888888889,
+          "z": -39,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-b/splash-180.png",
+          "ms": 180,
+          "x": 1,
+          "y": -1.5,
+          "z": -39,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-b/splash-350.png",
+          "ms": 350,
+          "x": 1,
+          "y": -1.5,
+          "z": -39,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-b/splash-600.png",
+          "ms": 600,
+          "x": 1,
+          "y": -1.5,
+          "z": -39,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-b/splash-1100.png",
+          "ms": 1100,
+          "x": 1,
+          "y": -1.5,
+          "z": -39,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
