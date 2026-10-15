@@ -1,0 +1,413 @@
+{
+  "viewport": [
+    1440,
+    900
+  ],
+  "fixtures": [
+    {
+      "kind": "hop",
+      "x": 4,
+      "z": 1,
+      "start": 0,
+      "cause": null,
+      "toX": 4,
+      "toZ": 2,
+      "clip": {
+        "x": 480,
+        "y": 359,
+        "width": 480,
+        "height": 400
+      },
+      "frames": [
+        {
+          "path": "output/playwright/batch-a/hop-0.png",
+          "ms": 0,
+          "x": 4,
+          "y": 0,
+          "z": -1,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/hop-20.png",
+          "ms": 20,
+          "x": 4,
+          "y": 0,
+          "z": -1,
+          "scale": [
+            1.1,
+            0.8,
+            1.1
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/hop-60.png",
+          "ms": 60,
+          "x": 4,
+          "y": 0.261794718758438,
+          "z": -1.1754074074074075,
+          "scale": [
+            0.9607307921862344,
+            1.0785384156275313,
+            0.9607307921862344
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/hop-78.png",
+          "ms": 78,
+          "x": 4,
+          "y": 0.499753309420462,
+          "z": -1.5099994074074075,
+          "scale": [
+            0.9250370035869306,
+            1.1499259928261385,
+            0.9250370035869306
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/hop-127.png",
+          "ms": 127,
+          "x": 4,
+          "y": 6.123233995736766e-17,
+          "z": -2,
+          "scale": [
+            1.0998026728428272,
+            0.8003946543143458,
+            1.0998026728428272
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/hop-160.png",
+          "ms": 160,
+          "x": 4,
+          "y": 0,
+          "z": -2,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": null
+        }
+      ]
+    },
+    {
+      "kind": "log-landing",
+      "x": 1,
+      "z": 38,
+      "start": 0,
+      "cause": null,
+      "toX": 1.5164361046291859,
+      "toZ": 39,
+      "clip": {
+        "x": 250,
+        "y": 301,
+        "width": 480,
+        "height": 400
+      },
+      "frames": [
+        {
+          "path": "output/playwright/batch-a/log-landing-0.png",
+          "ms": 0,
+          "x": 1,
+          "y": 0,
+          "z": -38,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/log-landing-20.png",
+          "ms": 20,
+          "x": 1,
+          "y": 0,
+          "z": -38,
+          "scale": [
+            1.1,
+            0.8,
+            1.1
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/log-landing-60.png",
+          "ms": 60,
+          "x": 1.0158895813858118,
+          "y": 0.3173403977707837,
+          "z": -38.175407407407405,
+          "scale": [
+            0.9607307921862344,
+            1.0785384156275313,
+            0.9607307921862344
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/log-landing-78.png",
+          "ms": 78,
+          "x": 1.1343247186572982,
+          "y": 0.661253121766141,
+          "z": -38.509999407407406,
+          "scale": [
+            0.9250370035869306,
+            1.1499259928261385,
+            0.9250370035869306
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/log-landing-127.png",
+          "ms": 127,
+          "x": 1.5164361046291859,
+          "y": 0.3166666666666667,
+          "z": -39,
+          "scale": [
+            1.0998026728428272,
+            0.8003946543143458,
+            1.0998026728428272
+          ],
+          "onLog": false,
+          "cause": null
+        },
+        {
+          "path": "output/playwright/batch-a/log-landing-210.png",
+          "ms": 210,
+          "x": 1.4495023665213935,
+          "y": 0.31666666666666665,
+          "z": -39,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": true,
+          "cause": null
+        }
+      ]
+    },
+    {
+      "kind": "flattened",
+      "x": 4.985836647709217,
+      "z": 5,
+      "start": 0.21000000000000005,
+      "cause": "FLATTENED!",
+      "toX": 4.985836647709217,
+      "toZ": 5,
+      "clip": {
+        "x": 603,
+        "y": 261,
+        "width": 480,
+        "height": 400
+      },
+      "frames": [
+        {
+          "path": "output/playwright/batch-a/flattened-0.png",
+          "ms": 0,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-a/flattened-80.png",
+          "ms": 80,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.07612416,
+            0.7825024,
+            1.07612416
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-a/flattened-180.png",
+          "ms": 180,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.25474176,
+            0.27216640000000003,
+            1.25474176
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-a/flattened-350.png",
+          "ms": 350,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.315,
+            0.09999999999999998,
+            1.315
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-a/flattened-600.png",
+          "ms": 600,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.315,
+            0.09999999999999998,
+            1.315
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        },
+        {
+          "path": "output/playwright/batch-a/flattened-900.png",
+          "ms": 900,
+          "x": 4.985836647709217,
+          "y": 0,
+          "z": -5,
+          "scale": [
+            1.315,
+            0.09999999999999998,
+            1.315
+          ],
+          "onLog": false,
+          "cause": "FLATTENED!"
+        }
+      ]
+    },
+    {
+      "kind": "splash",
+      "x": 1,
+      "z": 39,
+      "start": 0,
+      "cause": "SPLASH!",
+      "toX": 1,
+      "toZ": 39,
+      "clip": {
+        "x": 311,
+        "y": 193,
+        "width": 480,
+        "height": 400
+      },
+      "frames": [
+        {
+          "path": "output/playwright/batch-a/splash-0.png",
+          "ms": 0,
+          "x": 1,
+          "y": 0,
+          "z": -39,
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-a/splash-80.png",
+          "ms": 80,
+          "x": 1,
+          "y": -0.027264000000000004,
+          "z": -39,
+          "scale": [
+            0.9872768,
+            0.9872768,
+            0.9872768
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-a/splash-180.png",
+          "ms": 180,
+          "x": 1,
+          "y": -0.128304,
+          "z": -39,
+          "scale": [
+            0.9401248,
+            0.9401248,
+            0.9401248
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-a/splash-350.png",
+          "ms": 350,
+          "x": 1,
+          "y": -0.4226249999999999,
+          "z": -39,
+          "scale": [
+            0.802775,
+            0.802775,
+            0.802775
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-a/splash-600.png",
+          "ms": 600,
+          "x": 1,
+          "y": -0.972,
+          "z": -39,
+          "scale": [
+            0.5464,
+            0.5464,
+            0.5464
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        },
+        {
+          "path": "output/playwright/batch-a/splash-900.png",
+          "ms": 900,
+          "x": 1,
+          "y": -1.458,
+          "z": -39,
+          "scale": [
+            0.3196000000000001,
+            0.3196000000000001,
+            0.3196000000000001
+          ],
+          "onLog": false,
+          "cause": "SPLASH!"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

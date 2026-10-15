@@ -33,6 +33,7 @@ test('private room: isolated browsers play three rounds, rematch and hand off ho
     await expect(page.locator('#friends')).toHaveCSS('opacity', '1'); await page.locator('[data-room="create"]').click();
     await expect(page.locator('#lobby')).toBeVisible(); const code = await page.locator('#lobby-code').innerText();
     await expect(page.locator('[data-room="start"]')).toBeDisabled();
+    await expect(page.locator('[data-room="start"]')).toHaveCSS('background-color', 'rgb(184, 187, 192)');
     await open(guest, 'Coral', 4, `?room=${code}&debug=1`); await guest.locator('[data-room="join"]').click();
     await expect(guest.locator('#lobby')).toBeVisible(); await expect(page.locator('[data-room="start"]')).toBeEnabled();
     await expect(guest.locator('[data-room="start"]')).toBeHidden();
@@ -57,7 +58,18 @@ test('private room: isolated browsers play three rounds, rematch and hand off ho
         await expect(page.locator('#match-player-0 .heart-icons svg')).toHaveCount(2);
         await expect(page.locator('#match-player-0 .win-pips i')).toHaveCount(2);
         await expect(page.locator('#match-player-0 .animal-icon')).toBeVisible();
-        await page.keyboard.press('ArrowRight'); await page.waitForTimeout(250); await page.keyboard.press('ArrowRight');
+        const remoteArc = guest.evaluate(id => new Promise<number[]>(resolve => {
+          const versus = window.__HOP_DEBUG__!.versus, game = versus.game, heights: number[] = [];
+          const actors = Reflect.get(versus, 'actors') as Map<string, { root: { position: { y: number } } }>;
+          const start = performance.now();
+          game.onFrame = now => {
+            heights.push(actors.get(id)!.root.position.y);
+            if (now - start >= 800) { game.onFrame = null; resolve(heights); }
+          };
+        }), hostState.id);
+        await page.keyboard.press('ArrowRight');
+        const heights = await remoteArc; expect(Math.max(...heights)).toBeGreaterThan(.2); expect(heights.at(-1)).toBe(0);
+        await page.keyboard.press('ArrowRight');
         await expect.poll(() => hostState.current?.events.some(event => event.kind === 'shove' && event.by === hostState.id)).toBe(true);
         expect(hostState.current?.players.find(p => p.id === hostState.id)?.movement.x).toBe(4);
       }
@@ -153,10 +165,12 @@ test('a frozen browser still loses a life to authoritative traffic', async ({ br
     await open(guest, 'Sleeper', 5, `?room=${code}`); await guest.locator('[data-room="join"]').click();
     await expect(page.locator('[data-room="start"]')).toBeEnabled(); await page.locator('[data-room="start"]').click();
     await expect.poll(() => hostState.current?.phase).toBe('playing');
-    for (let i = 0; i < 3; i++) { await guest.keyboard.press('ArrowUp'); await page.waitForTimeout(200); }
-    await expect.poll(() => hostState.current?.players.find(p => p.id === guestState.id)?.movement.z).toBe(4);
+    for (let i = 0; i < 2; i++) { await guest.keyboard.press('ArrowUp'); await page.waitForTimeout(200); }
+    await expect.poll(() => hostState.current?.players.find(p => p.id === guestState.id)?.movement.z).toBe(3);
     const life = hostState.current!.players.find(p => p.id === guestState.id)!.lifeId;
-    await guest.keyboard.press('ArrowUp'); await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
+    // Freeze on grass with the road hop buffered: no race with a 70ms hazard-row switch.
+    await guest.evaluate(() => { for (let i = 0; i < 2; i++) window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' })); });
+    await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
     await expect.poll(() => hostState.current?.events.some(e => e.id === guestState.id && e.lifeId === life && e.kind === 'death'), { timeout: 20000 }).toBe(true);
     const dead = hostState.current!.players.find(p => p.id === guestState.id)!;
     expect(dead.hearts).toBe(1); expect(dead.movement.dead).toBe('FLATTENED!'); expect(reports).toBe(0);

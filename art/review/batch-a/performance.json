@@ -1,0 +1,86 @@
+{
+  "localProductionWorker": true,
+  "physicalPhone": false,
+  "runs": [
+    {
+      "name": "desktop",
+      "viewport": [
+        1440,
+        900
+      ],
+      "frames": 600,
+      "seconds": 10.0163,
+      "fps": 59.80252188932041,
+      "p95Ms": 16.799999999999272,
+      "maxMs": 33.399999999999636,
+      "maxArcHeight": 0.46875657775837637,
+      "hops": 43,
+      "phase": "playing",
+      "graphics": {
+        "frames": 872,
+        "calls": 59,
+        "triangles": 112458,
+        "geometries": 157,
+        "textures": 6,
+        "delta": 16.700000000000728,
+        "tier": "high",
+        "choice": "auto",
+        "resolution": 1,
+        "pixelRatio": 1,
+        "p95": 16.799999999999272,
+        "worst": 16.80000000000109,
+        "programs": 75,
+        "rows": 64,
+        "generatedRows": 145,
+        "particles": 24,
+        "station": "gameplay",
+        "mobile": false,
+        "animal": "fox",
+        "animalOffset": 0,
+        "crowdCheering": false,
+        "move": "idle"
+      },
+      "errors": []
+    },
+    {
+      "name": "phone-emulation",
+      "viewport": [
+        390,
+        844
+      ],
+      "frames": 602,
+      "seconds": 10.0163,
+      "fps": 60.00219641983567,
+      "p95Ms": 16.700000000000728,
+      "maxMs": 16.80000000000109,
+      "maxArcHeight": 0.46875657775840485,
+      "hops": 43,
+      "phase": "playing",
+      "graphics": {
+        "frames": 881,
+        "calls": 54,
+        "triangles": 103142,
+        "geometries": 157,
+        "textures": 5,
+        "delta": 16.600000000000364,
+        "tier": "medium",
+        "choice": "auto",
+        "resolution": 1,
+        "pixelRatio": 1.5,
+        "p95": 16.799999999999272,
+        "worst": 16.80000000000109,
+        "programs": 76,
+        "rows": 64,
+        "generatedRows": 151,
+        "particles": 14,
+        "station": "gameplay",
+        "mobile": true,
+        "animal": "fox",
+        "animalOffset": 0,
+        "crowdCheering": false,
+        "move": "idle"
+      },
+      "errors": []
+    }
+  ]
+}
