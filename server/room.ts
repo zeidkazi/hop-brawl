@@ -101,9 +101,10 @@ export class Room extends DurableObject<Env> {
   private async disconnected(ws: WebSocket): Promise<void> {
     const a = ws.deserializeAttachment() as Attachment | null;
     if (!a || !this.game || !this.game.players.some(p => p.id === a.id && p.connected)) return;
+    const wasCountdown = this.game.phase === 'countdown';
     this.game.leave(a.id, Date.now());
     try { ws.close(1000, 'Left room'); } catch { /* Already closed. */ }
-    if (this.game.quick && !this.pairFinished && this.game.phase === 'lobby') this.finishPair(false);
+    if (this.game.quick && !this.pairFinished && wasCountdown && this.game.phase === 'lobby') this.finishPair(false);
     this.broadcast(); this.manageTimer();
     if (!this.game.players.some(p => p.connected)) {
       this.emptyAt = Date.now(); await this.ctx.storage.setAlarm(this.emptyAt + CONFIG.ROOM_EXPIRE_MIN * 60000);

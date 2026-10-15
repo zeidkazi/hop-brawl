@@ -77,6 +77,13 @@ test('late in-time arrival finishes countdown; a countdown disconnect requeues t
       const mc = await wait(() => c.messages.find(m => m.type === 'matched')), md = await wait(() => d.messages.find(m => m.type === 'matched'));
       const rc = join(mc), rd = join(md); await wait(() => rc.messages.find(m => m.snapshot?.phase === 'countdown'));
       rd.ws.close(); d.ws.close(); await wait(() => c.messages.find(m => m.type === 'retry'));
+      c.ws.send('cancel'); rc.ws.close(); c.ws.close();
+      const e = connect('/ws/quick?name=LeaveEarly&animal=2'), f = connect('/ws/quick?name=Survivor&animal=4');
+      const me = await wait(() => e.messages.find(m => m.type === 'matched')), mf = await wait(() => f.messages.find(m => m.type === 'matched'));
+      const re = join(me); await wait(() => re.messages.find(m => m.type === 'welcome'));
+      re.ws.close(); e.ws.close(); await new Promise(r => setTimeout(r, 100));
+      const rf = join(mf); await wait(() => rf.messages.find(m => m.type === 'welcome'));
+      await wait(() => f.messages.find(m => m.type === 'retry'));
       return { lateStarted: true, countdownRetried: true };
     } finally { all.forEach(ws => ws.close()); }
   });
