@@ -45,7 +45,7 @@ export class RoomGame {
     if (this.players.filter(p => p.connected).length >= (this.quick ? CONFIG.MAX_PLAYERS_QUICK : CONFIG.MAX_PLAYERS_PRIVATE)) return 'ROOM_FULL';
     if (!name.trim() || name.length > VIEW.NAME_MAX_LENGTH || !Number.isInteger(animal) || animal < 0 || animal >= ANIMALS.length) return 'BAD_PLAYER';
     const used = this.players.filter(p => p.connected);
-    if (used.some(p => p.animal === animal)) animal = ANIMALS.findIndex((_, i) => !used.some(p => p.animal === i));
+    if (!this.quick && used.some(p => p.animal === animal)) animal = ANIMALS.findIndex((_, i) => !used.some(p => p.animal === i));
     const baseName = name.trim(); let uniqueName = baseName, suffix = 2;
     while (used.some(p => p.name.toLocaleLowerCase() === uniqueName.toLocaleLowerCase())) uniqueName = `${baseName} ${suffix++}`;
     const slot = [0, 1, 2, 3].find(i => !used.some(p => p.slot === i))!;
@@ -74,7 +74,7 @@ export class RoomGame {
   }
   choose(id: string, animal: number): boolean {
     const player = this.players.find(p => p.id === id && p.connected);
-    if (this.phase !== 'lobby' || !player || !Number.isInteger(animal) || animal < 0 || animal >= ANIMALS.length
+    if (this.quick || this.phase !== 'lobby' || !player || !Number.isInteger(animal) || animal < 0 || animal >= ANIMALS.length
       || this.players.some(p => p.connected && p.id !== id && p.animal === animal)) return false;
     player.animal = animal; return true;
   }

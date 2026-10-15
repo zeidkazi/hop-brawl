@@ -38,6 +38,11 @@ function quick() {
   g.join('a', 'Alice', 0, 1.6, 0); g.join('b', 'Bob', 2, 1.6, 1); return g;
 }
 describe('hostless Quick Match and rematch', () => {
+  it('preserves matching animal choices for the second player golden palette and locks assigned picks', () => {
+    const g = new RoomGame('ABCD'); g.quick = true;
+    g.join('a', 'Alice', 2, 1, 0); expect(g.choose('a', 4)).toBe(false); g.join('b', 'Bob', 2, 1, 1);
+    expect(g.players.map(p => [p.animal, p.slot])).toEqual([[2, 0], [2, 1]]);
+  });
   it('auto-starts only when the assigned two players join; private controls stay disabled', () => {
     const g = new RoomGame('ABCD'); g.quick = true; g.join('a', 'Alice', 0, 1, 0);
     expect(g.phase).toBe('lobby'); expect(g.start('a', 1)).toBe(false);

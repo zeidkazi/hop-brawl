@@ -112,6 +112,7 @@ export class Versus {
       const original = node.material as MeshStandardMaterial;
       const material = this.game.quality.tier === 'high' ? new MeshStandardMaterial({ vertexColors: true, roughness: original.roughness ?? 1 }) : new MeshLambertMaterial({ vertexColors: true });
       if (node.userData.player_color) material.color.set(COLORS.players[p.slot]!);
+      else if (this.client.state?.quick && p.slot === 1 && this.client.state.players.some(other => other.slot === 0 && other.animal === p.animal)) material.color.set(COLORS.yellow);
       material.transparent = true; node.material = material; materials.push(material); node.castShadow = this.game.quality.tier !== 'low';
     });
     const boxer = new Boxer(body); boxer.reduced = this.preferences.reducedMotion; boxer.joined();

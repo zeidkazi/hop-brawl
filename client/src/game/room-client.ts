@@ -46,6 +46,7 @@ export class RoomClient {
     const socket = this.socket = new WebSocket(url); let failed = false;
     socket.onopen = () => { this.lastMessage = Date.now(); this.clock(); };
     socket.onmessage = event => {
+      if (this.socket !== socket) return;
       this.lastMessage = Date.now(); if (event.data === 'pong') return;
       const data = JSON.parse(String(event.data)) as { type: string; id: string; snapshot: RoomSnapshot; now: number; sent: number; error: string };
       if (data.type === 'error') { failed = true; this.onError?.(data.error); }
