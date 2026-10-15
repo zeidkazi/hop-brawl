@@ -349,7 +349,7 @@ export class WorldView {
         for (let j = 0; j < row.obstacles.length; j++) {
           const obstacle = row.obstacles[j]!;
           const tree = obstacle.kind === 'tree';
-          this.put(tree ? this.trees : this.obstacles, obstacle.column, 0, row.z, (tree ? 14 : 8) / 12, (tree ? 20 : 6) / 12, tree ? 1 : 8 / 12, tree && this.modelsReady ? '#FFFFFF' : tree ? COLORS.tree : COLORS.rock);
+          this.put(tree ? this.trees : this.obstacles, obstacle.column, 0, row.z, (tree ? 14 : 8) / 12, (tree ? 20 : 6) / 12, tree ? VIEW.TREE_ROW_DEPTH : 8 / 12, tree && this.modelsReady ? '#FFFFFF' : tree ? COLORS.tree : COLORS.rock);
         }
         if (this.showCrates && row.crate) this.put(this.crates, row.crate.column, 0, row.z, 10 / 12, 10 / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.crate);
       } else if (row.kind === 'road') {
@@ -406,7 +406,7 @@ export class WorldView {
         this.grounds[3]!.instanceColor!.needsUpdate = this.outsideGrounds[3]!.instanceColor!.needsUpdate = true;
       }
       // Decorative scenery uses stable row hashes and cannot be stood on.
-      if (row.kind === 'grass') this.put(this.trees, (hash32(this.seed, row.z) & 1) ? -3 : 11, 0, row.z, 14 / 12, 20 / 12, 1, this.modelsReady ? '#FFFFFF' : COLORS.tree);
+      if (row.kind === 'grass') this.put(this.trees, (hash32(this.seed, row.z) & 1) ? -3 : 11, 0, row.z, 14 / 12, 20 / 12, VIEW.TREE_ROW_DEPTH, this.modelsReady ? '#FFFFFF' : COLORS.tree);
     }
     const size = ANIMAL_SIZES[this.animal]!;
     if (this.deathCause === 'FLATTENED!') {
