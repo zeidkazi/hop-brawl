@@ -11,6 +11,7 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 - Toasts have a hard 2.5-second lifetime and are cleared, with timers cancelled, at round transitions and room exit. Historical snapshot events are not replayed into a new round.
 - Non-host START is hidden with "Waiting for host..."; a lone host sees "Need 1 more player". Lobby names are capitalized, and its traffic uses a continuous clock independent of animal/join/leave updates.
 - Tree canopies, including toon hulls, now fit inside grass rows with clearance from hazard kerbs. Arena footprint filtering also reserves this gap; the 1,000-seed/300-row scan checks outlined tree depth and both touching edges.
+- HUD now uses animal portraits, SVG heart icons, round-win pips and player-color borders. Results use large slanted Lilita One winner banners, winner color/animal/pips and match actions.
 - Next: controls/lobby/toasts, scenery, results/HUD and replacement cover; then stop for owner playtest.
 
 ## Ship today: sections 31–32 (current, overrides historical gates below)

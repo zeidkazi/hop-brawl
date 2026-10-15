@@ -131,3 +131,20 @@ a { color: inherit; }
   .mode-buttons button { min-height: 50px; font-size: 23px; }
   .mode-buttons .primary { font-size: 28px; }
 }
+
+/* Match identity is legible without relying on words or color alone. */
+.match-scores > div { display:flex; align-items:center; gap:8px; border:3px solid var(--player); box-shadow:0 3px 0 var(--ink); }
+.animal-icon { width:48px; height:48px; display:block; flex:none; }
+.card-details { min-width:0; }.card-details strong { overflow-wrap:anywhere; }
+.card-symbols { display:flex; align-items:center; gap:12px; margin-top:5px; }
+.match-scores .heart-icons,.match-scores .win-pips { display:flex; }
+.heart-icons { display:inline-flex; gap:3px; }.heart-icons svg { width:21px; height:20px; overflow:visible; }
+.heart-icons path { stroke:var(--ink); stroke-width:1.8; }.heart-icons .full { fill:#FF6B6B; }.heart-icons .empty { fill:#1B1B2F26; }
+.win-pips { display:inline-flex; gap:6px; align-items:center; }.win-pips i { display:block; width:12px; height:12px; border:2px solid var(--ink); border-radius:50%; background:#1B1B2F26; }.win-pips i.won { background:var(--yellow); }
+.room-result .panel { width:min(680px,100%); overflow:visible; padding-top:20px; }
+.result-banner { transform:rotate(-4deg); background:var(--winner); border:4px solid var(--ink); box-shadow:5px 7px 0 var(--ink); padding:16px 22px; margin:-8px -12px 24px; color:var(--cream); }
+.result-banner h2 { transform:none; font:clamp(30px,5vw,58px)/1.05 'Lilita One',sans-serif; -webkit-text-stroke:5px var(--ink); paint-order:stroke fill; margin:8px 0 12px; }
+.result-banner .animal-icon { width:86px; height:86px; margin:auto; }
+.result-banner .win-pips i { width:21px; height:21px; border-width:3px; }
+.winner-shout { font:clamp(38px,7vw,76px)/1 'Lilita One',sans-serif; color:var(--yellow); -webkit-text-stroke:5px var(--ink); paint-order:stroke fill; }
+@media (orientation:portrait) { .card-animal .animal-icon { width:34px; height:34px; }.card-symbols { gap:8px; }.room-result { align-items:center; }.room-result .panel { padding:18px; }.result-banner { margin:0 0 20px; padding:12px; }.result-banner .animal-icon { width:64px; height:64px; } }

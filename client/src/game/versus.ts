@@ -8,6 +8,7 @@ import type { Motion } from '../ui/motion';
 import { Boxer } from './boxer';
 import { HopInput } from './input';
 import { RoomClient } from './room-client';
+import { animalIcon, heartIcons, winPips } from '../ui/room-icons';
 import { lobbyControls, roomWorldTime } from './room-presentation';
 import { LifeEvents } from './life-events';
 import { RailSound } from './rail-sound';
@@ -178,16 +179,27 @@ export class Versus {
     for (let slot = 0; slot < CONFIG.MAX_PLAYERS_PRIVATE; slot++) {
       const p = players.find(p => p.slot === slot), card = this.element(`match-player-${slot}`);
       card.hidden = !p;
-      if (p) { card.querySelector('strong')!.textContent = `${p.name}${p.id === this.client.id ? ' (YOU)' : ''}`;
-        card.querySelector('span')!.textContent = p.waiting ? 'Watching' : `${'♥'.repeat(p.hearts)}${'♡'.repeat(CONFIG.HEARTS_VERSUS - p.hearts)}  ·  ${p.wins} wins`; }
+      if (p) {
+        card.querySelector('strong')!.textContent = `${p.name}${p.id === this.client.id ? ' (YOU)' : ''}`;
+        const portrait = card.querySelector<HTMLElement>('.card-animal')!;
+        if (portrait.dataset.animal !== String(p.animal)) { portrait.innerHTML = animalIcon(p.animal); portrait.dataset.animal = String(p.animal); }
+        const symbols = card.querySelector<HTMLElement>('.card-symbols')!, key = `${p.hearts}/${p.wins}/${p.waiting}`;
+        if (symbols.dataset.value !== key) { symbols.innerHTML = p.waiting ? 'Watching' : heartIcons(p.hearts) + winPips(p.wins); symbols.dataset.value = key; }
+      }
     }
     const winner = state.players.find(p => p.id === state.winner);
     const score = state.players.filter(p => !p.waiting).map(p => `${p.name}: ${p.wins}`).join(' · ');
-    this.element('round-result-title').textContent = winner ? `${winner.name} wins!` : 'DRAW!';
+    this.element('round-result-title').textContent = winner ? `ROUND ${state.round} \u2014 ${winner.name.toUpperCase()} WINS!` : `ROUND ${state.round} \u2014 DRAW!`;
     this.element('round-result-score').textContent = score;
-    this.element('match-result-title').textContent = winner ? `${winner.name} WINS!` : 'MATCH OVER';
+    this.element('match-result-title').textContent = winner ? `${winner.name.toUpperCase()} WINS!` : 'MATCH OVER';
     this.element('match-result-score').textContent = score;
     this.element('match-result-reason').textContent = state.reason.includes('left') ? state.reason : 'Good brawl!';
+    for (const kind of ['round', 'match']) {
+      const screen = this.element(kind === 'round' ? 'roundEnd' : 'matchEnd');
+      screen.style.setProperty('--winner', winner ? COLORS.players[winner.slot]! : COLORS.yellow);
+      this.element(`${kind}-winner-animal`).innerHTML = winner ? animalIcon(winner.animal) : '';
+      this.element(`${kind}-winner-pips`).innerHTML = winner ? winPips(winner.wins) : '';
+    }
   }
   private frame(dt: number): void {
     const state = this.client.state; if (!state) return;
