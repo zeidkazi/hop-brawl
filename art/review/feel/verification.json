@@ -1,0 +1,95 @@
+{
+  "localOnly": true,
+  "physicalPhone": false,
+  "fixture": "12 seconds of active lateral hops on safe grass; full seeded world, audio and rendering; Solo idle death disabled in final runs to preserve the original fixture. Chrome trace and CPU sampling enabled.",
+  "runs": [
+    {
+      "label": "before",
+      "cpuThrottle": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "frames": 361,
+      "p95": 50.099999999998545,
+      "worst": 100,
+      "over50": 21,
+      "fps": 29.876758371716665,
+      "calls": 61,
+      "triangles": 108336,
+      "hops": 46,
+      "tier": "medium",
+      "pixelRatio": 2,
+      "errors": []
+    },
+    {
+      "label": "after",
+      "cpuThrottle": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "frames": 470,
+      "p95": 33.400000000001455,
+      "worst": 83.29999999999927,
+      "over50": 11,
+      "fps": 38.976472836971965,
+      "calls": 60,
+      "triangles": 111656,
+      "hops": 47,
+      "tier": "medium",
+      "pixelRatio": 2,
+      "errors": []
+    },
+    {
+      "label": "final",
+      "cpuThrottle": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "frames": 715,
+      "p95": 16.799999999999272,
+      "worst": 33.400000000001455,
+      "over50": 0,
+      "fps": 59.419783292555046,
+      "calls": 84,
+      "triangles": 119874,
+      "hops": 48,
+      "tier": "medium",
+      "pixelRatio": 2,
+      "errors": []
+    },
+    {
+      "label": "final-repeat",
+      "cpuThrottle": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "frames": 710,
+      "p95": 16.799999999999272,
+      "worst": 33.399999999999636,
+      "over50": 0,
+      "fps": 59.004169406046884,
+      "calls": 84,
+      "triangles": 119874,
+      "hops": 48,
+      "tier": "medium",
+      "pixelRatio": 2,
+      "errors": []
+    }
+  ],
+  "tests": {
+    "unit": 192,
+    "privateMatch": "Three rounds, rematch, host handoff; persistent normal plus isolated incognito mobile viewport",
+    "rendering": "DPR 1, 1.25, 2, 3 crops; no browser errors",
+    "lifecycle": "Desktop/mobile background suspension, resume and room resync",
+    "blender": "13 closed voxel shapes, 80972 bytes, Cycles AO64, no textures, CC0"
+  },
+  "limits": [
+    "CPU throttling is desktop emulation, not a physical mid-range phone measurement.",
+    "Heap snapshots and sampling show bounded retained heap, but Three.js/DOM allocations remain.",
+    "Earlier Step 4 intermediate trace missed the target; both final traces meet the requested p95 and >50ms limits."
+  ]
+}

@@ -2,7 +2,8 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  outputDir: './output/playwright',
+  // Keep trace/crop evidence in sibling folders when the test runner cleans its output.
+  outputDir: './output/playwright/tests',
   fullyParallel: true,
   // WebGL contexts share one GPU; run viewport projects serially to avoid
   // benchmarking contention from unrelated test workers.
