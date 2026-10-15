@@ -10,7 +10,7 @@ import { Boxer } from './boxer';
 import { HopInput } from './input';
 import { RoomClient } from './room-client';
 import { animalIcon, heartIcons, winPips } from '../ui/room-icons';
-import { lobbyControls, roomWorldTime } from './room-presentation';
+import { lobbyControls, remoteMovement, roomWorldTime } from './room-presentation';
 import { LifeEvents } from './life-events';
 import { RailSound } from './rail-sound';
 import { createHopPose, sampleHop } from '../../../shared/hop';
@@ -254,8 +254,7 @@ export class Versus {
         const a = pair.a.players.find(v => v.id === p.id), b = pair.b.players.find(v => v.id === p.id);
         if (a && b) {
           drawTime = Math.max(0, (this.client.now - CONFIG.INTERP_DELAY_MS - state.startAt) / 1000);
-          movement = b.lifeId === a.lifeId && b.movement.hopStart <= drawTime && !b.movement.dead ? b.movement : a.movement;
-          if (drawTime >= b.movement.time) movement = b.movement;
+          movement = remoteMovement(a, b, drawTime);
         }
       }
       sampleHop(movement, drawTime, this.game.world.rowAt, this.hopPose);
