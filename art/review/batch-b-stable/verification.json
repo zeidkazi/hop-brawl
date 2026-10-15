@@ -1,0 +1,38 @@
+{
+  "unitTests": 170,
+  "unitFiles": 36,
+  "typechecks": "client and server passed",
+  "productionBuild": "passed",
+  "workerDryRun": "passed, 35 static files",
+  "browserScenarios": 48,
+  "initialSuite": {
+    "passed": 45,
+    "failed": 3
+  },
+  "targetedRerun": {
+    "passed": 4,
+    "failed": 0,
+    "fixes": [
+      "obsolete .05-tile camera lag assertions replaced by actual rendered-bottom check",
+      "freeze-before-input removes fixture race"
+    ]
+  },
+  "packagedWorker": {
+    "url": "http://127.0.0.1:8787",
+    "testsPassed": 2,
+    "normalPersistentProfile": true,
+    "incognitoContext": true,
+    "verified": [
+      "create",
+      "join",
+      "three rounds",
+      "rematch",
+      "host handoff",
+      "Solo",
+      "retry"
+    ]
+  },
+  "physicalPhone": false,
+  "deployment": "blocked: Wrangler unauthenticated; OAuth callback timed out",
+  "batchCStarted": false
+}

@@ -160,7 +160,7 @@ The banks contain 44 named sound sprites and five music edits. All sources below
 
 | Bank / individual sound | Exact source file or recipe | License |
 |---|---|---|
-| `client/public/sfx/brawl.mp3`: `click`, `back`, `toggle`, `open`, `close` | Kenney Interface archive: `Audio/click_001.ogg`, `back_001.ogg`, `switch_001.ogg`, `open_001.ogg`, `close_001.ogg`, respectively. Leading silence trimmed; mix gain/limiter and 3 ms attack ramp. | CC0 1.0 |
+| `client/public/sfx/brawl.mp3`: `click`, `back`, `toggle`, `open`, `close` | Kenney Interface archive: `Audio/click_001.ogg`, `back_001.ogg`, `switch_001.ogg`, `open_001.ogg`, `close_001.ogg`, respectively. Leading/trailing silence trimmed; loudness normalization and peak limiting, with 3 ms endpoint ramps. | CC0 1.0 |
 | Same MP3: `punch`, `hit`, `tock`, `log` | Kenney Impact archive: `Audio/impactPunch_heavy_000.ogg`, `impactPunch_medium_000.ogg`, `impactSoft_medium_000.ogg`, `impactWood_light_000.ogg`, respectively. Same processing. | CC0 1.0 |
 | Same MP3: `hop0`, `hop1`, `hop2`, `bonk`, `splash`, `squash`, `whoosh` | Original synthesis: three boing/whoosh variants, thud+squeak, water burst, squash+crunch, swing/swept-away. | CC0 1.0 |
 | Same MP3: `bell`, `horn`, `train`, `rumble`, `car`, `truck`, `honk`, `water`, `bubbles` | Original synthesis: double crossing ding, train horn, rush/clatter, approaching rumble, car engine, low truck engine, near-miss horn, river loop, water bubbles. | CC0 1.0 |
