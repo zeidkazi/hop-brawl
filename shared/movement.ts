@@ -1,6 +1,7 @@
 import { CONFIG, SOLO, scrollSpeed } from './config';
 import { carriedOffEdge, hopHazardPosition, logSlotAtLanding, logSlotX, trainHits, vehicleHits } from './hazards';
 import type { Row } from './types';
+import { hopTravel, hopX } from './hop';
 
 export type HopDirection = 'up' | 'down' | 'left' | 'right';
 export type DeathCause = 'FLATTENED!' | 'DERAILED!' | 'SPLASH!' | 'SWEPT AWAY!' | 'LEFT BEHIND!';
@@ -16,7 +17,7 @@ export class Movement {
   externalCamera = false;
   invulnerableUntil = 0;
   logIndex = -1; slotIndex = -1;
-  private aimX = 0;
+  aimX = 0;
   private readonly landing = { log: -1, slot: -1, x: 0 };
   hopping = false; onLog = false; dead: DeathCause | null = null;
   direction: HopDirection = 'up';
@@ -86,8 +87,8 @@ export class Movement {
       const dt = next - this.time; this.time = next;
       if (this.hopping) {
         const elapsed = (this.time - this.hopStart) * 1000;
-        const p = Math.min(1, elapsed / CONFIG.HOP_MS);
-        this.x = this.fromX + (this.aimX - this.fromX) * p + (this.toX - this.aimX) * p * p;
+        const p = hopTravel(elapsed);
+        this.x = hopX(this.fromX, this.aimX, this.toX, p);
         this.z = this.fromZ + (this.toZ - this.fromZ) * p;
         if (this.time >= this.hopStart + CONFIG.HOP_MS / 1000 - Number.EPSILON * Math.max(1, this.time) * 8) {
           this.x = this.toX; this.z = this.toZ; this.hopping = false;

@@ -12,7 +12,8 @@ it('lands exactly without a zero-step loop at late absolute round times', () => 
 it('curves to the nearest slot at landing time and carries the exact slot thereafter', () => {
   const player = new Movement(rowAt); player.input('up');
   const expected = logSlotAtLanding(river, 4, .14, { log: -1, slot: -1, x: 0 });
-  player.advance(.07); expect(player.x).toBeCloseTo(4 + (expected.x - 4) * .25);
+  player.advance(.02); expect(player.x).toBe(4); // anticipation holds the source tile
+  player.advance(.0775); expect(player.x).toBeCloseTo(4 + (expected.x - 4) * .25);
   player.advance(.14); expect(player.x).toBeCloseTo(expected.x); expect(player.slotIndex).toBe(expected.slot);
   player.advance(1); expect(player.x).toBe(logSlotX(river, player.logIndex, player.slotIndex, 1));
   const slot = player.slotIndex; player.input('right'); player.advance(1.14);
