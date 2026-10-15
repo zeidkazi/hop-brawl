@@ -4,7 +4,7 @@ import {
   Scene, SRGBColorSpace, WebGLRenderer, WebGLRenderTarget, LinearToneMapping,
   Material,
 } from 'three';
-import { COLORS, CONFIG, QUALITY, QUALITY_DEGRADE, SOLO, STREET, VIEW } from '../../../shared/config';
+import { COLORS, CONFIG, FEEL, QUALITY, QUALITY_DEGRADE, SOLO, STREET, VIEW } from '../../../shared/config';
 import { CameraRig, gameplayDistance } from './camera';
 import type { Station } from './camera';
 import { Particles } from './particles';
@@ -44,6 +44,8 @@ export class GameRenderer {
   private resizeTimer = 0;
   private frameId = 0; private started = false; private background = false;
   private appliedTier: Tier | null = null;
+  private hitstopUntil = 0;
+  private readonly flash = document.createElement('div');
   playing = false;
   onFrame: ((now: number) => void) | null = null;
   beforeFrame: ((now: number, dt: number) => void) | null = null;
@@ -51,6 +53,7 @@ export class GameRenderer {
   worldTime: number | null = null;
 
   constructor(readonly canvas: HTMLCanvasElement) {
+    this.flash.className = 'impact-flash'; this.flash.style.cssText = 'position:fixed;inset:0;background:white;opacity:0;pointer-events:none;z-index:4'; document.body.append(this.flash);
     const context = canvas.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'high-performance' });
     if (!context) throw new Error('WEBGL_UNSUPPORTED');
     this.renderer = new WebGLRenderer({ canvas, context, antialias: true });
@@ -142,6 +145,12 @@ export class GameRenderer {
     this.target.setSize(width, height);
   }
 
+  impact(death = false): void {
+    if (this.rig.reducedMotion) return;
+    this.hitstopUntil = performance.now() + FEEL.HITSTOP_MS;
+    if (death) { this.flash.animate([{ opacity: .65 }, { opacity: 0 }], { duration: FEEL.FLASH_MS }); this.rig.deathZoom(); }
+  }
+
   setGraphics(choice: GraphicsChoice): void { this.quality.setChoice(choice); this.applyQuality(); }
   go(station: Station): void {
     this.world.station = station; this.rig.go(station);
@@ -221,6 +230,7 @@ export class GameRenderer {
     const time = (now - this.clockStart) / 1000;
     this.beforeFrame?.(now, dt);
     if (time * 1000 > VIEW.FRAME_WINDOW_MS && this.quality.sample(now, delta, this.playing)) this.applyQuality();
+    if (!this.rig.reducedMotion && performance.now() < this.hitstopUntil) return;
     this.rig.update(dt, time);
     this.world.requestWindow(this.rig.camZ);
     this.world.setView(this.rig.camera);

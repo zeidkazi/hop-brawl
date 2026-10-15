@@ -1,5 +1,5 @@
 import { CatmullRomCurve3, MathUtils, PerspectiveCamera, Vector3 } from 'three';
-import { CONFIG, HOME, RAIL, VIEW } from '../../../shared/config';
+import { CONFIG, FEEL, HOME, RAIL, VIEW } from '../../../shared/config';
 import { gameplayAnchor, gameplayDistance } from '../../../shared/camera';
 export { gameplayDistance } from '../../../shared/camera';
 
@@ -19,6 +19,8 @@ export class CameraRig {
   targetCamZ = 0;
   leaderZ = 1;
   shake = 0;
+  leanX = 0; leanZ = 0; private appliedLeanX = 0; private appliedLeanZ = 0; private zoomAt = -Infinity;
+  deathZoom(): void { this.zoomAt = performance.now(); }
   private shakeOffset = 0;
   private followZ = 1;
   private aspect = 1;
@@ -92,6 +94,9 @@ export class CameraRig {
   }
 
   update(dt: number, time: number): void {
+    this.camera.position.x -= this.appliedLeanX; this.focus.x -= this.appliedLeanX;
+    this.camera.position.z -= this.appliedLeanZ; this.focus.z -= this.appliedLeanZ;
+    this.appliedLeanX = this.appliedLeanZ = 0;
     this.camera.position.x -= this.shakeOffset; this.shakeOffset = 0;
     // The requested exponential response is frame-rate independent. Smooth the complete
     // ground-plane anchor: neither hop height nor an unsmoothed leader can move the camera.
@@ -121,6 +126,15 @@ export class CameraRig {
     if (this.station === 'gameplay' && this.flight === 1) {
       this.destination(); this.camera.position.copy(this.goal); this.focus.copy(this.goalFocus);
     }
+    this.leanX *= 1 - alpha; this.leanZ *= 1 - alpha;
+    if (!this.reducedMotion && this.station === 'gameplay') {
+      this.appliedLeanX = this.leanX; this.appliedLeanZ = -this.leanZ;
+      this.camera.position.x += this.appliedLeanX; this.focus.x += this.appliedLeanX;
+      this.camera.position.z += this.appliedLeanZ; this.focus.z += this.appliedLeanZ;
+    }
+    const zoomT = (performance.now() - this.zoomAt) / FEEL.ZOOM_MS;
+    const zoom = !this.reducedMotion && zoomT >= 0 && zoomT < 1 ? 1 + (FEEL.ZOOM_SCALE - 1) * Math.sin(zoomT * Math.PI) : 1;
+    if (this.camera.zoom !== zoom) { this.camera.zoom = zoom; this.camera.updateProjectionMatrix(); }
     this.camera.lookAt(this.focus);
     this.camera.updateMatrixWorld();
     if (this.station === 'gameplay' && this.flight === 1) {

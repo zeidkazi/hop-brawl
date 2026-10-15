@@ -68,6 +68,7 @@ export class Solo {
     this.movement.externalCamera = true;
     this.movement.belowScreen = () => this.pacing.expired;
     this.input = new HopInput(game.canvas, this.hop);
+    this.railSound.onNearMiss = () => { this.motion.toast('CLOSE!'); this.game.home.sound.play('whoosh'); };
     this.movement.onHop = this.hopped; this.movement.onLand = this.landed; this.movement.onDeath = this.died;
     this.movement.onBonk = direction => {
       this.bonkAt = this.poseTime; this.bonkDirection = direction; game.home.sound.play('bonk');
@@ -176,6 +177,7 @@ export class Solo {
   private readonly hop = (direction: HopDirection): void => { if (this.phase === 'playing') this.movement.input(direction); };
   private readonly hopped = (): void => {
     const player = this.movement;
+    this.game.rig.leanX = X[player.direction] * FEEL.LEAN; this.game.rig.leanZ = Z[player.direction] * FEEL.LEAN;
     this.game.particles.burst(player.x, player.z, BIOME_PALETTES[this.game.world.rowAt(Math.round(player.z)).biome].grass[0]);
     this.boxer?.play('hop'); this.game.home.sound.unlock(); this.game.home.sound.play('hop', 0, undefined, this.preferences.animal);
     if (this.preferences.haptics) navigator.vibrate?.(SOLO.HAPTIC_HOP_MS);
@@ -190,6 +192,7 @@ export class Solo {
     }
   };
   private readonly died = (cause: DeathCause): void => {
+    this.game.impact(true);
     this.game.rig.targetCamZ = this.movement.camZ;
     this.game.rig.leaderZ = Math.max(SOLO.SPAWN_Z, this.movement.distance);
     this.game.rig.update(0, this.poseTime);
