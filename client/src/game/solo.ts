@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { COLORS, CONFIG, HOME, RAIL, SOLO, VIEW, WORLD } from '../../../shared/config';
+import { BIOME_PALETTES, COLORS, CONFIG, HOME, RAIL, SOLO, VIEW, WORLD } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
 import { trainX } from '../../../shared/hazards';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
@@ -9,6 +9,8 @@ import type { Preferences } from '../ui/settings';
 import type { Motion } from '../ui/motion';
 import type { Boxer } from './boxer';
 import { RailSound } from './rail-sound';
+import { createHopPose, sampleHop } from '../../../shared/hop';
+import { createDeathPose, deathPose, Facing } from './fighter-pose';
 
 export const SOLO_BEST_KEY = 'hop-brawl-solo-best';
 export function readBest(storage: Pick<Storage, 'getItem'>): number | null {
@@ -36,6 +38,8 @@ export class Solo {
   private arenaRow = NaN;
   private readonly sceneryRow = (z: number) => this.game.world.rows.find(slot => slot.z === z)?.row ?? undefined;
   private deathAt = 0; private bonkAt = -Infinity; private bonkDirection: HopDirection = 'up';
+  private readonly facing = new Facing();
+  private readonly hopPose = createHopPose(); private readonly deathPose = createDeathPose();
   private heading = 0; private lastScore = -1; private lastCountdown = '';
   private boxer: Boxer | null = null;
   private readonly point = new Vector3();
@@ -107,7 +111,7 @@ export class Solo {
     game.home.setActorOpacity(1); game.world.deathCause = null;
     this.roundTime = this.poseTime = 0; this.runBest = this.best ?? 0; this.newBest = false; this.lastScore = -1;
     this.railSound.reset(); this.arenaRow = NaN;
-    this.heading = 0; this.bonkAt = -Infinity; this.cause.hidden = true;
+    this.facing.reset(); this.heading = 0; this.bonkAt = -Infinity; this.cause.hidden = true;
     this.name.textContent = this.preferences.name; this.bestLabel.textContent = `BEST ${this.runBest}`;
     this.flag.hidden = this.runBest === 0; this.heart.style.opacity = '1'; this.heart.style.transform = '';
     game.home.animalRoot.visible = true; game.home.animalRoot.scale.setScalar(1);
@@ -159,12 +163,12 @@ export class Solo {
   };
   private readonly landed = (): void => {
     const player = this.movement;
-    this.game.particles.burst(player.x, player.z);
+    this.game.particles.burst(player.x, player.z, BIOME_PALETTES[this.game.world.rowAt(player.z).biome].grass[0]);
     if (player.onLog) { this.game.world.logDipRow = player.z; this.game.world.logDipUntil = player.time + CONFIG.HOP_MS / 1000; }
     if (player.distance > this.runBest && !this.newBest) {
       this.newBest = true; this.motion.toast('NEW BEST!');
       this.game.home.sound.play('win');
-      for (let i = 0; i < SOLO.NEW_BEST_PARTICLES; i++) this.game.particles.burst(player.x, player.z);
+      for (let i = 0; i < SOLO.NEW_BEST_PARTICLES; i++) this.game.particles.burst(player.x, player.z, BIOME_PALETTES[this.game.world.rowAt(player.z).biome].grass[0]);
     }
   };
   private readonly died = (cause: DeathCause): void => {
@@ -233,33 +237,25 @@ export class Solo {
     this.project(this.name, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z);
     if (!this.flag.hidden) this.project(this.flag, SOLO.FLAG_X, SOLO.FLAG_HEIGHT, this.runBest);
   };
-  private renderPose(dt: number): void {
+  private renderPose(_dt: number): void {
     const player = this.movement, actor = this.game.home.animalRoot;
-    const p = player.hopping ? Math.min(1, (player.time - player.hopStart) * 1000 / CONFIG.HOP_MS) : 0;
-    let y = player.onLog ? SOLO.LOG_TOP : 0, sy = 1, sx = 1;
-    if (player.hopping) {
-      y = (this.game.world.rowAt(player.fromZ).kind === 'river' ? SOLO.LOG_TOP * (1 - p) : 0)
-        + (this.game.world.rowAt(player.toZ).kind === 'river' ? SOLO.LOG_TOP * p : 0);
-      y += Math.sin(p * Math.PI) * SOLO.HOP_HEIGHT;
-      sy = p < SOLO.ANTICIPATION_MS / CONFIG.HOP_MS ? 1 - (1 - SOLO.SQUASH_Y) * Math.sin(p * Math.PI * CONFIG.HOP_MS / SOLO.ANTICIPATION_MS)
-        : 1 + (SOLO.STRETCH_Y - 1) * Math.sin(p * Math.PI);
-      sx = 1 + (1 - sy) / 2;
-    }
-    const target = ANGLES[player.direction]; let turn = target - this.heading;
-    turn = Math.atan2(Math.sin(turn), Math.cos(turn)); this.heading += turn * Math.min(1, dt * 1000 / SOLO.TURN_MS);
-    actor.position.set(player.x, y, -player.z); actor.scale.set(sx, sy, sx); actor.rotation.set(0, this.heading, 0);
+    sampleHop(player, player.time, this.game.world.rowAt, this.hopPose);
+    const pose = this.hopPose;
+    this.heading = this.facing.update(ANGLES[player.direction], this.poseTime);
+    actor.position.set(pose.x, pose.y, -pose.z); actor.scale.set(pose.sx, pose.sy, pose.sx);
+    actor.rotation.set(0, this.heading, this.preferences.reducedMotion ? 0 : pose.roll);
     const bonk = (this.poseTime - this.bonkAt) * 1000 / SOLO.BONK_MS;
     if (bonk < 1) { const offset = Math.sin(bonk * Math.PI) * SOLO.BONK_DISTANCE;
       actor.position.x += X[this.bonkDirection] * offset; actor.position.z -= Z[this.bonkDirection] * offset; }
     if (player.dead) {
       const t = Math.min(1, (this.poseTime - this.deathAt) * 1000 / SOLO.DEATH_MS);
       this.game.world.deathProgress = t;
-      if (player.dead === 'FLATTENED!') actor.scale.y = Math.max(SOLO.FLATTEN_Y, 1 - t * SOLO.FLATTEN_RATE);
-      else if (player.dead === 'SPLASH!') { actor.position.y -= t * SOLO.SINK_DEPTH; actor.scale.setScalar(1 - t * SOLO.SINK_SCALE); }
-      else if (player.dead === 'DERAILED!') { actor.position.x += t * SOLO.TRAIN_FLING_X; actor.position.y += Math.sin(t * Math.PI) * SOLO.TRAIN_FLING_Y; actor.rotation.z = t * Math.PI * 2 * SOLO.TRAIN_SPINS; }
-      else if (player.dead === 'SWEPT AWAY!') { actor.position.x += (player.x < 0 ? -1 : 1) * t * SOLO.SWEPT_TRAVEL; actor.rotation.z = Math.sin(t * SOLO.SWEPT_WOBBLE_RATE) * SOLO.SWEPT_WOBBLE; }
-      else { this.game.home.setActorOpacity(1 - t); actor.visible = t < 1; }
-      if (this.preferences.reducedMotion) actor.rotation.z = 0;
+      deathPose(player.dead, this.poseTime - this.deathAt, player.x < 0 ? -1 : 1, this.preferences.reducedMotion, this.deathPose);
+      const death = this.deathPose;
+      actor.position.x += death.x; actor.position.y += death.y; actor.rotation.z = death.roll;
+      actor.scale.set(death.sx, death.sy, death.sx); this.game.home.setActorOpacity(death.opacity);
+      actor.visible = t < 1;
+      if (this.poseTime - this.deathAt < SOLO.DEATH_SHAKE_S) this.game.rig.shake = SOLO.DEATH_SHAKE * (1 - (this.poseTime - this.deathAt) / SOLO.DEATH_SHAKE_S);
     }
     this.game.home.updateGameActor(this.poseTime);
     const arena = this.game.home.arena;

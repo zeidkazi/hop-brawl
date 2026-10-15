@@ -371,7 +371,7 @@ export class WorldView {
       } else if (row.kind === 'river') {
         for (let j = 0; j < row.logs.length; j++) {
           const log = row.logs[j]!;
-          this.put(this.logs, laneItemX(row, log, time), -0.1 - (row.z === this.logDipRow && time < this.logDipUntil ? SOLO.LOG_DIP : 0), row.z, log.length, 5 / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.log);
+          this.put(this.logs, laneItemX(row, log, time), -0.1 - (row.z === this.logDipRow && time < this.logDipUntil ? SOLO.LOG_DIP * Math.sin(Math.PI * Math.max(0, 1 - (this.logDipUntil - time) * 1000 / CONFIG.HOP_MS)) : 0), row.z, log.length, 5 / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.log);
         }
       } else {
         for (let x = VIEW.DECOR_MIN_X; x <= VIEW.DECOR_MAX_X; x += RAIL.SLEEPER_SPACING)
