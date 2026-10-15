@@ -1,4 +1,4 @@
-import { Box3, CircleGeometry, Color, Group, InstancedMesh, Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial, Object3D, Sphere, Vector3 } from 'three';
+import { Box3, CircleGeometry, Color, Float32BufferAttribute, Group, InstancedMesh, Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial, Object3D, Sphere, Vector3 } from 'three';
 import { COLORS, DETAIL, VIEW, WORLD } from '../../../shared/config';
 import { grassDecor, GRASS_PROPS } from '../../../shared/world-detail';
 import { hash32 } from '../../../shared/rng';
@@ -22,6 +22,13 @@ export class WorldDetails {
   private seed = NaN; private bottom = 0;
   readonly clouds: InstancedMesh;
   constructor(models: ReadonlyMap<string, Group>) {
+    // Preserve glass, rubber and lights while tinting only the painted body panels.
+    for (const material of [this.standard,this.lambert]) {
+      material.onBeforeCompile = shader => {
+        shader.vertexShader = 'attribute float paintMask;\n'+shader.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n#ifdef USE_INSTANCING_COLOR\nvColor.xyz = mix(vColor.xyz/max(instanceColor,vec3(0.001)),vColor.xyz,paintMask);\n#endif');
+      };
+      material.customProgramCacheKey = () => 'detail-body-paint';
+    }
     const assets = new Map<string, Group>();
     const detail = models.get('detail_props')!;
     for (const child of detail.children) if (child instanceof Mesh && child.userData.detail_kind) {
@@ -30,7 +37,15 @@ export class WorldDetails {
     for (const name of VEHICLES) if (!assets.has(name)) assets.set(name, models.get(name)!);
     for (const [name, group] of assets) {
       const size = new Box3().setFromObject(group).getSize(new Vector3()); this.sizes.set(name, size);
-      const mesh = new InstancedMesh(normalizedModel(group), this.standard, VIEW.POOL_ROWS * DETAIL.PROP_MAX);
+      const geometry=normalizedModel(group), color=geometry.getAttribute('color'), mask=new Float32Array(color.count);
+      for(let i=0;i<color.count;i++) {
+        const r=color.getX(i),g=color.getY(i),b=color.getZ(i),hi=Math.max(r,g,b),lo=Math.min(r,g,b);
+        const paint=name==='car' ? r>g*1.25&&r>b*1.25 : name==='hatchback' ? b>r*1.5&&g<b*.85
+          : name==='truck' ? (r>g*1.25&&g>b*1.25)||(hi-lo<.1&&lo>.4) : name==='ice_cream_van'&&hi-lo<.1&&lo>.45;
+        if(paint) { mask[i]=1; color.setXYZ(i,hi,hi,hi); }
+      }
+      geometry.setAttribute('paintMask',new Float32BufferAttribute(mask,1));
+      const mesh = new InstancedMesh(geometry, this.standard, VIEW.POOL_ROWS * DETAIL.PROP_MAX);
       mesh.name = `detail-${name}`; mesh.count = 0; mesh.matrixAutoUpdate = false;
       mesh.boundingSphere = new Sphere(new Vector3(4,0,0), VIEW.POOL_ROWS);
       mesh.receiveShadow = true; mesh.castShadow = VEHICLES.includes(name);

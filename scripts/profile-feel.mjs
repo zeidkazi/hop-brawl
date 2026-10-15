@@ -16,6 +16,11 @@ try {
     // Same deterministic rendered world and safe row in both runs. Gameplay/input/audio remain active.
     game.world.reset(1337); move.x = move.fromX = move.toX = 4; move.z = move.fromZ = move.toZ = 4;
     move.externalCamera = true; move.belowScreen = () => false;
+    if (solo.pacing) {
+      // Keep this lateral-hop fixture comparable after Solo's nine-second idle rule was added.
+      const update = solo.pacing.update.bind(solo.pacing);
+      solo.pacing.update = (time,z,first) => { update(time,z,first); solo.pacing.camZ = 0; solo.pacing.warning = solo.pacing.expired = false; };
+    }
     game.quality.choice = 'high'; game.quality.tier = 'medium'; game.quality.resolution = 1; game.applyQuality();
     game.onFrame = null;
   });
