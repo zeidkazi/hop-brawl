@@ -165,7 +165,7 @@ export class Versus {
       else if (event.kind === 'bonk') sound.play('bonk', pan);
       else if (event.kind === 'shove') { sound.play('punch', pan); sound.play(`grunt${player?.animal ?? 2}` as 'grunt2', pan); }
       else if (event.kind === 'round') sound.sting('roundWin');
-      else if (event.kind === 'death') { sound.death(event.cause as DeathCause, pan); if (player?.hearts === 0) sound.play('cheer', pan); }
+      else if (event.kind === 'death') { sound.death(event.cause as DeathCause, pan); if (event.by || player?.hearts === 0) sound.play('cheer', pan); }
       this.eventSequence = event.seq;
     }
     const screen: RoomScreen = state.phase === 'lobby' ? 'lobby' : state.phase === 'roundEnd' ? 'roundEnd' : state.phase === 'matchEnd' ? 'matchEnd' : 'versus';

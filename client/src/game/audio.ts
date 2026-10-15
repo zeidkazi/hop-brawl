@@ -30,7 +30,7 @@ export class BoxingSound {
   private duckTimer = 0; private fanfareTimer = 0;
   constructor() { if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) this.stopWorld(); }); }
   get volume(): number { return this.sfxVolume; }
-  set volume(value: number) { this.sfxVolume = value; for (const v of this.voices) this.sfx?.volume(value * v.level, v.id); }
+  set volume(value: number) { this.sfxVolume = value; this.sfx?.mute(value === 0); for (const v of this.voices) this.sfx?.volume(value * v.level, v.id); }
   get musicVolume(): number { return this.musicLevel; }
   set musicVolume(value: number) { this.musicLevel = value; this.music?.mute(value === 0); this.mix(); }
   get diagnostics() { return { loaded: this.loaded, unlocked: this.unlocked, track: this.track, musicId: this.musicId,

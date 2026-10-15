@@ -53,6 +53,8 @@ test('private room: isolated browsers play three rounds, rematch and hand off ho
       await expect.poll(() => hostState.current?.phase, { timeout: 15000 }).toBe('playing');
       expect(guestState.current?.seed).toBe(hostState.current?.seed);
       expect(hostState.current?.round).toBe(round);
+      const music = await page.evaluate(() => window.__HOP_DEBUG__!.solo.game.home.sound.diagnostics);
+      expect(music.track).toBe('meadow'); expect(music.musicRate).toBe(round === 3 ? 1.1 : 1);
       if (round === 1) {
         await page.locator('#versus [data-room="leave"]').focus();
         await expect(page.locator('#match-player-0 .heart-icons svg')).toHaveCount(2);
