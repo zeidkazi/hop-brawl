@@ -1146,3 +1146,43 @@ Quick Play + 60 s Solo prompt → crates/boosts → awards → environmental bou
 - Quick Play (§6.2) with the 60 s Solo prompt; biomes autumn / snow / night (§10, §12.3) with their props; reconnect via resumeToken, version-refresh prompt, late joiners spectate; adaptive quality tuning; camera debug sliders.
 
 Then (owner decides): Vercel + custom domain (§15a) and deployment.
+
+## 34. Feel, clarity & performance pass (owner decision, 2026-10-16 — no new systems; enhance what exists)
+Lessons from Crossy Road applied: instant, readable, deliberate-paced hopping in a dense, charming world with constant small feedback and instant retry. No coins/unlocks/new mechanics in this pass.
+
+### 34.1 Crisp image (fix the blur) — found in code review
+- **Hop/visual pipeline renders through a full-screen HalfFloat render target and then copies to the canvas; MSAA only exists on that target and the canvas context is created with `antialias: false`.** Remove the intermediate full-screen target on Medium/Low (render straight to the canvas); on High keep MSAA but ensure the target is exactly canvas size (no scaling).
+- Canvas context: `antialias: true` on desktop/High; phones with devicePixelRatio ≥ 2 render at pixel ratio 2 (Medium cap 2.0, was 1.5) where performance allows.
+- **Dynamic resolution must never drop below 1.0 CSS pixel per pixel** (`pixelRatio ≥ min(devicePixelRatio, 1)`); and it is the **last** thing to degrade. Degrade order when slow: particles → weather → outlines on props → shadow map size → shadows to blob → only then resolution.
+- Verify by screenshot comparison at DPR 1, 1.25, 2, 3: edges sharp, no smeared text/labels, no upscale blur.
+
+### 34.2 Instant hop feel
+- **Movement starts on the input frame.** The 40 ms anticipation currently delays translation (`shared/hop.ts`); keep the squash but overlap it with take-off — translation begins at t = 0.
+- Hop 120 ms (was 140), arc height 0.45; landing squash 30 ms after arrival (doesn't delay the next input). Buffered input fires the moment the hop lands.
+- Hop sound + dust on the input frame (not at landing). Score number bounces (scale 1.25 → 1, 150 ms) with a tick sound on every new row.
+- Retry in Solo: any tap/key on Game Over restarts; tile flip ≤ 400 ms total.
+
+### 34.3 Deliberate pacing (Solo)
+- Solo camera follows the player (no forced scroll) with a gentle drift of 0.15 rows/s that only starts after the first hop and never exceeds 0.6 rows/s; **idle penalty instead of pressure**: standing still or retreating for 7 s triggers a warning (screen edge pulses, rumble) and at 9 s the bottom edge sweeps up (LEFT BEHIND). Versus keeps the shared scrolling camera.
+
+### 34.4 Clarity & contrast
+- Lane types instantly distinguishable: grass bright saturated green with alternating shades; road darker charcoal; water bright turquoise with animated foam edges; rail gravel brown-grey. Increase contrast between adjacent lane types; obstacles (trees/rocks) clearly taller and darker than decoration.
+- Hazard telegraphs: train (lights + bell + red lane pulse + barrier arms lowering), fast vehicles slightly larger/brighter (sports car red, bus yellow), logs with light top edge so landing spots read.
+
+### 34.5 Dense, charming world (Blender props, existing systems only)
+- Grass rows: non-blocking decoration in every row outside the guaranteed corridor rules — flowers, grass tufts, small bushes, stumps, pebbles, fence pieces (low, flat, clearly not obstacles). 3–6 per row, instanced.
+- Roads: vehicle variety from existing + new Blender models — sedan, hatchback, taxi, truck, bus, ice-cream van, sports car — each type its own speed band within the tier; random colors per instance (palette swap).
+- River: lily pads (decor), foam around logs, occasional ducks drifting (decor).
+- Rail: crossing barrier arms lower during the warning, raise after the train.
+- Ambient life: birds crossing the sky, butterflies over grass, slow cloud shadows sweeping the ground.
+- Lighting: warmer sun, stronger contact shadows, soft vignette; keep toon outlines.
+
+### 34.6 Juice
+- Hit-stop 70 ms on shove impact and on death; white flash (80 ms) + short zoom punch on death; near-miss "CLOSE!" pop + whoosh when a vehicle passes within 0.3 tiles; Super Hop speed lines; camera leans 0.2 tiles toward movement direction. All respect Reduce motion.
+
+### 34.7 Performance & smoothness
+- Profile with a Chrome performance trace (mobile viewport, 4× CPU throttle) and fix the top 5 costs; report before/after numbers.
+- Static row geometry merged per row and `matrixAutoUpdate = false`; vehicles/logs/props instanced; only players + vehicles cast shadows; shadow camera tightly fitted; no per-frame allocations (verify with heap snapshot).
+- **Background:** on `visibilitychange` hidden / `pagehide`: suspend the AudioContext (Howler) and stop the render loop; on return: resume with a 300 ms audio fade, `requestSync` in versus, Solo stays paused.
+- **Network smoothness:** adaptive interpolation delay = clamp(2 × measured jitter + 60 ms, 90, 220); camera target interpolated, never stepped; HUD shows ping + FPS when `?debug=1`.
+- Targets: stable 60 fps on a mid-range phone, p95 frame ≤ 18 ms at 4× throttle, zero frames > 50 ms during play.
