@@ -103,7 +103,8 @@ export class Matchmaker extends DurableObject<Env> {
     await this.ctx.blockConcurrencyWhile(async () => {
       for (const pair of [...this.queue.pairs]) if (pair.deadline <= Date.now()) {
         const response = await this.env.ROOMS.get(this.env.ROOMS.idFromName(pair.code)).fetch('https://room/expire-pair', { method: 'POST' });
-        const result = await response.json<{ started: boolean; tokens: string[] }>();
+        const result = await response.json<{ started: boolean; tokens: string[]; pendingUntil?: number }>();
+        if (result.pendingUntil) { pair.deadline = result.pendingUntil; continue; }
         await this.finish(pair.code, result.started, result.tokens);
       }
       await this.pair();

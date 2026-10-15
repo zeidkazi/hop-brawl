@@ -46,3 +46,39 @@ test('matchmaker sockets cancel, pair FIFO, reject code joins and recover a conn
   });
   expect(result).toEqual({ count: 1, same: true, denied: 'ROOM_NOT_FOUND', retried: 'retry', next: true, quick: true, host: '' });
 });
+
+test('late in-time arrival finishes countdown; a countdown disconnect requeues the survivor', async ({ page }) => {
+  test.setTimeout(40000);
+  await page.goto('/licenses/lilita-one.txt');
+  const result = await page.evaluate(async () => {
+    type Message = { type: string; code: string; token: string; snapshot?: { phase: string } };
+    const all: WebSocket[] = [];
+    const connect = (path: string) => {
+      const url = new URL(path, location.href); url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(url), messages: Message[] = []; all.push(ws);
+      ws.onmessage = e => { if (e.data !== 'pong') messages.push(JSON.parse(String(e.data)) as Message); };
+      return { ws, messages };
+    };
+    const wait = async (check: () => Message | undefined) => {
+      const until = Date.now() + 15000;
+      while (Date.now() < until) { const result = check(); if (result) return result; await new Promise(r => setTimeout(r, 20)); }
+      throw new Error('No matchmaking response');
+    };
+    const join = (m: Message) => connect(`/ws/room/${m.code}?token=${m.token}&aspect=1`);
+    try {
+      const a = connect('/ws/quick?name=LateA&animal=2'), b = connect('/ws/quick?name=LateB&animal=2');
+      const ma = await wait(() => a.messages.find(m => m.type === 'matched')), mb = await wait(() => b.messages.find(m => m.type === 'matched'));
+      const ra = join(ma); await wait(() => ra.messages.find(m => m.type === 'welcome'));
+      await new Promise(r => setTimeout(r, 8500)); const rb = join(mb);
+      await wait(() => rb.messages.find(m => m.snapshot?.phase === 'playing'));
+      await wait(() => a.messages.find(m => m.type === 'ready'));
+      a.ws.close(); b.ws.close(); ra.ws.close(); rb.ws.close();
+      const c = connect('/ws/quick?name=AbortA&animal=2'), d = connect('/ws/quick?name=AbortB&animal=4');
+      const mc = await wait(() => c.messages.find(m => m.type === 'matched')), md = await wait(() => d.messages.find(m => m.type === 'matched'));
+      const rc = join(mc), rd = join(md); await wait(() => rc.messages.find(m => m.snapshot?.phase === 'countdown'));
+      rd.ws.close(); d.ws.close(); await wait(() => c.messages.find(m => m.type === 'retry'));
+      return { lateStarted: true, countdownRetried: true };
+    } finally { all.forEach(ws => ws.close()); }
+  });
+  expect(result).toEqual({ lateStarted: true, countdownRetried: true });
+});

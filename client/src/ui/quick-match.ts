@@ -25,7 +25,7 @@ export class QuickMatch {
       if (action === 'start' || action === 'new') this.start();
       else if (action === 'keep') { this.promptAt = Date.now() + CONFIG.QUICK_PROMPT_S * 1000; this.prompt(false); }
       else {
-        this.stop(); if (this.versus.active) this.versus.leave(action === 'menu' ? 'home' : 'friends');
+        this.stop(); if (this.versus.active || this.matched) this.versus.leave(action === 'menu' ? 'home' : 'friends');
         this.show(action === 'solo' ? 'solo' : action === 'menu' ? 'home' : 'friends');
         if (action === 'invite') void this.versus.connect(true);
       }
@@ -61,7 +61,7 @@ export class QuickMatch {
       } else if (message.type === 'retry') {
         this.versus.leave('search'); this.matched = false; this.started = Date.now(); this.promptAt = this.started + CONFIG.QUICK_PROMPT_S * 1000;
         this.prompt(false); this.motion.toast(message.message);
-      } else if (message.type === 'ready') this.stop();
+      } else if (message.type === 'ready') this.stop(true);
       else if (message.type === 'error') this.fail(message.error);
     };
     ws.onclose = () => { if (this.socket === ws) this.fail('Search disconnected. Please try again.'); };
@@ -77,8 +77,9 @@ export class QuickMatch {
   private fail(message: string): void {
     this.stop(); this.versus.leave('friends'); this.el('room-error').textContent = message; this.motion.toast(message);
   }
-  stop(): void {
+  stop(keepRoom = false): void {
     const ws = this.socket; this.socket = null; clearInterval(this.timer);
+    if (ws && this.matched && !keepRoom) this.versus.client.close();
     if (ws?.readyState === WebSocket.OPEN) ws.send('cancel'); ws?.close(1000, 'Left search');
   }
 }

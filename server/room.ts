@@ -41,6 +41,11 @@ export class Room extends DurableObject<Env> {
       return new Response('Created', { status: 201 });
     }
     if (url.pathname === '/expire-pair') {
+      // Both arrived in time. Let their countdown finish even if the second
+      // connection landed just before the ten-second connection deadline.
+      if (this.game?.phase === 'countdown' && this.game.players.filter(p => p.connected).length === 2) {
+        return Response.json({ started: false, tokens: this.connectedTokens(), pendingUntil: this.game.nextAt + ROOM.SNAPSHOT_MS });
+      }
       const started = Boolean(this.game?.quick && this.game.round > 0 && this.game.phase !== 'lobby' && this.game.phase !== 'countdown');
       const tokens = this.connectedTokens();
       if (!started) { this.pairDeadline = 0; this.pairFinished = true; for (const ws of this.ctx.getWebSockets()) ws.close(1000, 'Pair expired'); }
