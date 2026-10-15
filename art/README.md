@@ -67,3 +67,7 @@ Animal `--author` builds apply art/brawler_gear.py after the anatomy recipe. Sec
 ## Final sign-off evidence
 
 `node scripts/audit-models.mjs` audits all runtime GLB surfaces and the 2 MB budget. `npm run build` then `npm run preview -- --port 4173` serves the production build; `node scripts/review-models.mjs` records five cache-cleared desktop loads and captures native camera lineups, six-frame move strips, both requested viewports and the logo comparison. Run it after regenerating all six `--silhouette-only` previews. Evidence is in art/review/ and art/previews/signoff/. The review script uses actual loaded models and the runtime move sampler, not mockups.
+
+## Section 34 detail library
+
+`npm run art:build -- --detail` builds the original CC0 flowers, tufts, bushes, stumps, pebbles, low fence pieces, lily pads, ducks, birds, butterflies, bus, ice-cream van and sports car. `detail_kind` metadata identifies the closed merged voxel meshes for instancing. Editable source is art/build_detail.py plus art/voxels/detail_props.json; the GLB, blend and preview share the same geometry. No runtime placement is part of the authoring command.

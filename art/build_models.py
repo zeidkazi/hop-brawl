@@ -318,9 +318,14 @@ def main():
     parser.add_argument('--logo-variants', action='store_true')
     parser.add_argument('--menu-props', action='store_true')
     parser.add_argument('--arena', action='store_true')
+    parser.add_argument('--detail', action='store_true')
     parser.add_argument('--street-logo', action='store_true')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     config = json.loads(Path(args.config).read_text(encoding='utf-8'))
+    if args.detail:
+        from build_detail import build as build_detail
+        build_detail(ROOT, config)
+        return
     if args.street_logo:
         from build_logo import build_variant
         build_variant(ROOT, config, False, street=True)
@@ -350,6 +355,10 @@ def main():
         assert [len(obj.data.polygons) for obj in split] == [6, 6], 'Separate parts must stay closed'
         for path in (ROOT / 'art' / 'voxels').glob('*.json'):
             source = json.loads(path.read_text())
+            if path.stem == 'detail_props':
+                for name, item in source.items():
+                    audit([(x,d,h,color) for x,h,d,color in item['voxels']], FACES)
+                continue
             assignments = {i: part for part, indices in source.get('parts', {}).items() for i in indices}
             groups = {}
             for i, (x, h, d, color) in enumerate(source['voxels']):
@@ -358,7 +367,7 @@ def main():
             print(f'SURFACE_AUDIT {path.stem}: {len(groups)} closed parts, {count} merged quads', flush=True)
         print('BLENDER_SELF_TEST_OK', flush=True)
         return
-    names = [args.model] if args.model else [p.stem for p in sorted((ROOT / 'art' / 'voxels').glob('*.json'))]
+    names = [args.model] if args.model else [p.stem for p in sorted((ROOT / 'art' / 'voxels').glob('*.json')) if p.stem != 'detail_props']
     if not names:
         parser.error('No voxel sources found; select an authored recipe with --model NAME --author')
     for name in names:
