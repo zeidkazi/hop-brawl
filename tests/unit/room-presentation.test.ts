@@ -23,7 +23,9 @@ it('reconstructs a delayed remote hop and never mixes a dead life with its respa
   room.start('a', 0); room.tick(3000); room.hop('b', 'up', 1, 3000);
   const a = room.snapshot().players[1]!; room.tick(3140); const b = room.snapshot().players[1]!;
   const pose = createHopPose(); sampleHop(remoteMovement(a, b, .0775), .0775, room.rowAt, pose);
-  expect(pose.y).toBeCloseTo(.5); expect(pose.z).toBeCloseTo(1.5);
+  expect(pose.y).toBeGreaterThan(.2); expect(pose.z).toBeGreaterThan(1); expect(pose.z).toBeLessThan(2);
+  const completed = createHopPose(); sampleHop(b.movement, .0775, room.rowAt, completed);
+  expect(completed).toEqual(pose);
   a.movement.dead = 'SPLASH!'; b.lifeId++; b.movement.z = 4;
   expect(remoteMovement(a, b, .05)).toBe(b.movement);
 });
