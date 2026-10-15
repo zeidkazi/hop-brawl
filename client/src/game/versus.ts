@@ -180,6 +180,7 @@ export class Versus {
         if (state.phase === 'matchEnd') this.game.home.sound.sting('matchWin');
       }
     }
+    if (state.phase === 'playing') this.game.home.sound.muffle(state.players.find(p => p.id === this.client.id)?.hearts === 0);
     this.updateUI(state);
   }
   private animateDeath(id: string, lifeId: number, cause: DeathCause): void {
@@ -246,9 +247,10 @@ export class Versus {
     const time = roomWorldTime(state, this.client.time, this.poseTime);
     this.game.worldTime = time; this.game.rig.targetCamZ = state.camZ; this.game.rig.leaderZ = state.leaderZ;
     if (state.phase === 'playing') {
-      this.railSound.update(this.game.world.rows, state.camZ, time, this.game.home.sound, this.client.prediction.x, this.client.prediction.z, !this.client.prediction.dead);
-      this.game.home.sound.muffle(me?.hearts === 0);
+      this.railSound.update(this.game.world.rows, state.camZ, time, this.game.home.sound, this.client.prediction.x, this.client.prediction.z, !this.client.prediction.dead, this.game.home.arena);
+
     }
+    if (state.phase === 'lobby') this.railSound.menu(this.poseTime, this.game.home.sound, this.game.home.arena, 4, SOLO.SPAWN_Z);
     const countdown = this.element('match-countdown');
     countdown.textContent = state.phase === 'countdown' ? String(Math.max(1, Math.ceil((state.startAt - now) / 1000)))
       : state.phase === 'playing' && now - state.startAt < SOLO.HOP_BANNER_MS ? 'HOP!' : '';

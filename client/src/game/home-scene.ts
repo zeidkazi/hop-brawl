@@ -11,6 +11,7 @@ import { downloads, registerAsset } from '../ui/downloads';
 import { mulberry32 } from '../../../shared/rng';
 import type { Tier } from './quality';
 import { Outlines } from './outlines';
+import { WorldSound } from './world-sound';
 import { Arena } from './arena';
 import { Boxer } from './boxer';
 import type { BoxerMove } from './boxer';
@@ -40,6 +41,7 @@ export class HomeScene {
   private readonly logoGlove = this.logoMaterial.clone();
   readonly boxers: Boxer[] = [];
   readonly sound = new BoxingSound();
+  private readonly ambient = new WorldSound();
   readonly effects = new BoxingEffects();
   private time = 0;
   private readonly contactLeft = new Vector3();
@@ -384,6 +386,7 @@ export class HomeScene {
   }
 
   update(time: number): void {
+    this.ambient.menu(time, this.sound, this.arena, 4, -HOME.ANIMAL_Z);
     this.time = time;
     this.waterTime.value = time;
     this.arena?.update(time);
