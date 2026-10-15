@@ -1,5 +1,5 @@
-/** Original Hop Brawl composition and synthesis, dedicated to CC0 1.0. No sampled recordings. */
-import { mkdirSync, writeFileSync } from 'node:fs';
+/** CC0 Kenney/OpenGameArt imports plus original procedural gap fills. See CREDITS.md. */
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import ffmpeg from 'ffmpeg-static';
 import { SOUND } from '../shared/config.ts';
@@ -62,28 +62,26 @@ for (let animal = 0; animal < 6; animal++) sound(`grunt${animal}`, .3, a => {
   const pitches = [480, 120, 530, 340, 95, 650];
   for (let i = 0; i < (animal === 1 || animal === 4 ? 3 : 2); i++) tone(a, i * .07, .14, pitches[animal]!, .35, 1, pitches[animal]! * (animal === 5 ? .55 : .8));
 });
+// Import preparation is separate from runtime. Downloads are hash-pinned and cached outside Git.
+const imported = spawnSync('python', ['art/import_audio.py', ffmpeg!, String(rate), String(SOUND.MENU_BPM), String(SOUND.GAME_BPM), String(SOUND.MUSIC_BARS)], { stdio: 'inherit' });
+if (imported.status !== 0) throw new Error('CC0 source preparation failed');
+function pcm(name: string): Samples {
+  const bytes = readFileSync(`tmp/audio-import/${name}.pcm`);
+  return Float32Array.from({ length: bytes.length / 4 }, (_, i) => bytes.readFloatLE(i * 4));
+}
+for (const name of ['click', 'back', 'toggle', 'open', 'close', 'punch', 'hit', 'tock', 'log']) sounds[name] = pcm(name);
 const tracks: Record<string, Samples> = {};
-for (const [variant, name] of ['menu', 'meadow', 'autumn', 'snow', 'nightCity'].entries()) {
-  const bpm = variant ? SOUND.GAME_BPM : SOUND.MENU_BPM, beat = 60 / bpm;
-  const a = buffer(SOUND.MUSIC_BARS * 4 * beat);
-  const roots = [48, 53, 57, 55, 48, 53, 55, 55];
-  const melody = [0, 4, 7, 12, 7, 4, 2, 7, 4, 7, 12, 16, 14, 12, 7, 4];
-  for (let bar = 0; bar < SOUND.MUSIC_BARS; bar++) {
-    const root = roots[bar]!;
-    for (let b = 0; b < 4; b++) {
-      const at = (bar * 4 + b) * beat;
-      tone(a, at, .16, 110, .32, 0, 32); // toy kick
-      if (b % 2) noise(a, at, .11, .32, .8); // snare
-      for (let h = 0; h < 2; h++) noise(a, at + h * beat / 2, .035, .13, 1);
-      tone(a, at, beat * .72, hz(root + (b % 2 ? 7 : 0)), .23, .25);
-      for (const n of [0, 4, 7]) tone(a, at + beat * .5, beat * .38, hz(root + 12 + n), .055, variant === 3 ? 0 : .4);
-    }
-    for (let s = 0; s < 8; s++) {
-      const step = melody[(s + bar * 2 + variant * 2) % melody.length]!, at = (bar * 4 + s * .5) * beat;
-      const n = root + 24 + step;
-      tone(a, at, beat * (variant === 3 ? .8 : .4), hz(n), .12, variant === 4 ? 1 : .25);
-      if (variant === 3) tone(a, at + beat / 4, beat * .7, hz(n + 12), .025);
-    }
+for (const name of ['menu', 'meadow', 'autumn', 'snow', 'nightCity']) {
+  const source = pcm(name), bpm = name === 'menu' ? SOUND.MENU_BPM : SOUND.GAME_BPM;
+  const a = buffer(SOUND.MUSIC_BARS * 4 * 60 / bpm);
+  // Repeat the complete four-bar title phrase; other selections are eight bars.
+  const phrase = Math.round((name === 'menu' ? 16 : 32) * 60 / bpm * rate);
+  for (let i = 0; i < a.length; i++) a[i] = source[Math.min(i % phrase, source.length - 1)]!;
+  // Five-millisecond boundary ramps remove codec/transient clicks without adding a silent gap.
+  const edge = Math.round(rate * .005);
+  for (let offset = 0; offset < a.length; offset += phrase) {
+    const end = Math.min(a.length, offset + phrase);
+    for (let i = 0; i < edge; i++) { a[offset + i]! *= i / edge; a[end - 1 - i]! *= i / edge; }
   }
   tracks[name] = a;
 }
@@ -104,4 +102,4 @@ encode('tmp/audio/sfx.wav', 'client/public/sfx/brawl.mp3', ['-ac', '1', '-codec:
 encode('tmp/audio/music.wav', 'client/public/music/brawl.ogg', ['-codec:a', 'libvorbis', '-q:a', '3']);
 encode('tmp/audio/music.wav', 'client/public/music/brawl.m4a', ['-codec:a', 'aac', '-b:a', '96k']);
 writeFileSync('client/src/game/audio-manifest.json', JSON.stringify(manifest, null, 2) + '\n');
-console.log(`Built ${Object.keys(sounds).length} CC0 sound sprites and ${Object.keys(tracks).length} original eight-bar music loops.`);
+console.log(`Built ${Object.keys(sounds).length} CC0 sound sprites and ${Object.keys(tracks).length} OpenGameArt eight-bar music edits.`);

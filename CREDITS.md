@@ -81,7 +81,7 @@ All six animal model/source/preview entries above now include original CC0 float
 
 | File / generated asset | Source URL | License |
 |---|---|---|
-| `client/src/game/boxing-feedback.ts`: synthesized tock, whoosh and punch-hit one-shots; contact and dizzy-star geometry | https://github.com/zeidkazi/hop-brawl/blob/main/client/src/game/boxing-feedback.ts | Original CC0 1.0; no recordings, downloads or third-party audio |
+| `client/src/game/boxing-feedback.ts`: synthesized tock, whoosh and punch-hit one-shots; contact and dizzy-star geometry | https://github.com/zeidkazi/hop-brawl/blob/a0771d7/client/src/game/boxing-feedback.ts | Original CC0 1.0; no recordings, downloads or third-party audio |
 | `art/previews/signoff/lineup.png` | https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-models.mjs | CC0 1.0 contact sheet of original Blender renders |
 | `art/previews/signoff/grass-lineup.png` | Same review script URL above | CC0 1.0 native runtime captures |
 | `art/previews/signoff/silhouettes.png` | Same review script URL above | CC0 1.0 final Blender silhouettes |
@@ -118,14 +118,14 @@ All six animal model/source/preview entries above now include original CC0 float
 | `rail_post.glb`, editable `art/rail_post.blend`, voxel source and preview | [Original Blender recipe](https://github.com/zeidkazi/hop-brawl/blob/main/art/recipes/rail_post.py) | Original closed voxel geometry and baked colors, CC0 1.0 |
 | `art/previews/playtest30/*-row*.png` | [Seeded gameplay review script](https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-playtest30.mjs) | Original runtime captures, CC0 1.0; existing font/model provenance above |
 
-## Submission procedural sound (§32)
+## Historical submission procedural sound (§32; replaced by Batch B)
 
 | Sound | Source | License |
 |---|---|---|
-| Train warning bell and horn | [Original Web Audio synthesis](https://github.com/zeidkazi/hop-brawl/blob/main/client/src/game/boxing-feedback.ts) and [warning scheduling](https://github.com/zeidkazi/hop-brawl/blob/main/client/src/game/rail-sound.ts) | CC0 1.0 |
+| Train warning bell and horn | [Original Web Audio synthesis](https://github.com/zeidkazi/hop-brawl/blob/a0771d7/client/src/game/boxing-feedback.ts) and [warning scheduling](https://github.com/zeidkazi/hop-brawl/blob/main/client/src/game/rail-sound.ts) | CC0 1.0 |
 | Hop, water splash, squash, edge/tree bonk, shove punch, three-note round win | Same original Web Audio synthesis above; tunable oscillator/noise envelopes in shared/config.ts | CC0 1.0 |
 
-These sounds are generated in the browser, with no downloaded clips, external service, API key or attribution requirement. A user gesture unlocks audio; SFX volume applies to every cue; at most 16 voices play at once. No announcer is included in the submission.
+These earlier sounds were generated in the browser, with no downloaded clips, external service, API key or attribution requirement. A user gesture unlocks audio; SFX volume applies to every cue; at most 16 voices play at once. Batch B below replaces this runtime synthesis with the predecoded CC0 sprite bank.
 
 ## Submission cover (§32.1 step 7)
 
@@ -148,19 +148,34 @@ Find one consistent, energetic voice for: "Round one", "Round two", "Final round
 
 ## Detail pass Batch B audio (CC0 1.0)
 
-All 44 sound sprites and five music loops below are original deterministic PCM synthesis/compositions, dedicated to [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). There are no third-party recordings or voice imitations. Source for every sprite: [art/build-sfx.ts](https://github.com/zeidkazi/hop-brawl/blob/main/art/build-sfx.ts). Rebuild with `node art/build-sfx.ts`; the pinned development encoder produces the specified mono MP3 effects and OGG/M4A music. Sprite offsets/durations are individually recorded in `client/src/game/audio-manifest.json`.
+The banks contain 44 named sound sprites and five music edits. All sources below are [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). Rebuild with `node art/build-sfx.ts` (Python + the pinned ffmpeg encoder); `art/import_audio.py` downloads and SHA-256-verifies the source archives into ignored `tmp/`, selects the listed files, and converts them to mono PCM. No account, API key or attribution obligation. Individual offsets/durations are in `client/src/game/audio-manifest.json`.
 
-| Shipped file | Individual sounds / source | License |
+| Source pack / author | Download and license evidence |
+|---|---|
+| Kenney Interface Sounds | [Pack + CC0 declaration](https://kenney.nl/assets/interface-sounds); [exact archive](https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip), containing `License.txt` |
+| Kenney Impact Sounds | [Pack + CC0 declaration](https://kenney.nl/assets/impact-sounds); [exact archive](https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip), containing `License.txt` |
+| Juhani Junkala / SubspaceAudio, 5 Chiptunes (Action) | [Creator upload + CC0 declaration](https://opengameart.org/content/5-chiptunes-action); [exact archive](https://opengameart.org/sites/default/files/5%20Action%20Chiptunes%20By%20Juhani%20Junkala.zip), containing the author's CC0 declaration in `INFO.txt` |
+| Original Hop Brawl procedural gap fills | [Editable synthesis source](https://github.com/zeidkazi/hop-brawl/blob/main/art/build-sfx.ts), dedicated to CC0 1.0. No sampled recordings or voice imitations. |
+
+| Bank / individual sound | Exact source file or recipe | License |
 |---|---|---|
-| `client/public/sfx/brawl.mp3` | `hop0`, `hop1`, `hop2`: three boing/whoosh variants; `bonk`: thud + squeak; `splash`: water burst; `squash`: squash + crunch; `punch`: shove; `whoosh`: swing/swept-away; `hit`: glove impact; `tock`: glove tap. Original build-sfx source above. | CC0 1.0 |
-| Same MP3, hazard sprites | `bell`: double crossing ding; `horn`: train horn; `train`: rush + clatter; `rumble`: approaching train; `car`: engine; `truck`: low engine; `honk`: near-miss horn; `water`: river loop; `log`: landing thunk; `bubbles`: water bubbles. Original build-sfx source above. | CC0 1.0 |
-| Same MP3, death / atmosphere sprites | `fall`: falling whoop; `impact`: derail impact; `crowd`: stylized crowd murmur; `cheer`: stylized crowd cheer; `birds`: meadow birds. Original build-sfx source above. | CC0 1.0 |
-| Same MP3, flow sprites | `countdown`: beep; `go`: HOP slam/whoosh; `newBest`: 1.25 s jingle; `gameOver`: 2 s sting; `roundWin`: 2.5 s sting; `matchWin`: 5 s fanfare; `respawn`: return; `heartLost`: heart loss. Original build-sfx source above. | CC0 1.0 |
-| Same MP3, interface sprites | `click`, `back`, `toggle`, `open`, `close`. Original build-sfx source above. | CC0 1.0 |
-| Same MP3, animal sprites | `grunt0`: chicken cluck; `grunt1`: frog ribbit; `grunt2`: fox yip; `grunt3`: penguin squawk; `grunt4`: pig oink; `grunt5`: cat meow. Stylized synthesized grunts, not animal recordings. Original build-sfx source above. | CC0 1.0 |
-| `client/public/music/brawl.ogg` | Original eight-bar C-major toy-pop/chiptune arrangements: `menu` (110 BPM), `meadow`, `autumn`, `snow`, `nightCity` (130 BPM). Source: build-sfx above. | CC0 1.0 |
-| `client/public/music/brawl.m4a` | AAC alternative of the same five original compositions, for browsers without OGG support. | CC0 1.0 |
+| `client/public/sfx/brawl.mp3`: `click`, `back`, `toggle`, `open`, `close` | Kenney Interface archive: `Audio/click_001.ogg`, `back_001.ogg`, `switch_001.ogg`, `open_001.ogg`, `close_001.ogg`, respectively. Leading silence trimmed; mix gain/limiter and 3 ms attack ramp. | CC0 1.0 |
+| Same MP3: `punch`, `hit`, `tock`, `log` | Kenney Impact archive: `Audio/impactPunch_heavy_000.ogg`, `impactPunch_medium_000.ogg`, `impactSoft_medium_000.ogg`, `impactWood_light_000.ogg`, respectively. Same processing. | CC0 1.0 |
+| Same MP3: `hop0`, `hop1`, `hop2`, `bonk`, `splash`, `squash`, `whoosh` | Original synthesis: three boing/whoosh variants, thud+squeak, water burst, squash+crunch, swing/swept-away. | CC0 1.0 |
+| Same MP3: `bell`, `horn`, `train`, `rumble`, `car`, `truck`, `honk`, `water`, `bubbles` | Original synthesis: double crossing ding, train horn, rush/clatter, approaching rumble, car engine, low truck engine, near-miss horn, river loop, water bubbles. | CC0 1.0 |
+| Same MP3: `fall`, `impact`, `crowd`, `cheer`, `birds` | Original synthesis: falling whoop, derail impact, stylized crowd murmur/cheer, meadow birds. | CC0 1.0 |
+| Same MP3: `countdown`, `go`, `newBest`, `gameOver`, `roundWin`, `matchWin`, `respawn`, `heartLost` | Original synthesis: countdown beep, HOP slam/whoosh, 1.25 s new-best jingle, 2 s Solo sting, 2.5 s round sting, 5 s match fanfare, respawn and heart-loss cues. | CC0 1.0 |
+| Same MP3: `grunt0`–`grunt5` | Original stylized synthesis: chicken cluck, frog ribbit, fox yip, penguin squawk, pig oink, cat meow. | CC0 1.0 |
+| `client/public/music/brawl.ogg` and `.m4a`: `menu` | Juhani Junkala archive: `Juhani Junkala [Retro Game Music Pack] Title Screen.wav`; complete four-bar phrase repeated twice, 85 → 110 BPM. | CC0 1.0 |
+| Same music banks: `meadow` | `Juhani Junkala [Retro Game Music Pack] Level 1.wav`; first eight bars, 90.5 → 130 BPM on the half-time beat grid. | CC0 1.0 |
+| Same music banks: `autumn` | `Juhani Junkala [Retro Game Music Pack] Level 2.wav`; first eight bars, 105.5 → 130 BPM. | CC0 1.0 |
+| Same music banks: `snow` | `Juhani Junkala [Retro Game Music Pack] Level 3.wav`; first eight bars, 105.5 → 130 BPM. | CC0 1.0 |
+| Same music banks: `nightCity` | Same Level 3 source; contrasting eight-bar phrase starting at beat 64 (bar 17), 105.5 → 130 BPM. | CC0 1.0 |
 
-Announcer search: [Kenney Voiceover Pack (Fighter)](https://kenney.nl/assets/voiceover-pack-fighter), CC0, and its [creator-posted file inventory](https://opengameart.org/content/voiceover-pack-fighter-40-taunts) cover Round 1, Round 2, Final round and Winner, but lack Hop, Showdown and K.O. Searches of OpenGameArt/Freesound did not establish one CC0 voice covering all seven. No voice files are shipped. Per section 33, use text slams + original SFX throughout; owner recordings remain an option for a later complete voice set.
+Music edits preserve pitch, use exact whole-bar durations, mix gain 0.36, mono downmix, and 5 ms boundary ramps to suppress clicks. OGG and AAC/M4A encode the same edited PCM; neither has a silent padding gap inside a looping sprite. All five share the source pack's chiptune instrumentation; a common key is not claimed.
+
+Announcer search: [Kenney Voiceover Pack (Fighter)](https://kenney.nl/assets/voiceover-pack-fighter), CC0, and its [creator-posted file inventory](https://opengameart.org/content/voiceover-pack-fighter-40-taunts) cover Round 1, Round 2, Final round and Winner, but lack Hop, Showdown and K.O. Searches of OpenGameArt/Freesound did not establish one CC0 voice covering all seven. No voice files are shipped. Per section 33, use text slams + SFX throughout; owner recordings remain an option for a later complete voice set.
 
 Bubbles are shipped and used after splash deaths; sinking-log warning playback waits for Batch D's sinking-log mechanic. The four biome music arrangements are ready now; biome visuals/ambience swapping remain Batch E.
+
+- `art/review/batch-b/flattened.png` and `art/review/batch-b/splash.png`: original six-frame 390x844 phone-viewport game captures, CC0 1.0; source https://github.com/zeidkazi/hop-brawl/blob/main/scripts/review-death-corrections.mjs. The manifest records actual animation times, seeded collisions and poses.

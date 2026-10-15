@@ -95,7 +95,7 @@ export class Screens {
         </div>
       </section>
       <section id="credits" class="screen modal" aria-labelledby="credits-title" hidden>
-        <div class="panel"><h2 id="credits-title">CREDITS</h2><p>Original Hop Brawl models, scenery, music and sound — CC0.</p>
+        <div class="panel"><h2 id="credits-title">CREDITS</h2><p>Models and scenery: Hop Brawl. Music: Juhani Junkala. Sounds: Kenney + Hop Brawl. All CC0.</p>
           <p>Lilita One — Juan Montoreano.<br><a href="/licenses/lilita-one.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
           <p>Nunito — The Nunito Project Authors.<br><a href="/licenses/nunito.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
           <button class="yellow" data-back>Back</button>
