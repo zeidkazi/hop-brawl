@@ -1,0 +1,132 @@
+{
+  "localProductionWorker": true,
+  "physicalPhone": false,
+  "coldLoads": [
+    {
+      "name": "desktop",
+      "interactiveMs": 2497.8999999910593,
+      "firstPaint": 120,
+      "bytes": "1748932",
+      "total": "1748932"
+    },
+    {
+      "name": "phone-emulation",
+      "interactiveMs": 1957.5,
+      "firstPaint": 68,
+      "bytes": "1748932",
+      "total": "1748932"
+    }
+  ],
+  "runs": [
+    {
+      "name": "desktop",
+      "viewport": [
+        1440,
+        900
+      ],
+      "frames": 602,
+      "seconds": 10.0163,
+      "fps": 60.00219641983567,
+      "p95Ms": 16.700000000000728,
+      "maxMs": 16.80000000000109,
+      "maxVoices": 9,
+      "audio": {
+        "loaded": true,
+        "unlocked": true,
+        "track": "meadow",
+        "musicId": 1009,
+        "musicRate": 1,
+        "muffled": false,
+        "paused": false,
+        "ducked": false,
+        "voices": 5,
+        "filterHz": 20000,
+        "musicVolume": 0.5,
+        "sfxVolume": 0.8
+      },
+      "maxArcHeight": 0.4687565777583858,
+      "hops": 43,
+      "phase": "playing",
+      "graphics": {
+        "frames": 880,
+        "calls": 59,
+        "triangles": 113490,
+        "geometries": 157,
+        "textures": 6,
+        "delta": 16.69999999999709,
+        "tier": "high",
+        "choice": "auto",
+        "resolution": 1,
+        "pixelRatio": 1,
+        "p95": 16.700000000000728,
+        "worst": 16.80000000000109,
+        "programs": 75,
+        "rows": 64,
+        "generatedRows": 145,
+        "particles": 24,
+        "station": "gameplay",
+        "mobile": false,
+        "animal": "fox",
+        "animalOffset": 0,
+        "crowdCheering": false,
+        "move": "idle"
+      },
+      "errors": []
+    },
+    {
+      "name": "phone-emulation",
+      "viewport": [
+        390,
+        844
+      ],
+      "frames": 602,
+      "seconds": 10.0163,
+      "fps": 60.00219641983567,
+      "p95Ms": 16.799999999999272,
+      "maxMs": 16.80000000000109,
+      "maxVoices": 11,
+      "audio": {
+        "loaded": true,
+        "unlocked": true,
+        "track": "meadow",
+        "musicId": 1010,
+        "musicRate": 1,
+        "muffled": false,
+        "paused": false,
+        "ducked": false,
+        "voices": 7,
+        "filterHz": 20000,
+        "musicVolume": 0.5,
+        "sfxVolume": 0.8
+      },
+      "maxArcHeight": 0.4687565777583858,
+      "hops": 43,
+      "phase": "playing",
+      "graphics": {
+        "frames": 883,
+        "calls": 54,
+        "triangles": 103298,
+        "geometries": 157,
+        "textures": 5,
+        "delta": 16.69999999999891,
+        "tier": "medium",
+        "choice": "auto",
+        "resolution": 1,
+        "pixelRatio": 1.5,
+        "p95": 16.700000000000728,
+        "worst": 16.80000000000109,
+        "programs": 76,
+        "rows": 64,
+        "generatedRows": 151,
+        "particles": 14,
+        "station": "gameplay",
+        "mobile": true,
+        "animal": "fox",
+        "animalOffset": 0,
+        "crowdCheering": false,
+        "move": "idle"
+      },
+      "errors": []
+    }
+  ]
+}

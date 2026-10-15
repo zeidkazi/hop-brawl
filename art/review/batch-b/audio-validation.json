@@ -1,0 +1,54 @@
+{
+  "unitTests": 166,
+  "unitFiles": 35,
+  "desktopAndPhoneBrowserScenarios": 22,
+  "browserResult": "passed",
+  "physicalPhone": false,
+  "audioMix": [
+    {
+      "rms": 0.09004614413370192,
+      "muted": true,
+      "zero": true,
+      "count": 16,
+      "lowpass": 699.2806396484375,
+      "open": 19962.33984375
+    },
+    {
+      "rms": 0.056370439844756176,
+      "muted": true,
+      "zero": true,
+      "count": 16,
+      "lowpass": 689.8134155273438,
+      "open": 19950.814453125
+    }
+  ],
+  "decodedAudio": [
+    {
+      "file": "/sfx/brawl.mp3",
+      "channels": 1,
+      "minRms": 0.0125711056247502,
+      "maxJoin": 0.04417893540130535
+    },
+    {
+      "file": "/music/brawl.ogg",
+      "channels": 1,
+      "minRms": 0.14701413867003624,
+      "maxJoin": 0.016309987753629684
+    },
+    {
+      "file": "/music/brawl.m4a",
+      "channels": 1,
+      "minRms": 0.14570431761128969,
+      "maxJoin": 0.019088708679191768
+    }
+  ],
+  "playResponseMs": [
+    17.200000002980232,
+    8.400000005960464
+  ],
+  "finalSoloRegressions": 6,
+  "finalSoloResult": "passed",
+  "finalSourceAudioRegressions": 6,
+  "finalSourceAudioResult": "passed",
+  "assetSource": "Kenney Interface/Impact CC0 + Juhani Junkala OpenGameArt CC0 + original procedural gap fills"
+}
