@@ -1,7 +1,7 @@
-import { Group, Mesh, MeshLambertMaterial, MeshStandardMaterial, Vector3 } from 'three';
-import { ANIMALS, BOXER, COLORS, CONFIG, HOME, ROOM, SOLO, SOUND } from '../../../shared/config';
+import { Group, Material, Mesh, MeshLambertMaterial, MeshStandardMaterial, Vector3 } from 'three';
+import { ANIMALS, BIOME_PALETTES, BOXER, COLORS, CONFIG, HOME, RAIL, ROOM, SOLO, SOUND, WORLD } from '../../../shared/config';
 import type { PlayerState, RoomSnapshot } from '../../../shared/room';
-import type { HopDirection } from '../../../shared/movement';
+import type { DeathCause, HopDirection } from '../../../shared/movement';
 import type { GameRenderer } from './renderer';
 import type { Preferences } from '../ui/settings';
 import type { Motion } from '../ui/motion';
@@ -13,9 +13,13 @@ import { animalIcon, heartIcons, winPips } from '../ui/room-icons';
 import { lobbyControls, roomWorldTime } from './room-presentation';
 import { LifeEvents } from './life-events';
 import { RailSound } from './rail-sound';
+import { createHopPose, sampleHop } from '../../../shared/hop';
+import { createDeathPose, deathPose, Facing, respawnHeight } from './fighter-pose';
+import { DeathEffects } from './death-effects';
+import { trainX } from '../../../shared/hazards';
 
 export type RoomScreen = 'lobby' | 'versus' | 'roundEnd' | 'matchEnd' | 'friends' | 'home';
-interface Actor { effects: BoxingEffects; root: Group; boxer: Boxer; animal: number; id: string; heading: number; materials: (MeshStandardMaterial | MeshLambertMaterial)[]; deathAt: number }
+interface Actor { effects: BoxingEffects; root: Group; boxer: Boxer; animal: number; id: string; heading: number; facing: Facing; materials: Material[]; deathAt: number; deathCause: DeathCause | null; deathX: number; deathZ: number; deathEffects: DeathEffects; lifeId: number; respawnAt: number; landedHop: number }
 const ANGLE: Record<HopDirection, number> = { up: 0, down: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 };
 
 export class Versus {
@@ -28,6 +32,7 @@ export class Versus {
   private readonly railSound = new RailSound();
   private readonly actors = new Map<string, Actor>();
   private readonly point = new Vector3();
+  private readonly hopPose = createHopPose(); private readonly deathPose = createDeathPose();
   private readonly scenery = (z: number) => this.game.world.rows.find(slot => slot.z === z)?.row ?? undefined;
   constructor(private readonly root: HTMLElement, readonly game: GameRenderer, private readonly preferences: Preferences,
     private readonly motion: Motion, private readonly show: (screen: RoomScreen) => void) {
@@ -37,7 +42,7 @@ export class Versus {
     });
     const priorFrame = game.beforeFrame;
     game.beforeFrame = (now, dt) => { if (this.active) this.frame(dt); else priorFrame?.(now, dt); };
-    this.client.onPredictedDeath = lifeId => this.animateDeath(this.client.id, lifeId);
+    this.client.onPredictedDeath = (lifeId, cause) => this.animateDeath(this.client.id, lifeId, cause);
     this.client.onState = state => this.receive(state);
     this.client.onError = error => {
       const text = error === 'ROOM_NOT_FOUND' ? 'Room not found' : error === 'ROOM_FULL' ? 'Room full' : error;
@@ -87,7 +92,7 @@ export class Versus {
     if (arena) { this.game.home.root.add(arena.root); arena.root.position.set(0, 0, 0); arena.root.rotation.y = 0; arena.restoreHome(); }
     this.game.go('home'); this.element('room-error').textContent = ''; this.show(screen);
   }
-  private dispose(actor: Actor): void { actor.root.removeFromParent(); actor.effects.dispose(); for (const material of actor.materials) material.dispose(); }
+  private dispose(actor: Actor): void { actor.root.removeFromParent(); actor.effects.dispose(); actor.deathEffects.dispose(); for (const material of actor.materials) material.dispose(); }
   private actor(p: PlayerState): Actor {
     let actor = this.actors.get(p.id);
     if (actor?.animal === p.animal) return actor;
@@ -99,11 +104,12 @@ export class Versus {
     const root = new Group(); root.name = `room-player-${p.id}`; root.add(body); this.game.scene.add(root);
     const materials: Actor['materials'] = [];
     body.traverse(node => {
-      if (!(node instanceof Mesh) || node.userData.outline) return;
+      if (!(node instanceof Mesh)) return;
+      if (node.userData.outline) { const material = (node.material as Material).clone(); material.transparent = true; material.transparent = true; node.material = material; materials.push(material); return; }
       const original = node.material as MeshStandardMaterial;
       const material = this.game.quality.tier === 'high' ? new MeshStandardMaterial({ vertexColors: true, roughness: original.roughness ?? 1 }) : new MeshLambertMaterial({ vertexColors: true });
       if (node.userData.player_color) material.color.set(COLORS.players[p.slot]!);
-      node.material = material; materials.push(material); node.castShadow = this.game.quality.tier !== 'low';
+      material.transparent = true; node.material = material; materials.push(material); node.castShadow = this.game.quality.tier !== 'low';
     });
     const boxer = new Boxer(body); boxer.reduced = this.preferences.reducedMotion; boxer.joined();
     const effects = new BoxingEffects(BOXER.SHOVE_EFFECT_SCALE); this.game.scene.add(effects.root);
@@ -112,7 +118,9 @@ export class Versus {
       const glove = boxer.punchSide < 0 ? boxer.left : boxer.right;
       glove.getWorldPosition(this.point); effects.contact(this.poseTime, this.point);
     };
-    actor = { effects, root, boxer, animal: p.animal, id: p.id, heading: 0, materials, deathAt: 0 };
+    const deathEffects = new DeathEffects(); this.game.scene.add(deathEffects.root);
+    actor = { effects, root, boxer, animal: p.animal, id: p.id, heading: 0, facing: new Facing(), materials, deathAt: -Infinity,
+      deathCause: null, deathX: 0, deathZ: 0, deathEffects, lifeId: p.lifeId, respawnAt: -Infinity, landedHop: -1 };
     this.actors.set(p.id, actor); return actor;
   }
   private receive(state: RoomSnapshot): void {
@@ -132,12 +140,18 @@ export class Versus {
       this.startAt = state.startAt; this.game.world.reset(state.seed); this.game.rig.resetScroll(!first);
       this.arenaRow = NaN; this.railSound.reset(); for (const actor of this.actors.values()) actor.boxer.countdown();
     }
+    for (const p of state.players) {
+      const actor = this.actors.get(p.id); if (!actor || actor.lifeId === p.lifeId) continue;
+      actor.lifeId = p.lifeId; actor.deathCause = null; actor.deathAt = -Infinity; actor.landedHop = -1;
+      actor.respawnAt = state.phase === 'playing' ? this.poseTime : -Infinity; actor.facing.reset();
+      for (const material of actor.materials) material.opacity = 1;
+    }
     for (const event of state.events) if (event.seq > this.eventSequence) {
       const actor = this.actors.get(event.id);
       if (event.kind === 'hop') actor?.boxer.play('hop');
       if (event.kind === 'shove') { actor?.boxer.play('stunned'); this.actors.get(event.by)?.boxer.play('punch'); }
       if (event.kind === 'death') {
-        this.animateDeath(event.id, event.lifeId);
+        this.animateDeath(event.id, event.lifeId, event.cause as DeathCause);
         if (!this.deaths.confirmation(event.id, event.lifeId)) { this.eventSequence = event.seq; continue; }
         this.motion.toast(`${state.players.find(p => p.id === event.id)?.name ?? ''} ${event.cause}`);
       }
@@ -159,9 +173,14 @@ export class Versus {
     }
     this.updateUI(state);
   }
-  private animateDeath(id: string, lifeId: number): void {
+  private animateDeath(id: string, lifeId: number, cause: DeathCause): void {
     const actor = this.actors.get(id);
-    if (actor && this.deaths.animation(id, lifeId)) { actor.deathAt = this.poseTime; actor.boxer.play('stunned'); }
+    if (actor && this.deaths.animation(id, lifeId)) {
+      const move = id === this.client.id ? this.client.prediction : this.client.state!.players.find(p => p.id === id)!.movement;
+      actor.deathAt = this.poseTime; actor.deathCause = cause; actor.deathX = move.x; actor.deathZ = move.z;
+      actor.boxer.play('stunned');
+      if (cause === 'SPLASH!' || cause === 'LEFT BEHIND!') this.game.particles.burst(move.x, move.z, cause === 'SPLASH!' ? COLORS.water : COLORS.cream);
+    }
   }
   private updateUI(state: RoomSnapshot): void {
     const host = state.host === this.client.id, players = state.players.filter(p => p.connected);
@@ -210,6 +229,7 @@ export class Versus {
   }
   private frame(dt: number): void {
     const state = this.client.state; if (!state) return;
+    this.game.rig.shake = 0;
     this.poseTime += dt; this.client.advance(); const now = this.client.now;
     const me = state.players.find(p => p.id === this.client.id);
     this.input.enabled = this.client.ready && state.phase === 'playing' && !me?.waiting && (me?.hearts ?? 0) > 0;
@@ -232,25 +252,57 @@ export class Versus {
       let x = movement.x, z = movement.z, drawTime = time;
       if (p.id !== this.client.id && pair && state.phase === 'playing') {
         const a = pair.a.players.find(v => v.id === p.id), b = pair.b.players.find(v => v.id === p.id);
-        if (a && b) { x = a.movement.x + (b.movement.x - a.movement.x) * pair.mix; z = a.movement.z + (b.movement.z - a.movement.z) * pair.mix;
-          movement = pair.mix < 1 ? a.movement : b.movement; drawTime = Math.max(0, (this.client.now - CONFIG.INTERP_DELAY_MS - state.startAt) / 1000); }
+        if (a && b) {
+          drawTime = Math.max(0, (this.client.now - CONFIG.INTERP_DELAY_MS - state.startAt) / 1000);
+          movement = b.lifeId === a.lifeId && b.movement.hopStart <= drawTime && !b.movement.dead ? b.movement : a.movement;
+          if (drawTime >= b.movement.time) movement = b.movement;
+        }
       }
-      if (lobby) { x = ROOM.SPAWNS[2]![p.slot]!; z = SOLO.SPAWN_Z; }
-      const hop = !lobby && movement.hopping ? Math.min(1, Math.max(0, (drawTime - movement.hopStart) * 1000 / CONFIG.HOP_MS)) : 0;
-      const y = (movement.onLog ? SOLO.LOG_TOP : 0) + Math.sin(hop * Math.PI) * SOLO.HOP_HEIGHT;
-      actor.root.visible = p.connected && !p.waiting && (!movement.dead || this.poseTime - actor.deathAt < SOLO.DEATH_MS / 1000);
-      actor.root.position.set(x, y, -z);
-      const turn = Math.atan2(Math.sin(ANGLE[movement.direction] - actor.heading), Math.cos(ANGLE[movement.direction] - actor.heading));
-      actor.heading += turn * Math.min(1, dt * 1000 / SOLO.TURN_MS); actor.root.rotation.y = lobby ? HOME.ANIMAL_YAW : actor.heading;
-      const stretch = 1 + Math.sin(hop * Math.PI) * (SOLO.STRETCH_Y - 1); actor.root.scale.set(1 + (1 - stretch) / 2, stretch, 1 + (1 - stretch) / 2);
-      if (movement.dead) actor.root.scale.y = SOLO.FLATTEN_Y;
+      sampleHop(movement, drawTime, this.game.world.rowAt, this.hopPose);
+      const pose = this.hopPose; x = pose.x; z = pose.z;
+      if (lobby) { x = ROOM.SPAWNS[2]![p.slot]!; z = SOLO.SPAWN_Z; pose.y = 0; pose.sx = pose.sy = 1; pose.roll = 0; }
+      if (!lobby && !movement.dead && !pose.hopping && movement.hops > 0 && actor.landedHop !== movement.hopStart) {
+        actor.landedHop = movement.hopStart;
+        this.game.particles.burst(x, z, BIOME_PALETTES[this.game.world.rowAt(z).biome].grass[0]);
+        if (movement.onLog) { this.game.world.logDipRow = z; this.game.world.logDipUntil = time + CONFIG.HOP_MS / 1000; }
+      }
+      actor.root.visible = p.connected && !p.waiting;
+      actor.root.position.set(x, pose.y + respawnHeight(this.poseTime - actor.respawnAt, this.preferences.reducedMotion), -z);
+      actor.heading = actor.facing.update(ANGLE[movement.direction], this.poseTime);
+      actor.root.rotation.set(0, lobby ? HOME.ANIMAL_YAW : actor.heading, this.preferences.reducedMotion ? 0 : pose.roll);
+      actor.root.scale.set(pose.sx, pose.sy, pose.sx);
+      const dying = !!movement.dead || (p.id === this.client.id && !!this.client.prediction.dead);
+      const elapsed = this.poseTime - actor.deathAt;
+      if (dying && actor.deathCause) {
+        deathPose(actor.deathCause, elapsed, actor.deathX < 0 ? -1 : 1, this.preferences.reducedMotion, this.deathPose);
+        const death = this.deathPose;
+        actor.root.position.set(actor.deathX + death.x, death.y, -actor.deathZ);
+        actor.root.rotation.z = death.roll; actor.root.scale.set(death.sx, death.sy, death.sx);
+        for (const material of actor.materials) material.opacity = death.opacity;
+        actor.root.visible &&= elapsed < SOLO.DEATH_MS / 1000;
+        if (elapsed < SOLO.DEATH_SHAKE_S && Math.hypot(actor.deathX - this.client.prediction.x, actor.deathZ - this.client.prediction.z) <= SOLO.DEATH_SHAKE_DISTANCE)
+          this.game.rig.shake = Math.max(this.game.rig.shake, SOLO.DEATH_SHAKE * (1 - elapsed / SOLO.DEATH_SHAKE_S));
+      } else {
+        for (const material of actor.materials) material.opacity = 1;
+        if (!lobby && movement.invulnerableUntil > time && !this.preferences.reducedMotion)
+          actor.root.visible &&= Math.floor(this.poseTime * SOLO.PROTECT_BLINK_HZ * 2) % 2 === 0;
+      }
+      actor.deathEffects.update(dying ? actor.deathCause : null, elapsed, actor.deathX, actor.deathZ);
       actor.effects.root.position.copy(actor.root.position);
       actor.effects.update(this.poseTime, actor.boxer.move, this.preferences.reducedMotion);
-      actor.boxer.reduced = this.preferences.reducedMotion; actor.boxer.update(this.poseTime);
+      actor.boxer.reduced = this.preferences.reducedMotion;
+      // Hop rig follows the same delayed/predicted clock as the body, including buffered hops.
+      actor.boxer.review = pose.hopping && !dying ? { move: 'hop', elapsed: drawTime - movement.hopStart } : null;
+      actor.boxer.update(this.poseTime);
       const label = this.element(`match-name-${p.slot}`); label.hidden = !actor.root.visible || lobby;
       label.textContent = `${p.name}${p.id === this.client.id ? ' ▼' : ''}${movement.invulnerableUntil > time ? ' ✦' : ''}`;
       this.point.set(x, SOLO.NAME_HEIGHT, -z).project(this.game.rig.camera);
       label.style.transform = `translate(${(this.point.x + 1) * innerWidth / 2}px,${(1 - this.point.y) * innerHeight / 2}px) translate(-50%,-50%)`;
+    }
+    if (state.phase === 'playing') for (const slot of this.game.world.rows) if (slot.row?.kind === 'rail') {
+      const train = trainX(slot.row, time);
+      if (train !== null && Math.abs(train - this.client.prediction.x) < WORLD.TRAIN_LENGTH / 2 + CONFIG.COLUMNS
+        && Math.abs(slot.z - this.client.prediction.z) <= RAIL.SHAKE_DISTANCE) this.game.rig.shake = Math.max(this.game.rig.shake, RAIL.SHAKE_AMPLITUDE);
     }
     if (me) { this.game.world.animalX = this.client.prediction.x; this.game.world.animalZ = this.client.prediction.z; }
     const arena = this.game.home.arena;
