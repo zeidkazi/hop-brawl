@@ -22,8 +22,9 @@ def create():
     v.face(1, 5, 6, 6)
     # Sweep the bushy tail out to the camera-facing side, beyond the head.
     v.box(4, 5, 2, 3, 1, 2, orange, 'tail')
-    v.box(5, 7, 3, 5, 0, 2, orange, 'tail')
-    v.box(6, 7, 6, 7, 0, 2, white, 'tail')
-    v.box(6, 6, 8, 8, 1, 2, white, 'tail')
+    # Broad orange haunch and a large cream cap remain legible from the 52-degree play camera.
+    v.box(4, 7, 3, 5, 0, 3, orange, 'tail')
+    v.box(5, 7, 6, 7, 0, 3, white, 'tail')
+    v.box(5, 6, 8, 8, 1, 2, white, 'tail')
     v.pivots['tail'] = [4.5, 3, 3]
     return v
