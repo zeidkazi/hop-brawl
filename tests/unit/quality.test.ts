@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { QUALITY_DEGRADE } from '../../shared/config';
 import { FrameWindow, QualityController } from '../../client/src/game/quality';
 
 describe('frame pacing and quality', () => {
   it('restores full menu resolution immediately and never lowers it in menus', () => {
     const quality = new QualityController(true);
     quality.resolution = 0.75;
-    expect(quality.pixelRatio(2, false)).toBe(1.5);
+    expect(quality.pixelRatio(2, false)).toBe(2);
     expect(quality.sample(0, 30, false)).toBe(true);
     for (let t = 30; t < 5000; t += 30) quality.sample(t, 30, false);
     expect(quality.resolution).toBe(1);
-    expect(quality.tier).toBe('low');
+    expect(quality.resolution).toBe(1);
   });
   it('measures a rolling window and removes old stalls', () => {
     const frames = new FrameWindow();
@@ -22,15 +23,17 @@ describe('frame pacing and quality', () => {
     expect(frames.p90).toBe(12);
     expect(frames.worst).toBe(12);
   });
-  it('starts phones at Medium, lowers resolution before a sustained tier drop', () => {
-    const quality = new QualityController(true);
-    expect(quality.tier).toBe('medium');
-    expect(quality.pixelRatio(3)).toBe(1.5);
-    for (let t = 0; t < 3000; t += 30) quality.sample(t, 30, true);
-    expect(quality.tier).toBe('medium');
-    expect(quality.resolution).toBe(0.75);
-    for (let t = 3000; t < 3500; t += 30) quality.sample(t, 30, true);
-    expect(quality.tier).toBe('low');
+  it('degrades every effect in order before resolution and never goes below one CSS pixel', () => {
+    const quality = new QualityController(true), stages: number[] = [];
+    expect(quality.pixelRatio(3)).toBe(2);
+    for (let t = 0; t < 24000; t += 30) {
+      if (quality.sample(t, 30, true) && stages.at(-1) !== quality.degradation) stages.push(quality.degradation);
+      if (quality.degradation < QUALITY_DEGRADE.BLOB_SHADOWS) expect(quality.resolution).toBe(1);
+    }
+    expect(stages).toEqual([1, 2, 3, 4, 5]); expect(quality.resolution).toBeLessThan(1);
+    expect(quality.shadowSize).toBe(0); expect(quality.weatherCount).toBe(0); expect(quality.propOutlines).toBe(false);
+    for (const dpr of [.8, 1, 1.25, 2, 3]) expect(quality.pixelRatio(dpr)).toBeGreaterThanOrEqual(Math.min(dpr, 1));
+    quality.setChoice('low'); expect(quality.pixelRatio(1.25)).toBe(1);
   });
   it('never auto-raises in a round and honours the manual tier override', () => {
     const quality = new QualityController(false);
@@ -43,11 +46,11 @@ describe('frame pacing and quality', () => {
   });
   it('keeps an automatically lowered tier during play, then permits menu recovery', () => {
     const quality = new QualityController(true);
-    for (let t = 0; t < 4000; t += 30) quality.sample(t, 30, true);
+    for (let t = 0; t < 17000; t += 30) quality.sample(t, 30, true);
     expect(quality.tier).toBe('low');
-    for (let t = 4000; t < 12000; t += 10) quality.sample(t, 10, true);
+    for (let t = 17000; t < 24000; t += 10) quality.sample(t, 10, true);
     expect(quality.tier).toBe('low');
-    for (let t = 12000; t < 16000; t += 10) quality.sample(t, 10, false);
+    for (let t = 24000; t < 28000; t += 10) quality.sample(t, 10, false);
     expect(quality.tier).toBe('medium');
   });
 });
