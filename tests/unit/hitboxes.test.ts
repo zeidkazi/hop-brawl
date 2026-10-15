@@ -1,3 +1,4 @@
+import { CONFIG } from '../../shared/config';
 import { describe, expect, it } from 'vitest';
 import { carriedOffEdge, hopHazardPosition, logAtLanding, trainHits, vehicleHits } from '../../shared/hazards';
 import type { RailRow, RiverRow, RoadRow } from '../../shared/types';
@@ -51,17 +52,17 @@ describe('forgiving hitboxes', () => {
 describe('hop hazard row', () => {
   it('switches at 50% for forward and backward hops without allocating output', () => {
     const out = { x: 0, z: 0 };
-    expect(hopHazardPosition(4, 5, 4, 6, 69.99, out)).toBe(out);
+    expect(hopHazardPosition(4, 5, 4, 6, CONFIG.HOP_MS / 2 - .01, out)).toBe(out);
     expect(out).toEqual({ x: 4, z: 5 });
-    hopHazardPosition(4, 5, 4, 6, 70, out);
+    hopHazardPosition(4, 5, 4, 6, CONFIG.HOP_MS / 2, out);
     expect(out).toEqual({ x: 4, z: 6 });
-    hopHazardPosition(4, 6, 4, 5, 70, out);
+    hopHazardPosition(4, 6, 4, 5, CONFIG.HOP_MS / 2, out);
     expect(out).toEqual({ x: 4, z: 5 });
   });
 
   it('interpolates sideways from fractional log positions and clamps elapsed time', () => {
     const out = { x: 0, z: 0 };
-    hopHazardPosition(3.2, 5, 4.2, 5, 70, out);
+    hopHazardPosition(3.2, 5, 4.2, 5, CONFIG.HOP_MS / 2, out);
     expect(out).toEqual({ x: 3.7, z: 5 });
     hopHazardPosition(3.2, 5, 4.2, 5, 1000, out);
     expect(out).toEqual({ x: 4.2, z: 5 });
