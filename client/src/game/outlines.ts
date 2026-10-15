@@ -29,6 +29,7 @@ export class Outlines {
       shell.instanceMatrix = source.instanceMatrix;
       shell.boundingSphere = source.boundingSphere?.clone() ?? null;
     }
+    shell.updateMatrix(); shell.matrixAutoUpdate = false;
     shell.name = source.name + '_hull'; shell.userData.outline = true;
     source.add(shell); this.entries.push({ source, shell, kind });
   }

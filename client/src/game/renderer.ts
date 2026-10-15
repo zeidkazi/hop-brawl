@@ -12,6 +12,7 @@ import { QualityController } from './quality';
 import type { GraphicsChoice, Tier } from './quality';
 import { WorldView } from './world-view';
 import { HomeScene } from './home-scene';
+import { updateVisibleMatrices } from './scene-matrices';
 import { createSky } from './sky';
 import { prepareDesaturation } from './desaturation';
 
@@ -60,6 +61,7 @@ export class GameRenderer {
     this.quality = new QualityController(mobile);
     this.width = window.innerWidth; this.height = window.innerHeight;
     this.rig = new CameraRig(this.width / this.height);
+    this.scene.matrixWorldAutoUpdate = false;
     this.scene.background = new Color(COLORS.sky);
     this.scene.fog = new Fog(COLORS.sky, VIEW.LOBBY_DISTANCE, VIEW.FAR / 2);
     this.scene.add(this.sky, this.world.root, this.particles.mesh, new HemisphereLight(COLORS.sky, COLORS.groundSide, VIEW.HEMISPHERE_INTENSITY), this.sun, this.sun.target);
@@ -73,7 +75,7 @@ export class GameRenderer {
     shadowCamera.right = CONFIG.COLUMNS / 2 + VIEW.SHADOW_MARGIN;
     shadowCamera.top = CONFIG.VIEW_ROWS / 2 + VIEW.SHADOW_MARGIN;
     shadowCamera.bottom = -CONFIG.VIEW_ROWS / 2 - VIEW.SHADOW_MARGIN;
-    shadowCamera.far = VIEW.FAR;
+    shadowCamera.near = 1; shadowCamera.far = VIEW.SHADOW_FAR;
     shadowCamera.updateProjectionMatrix();
     this.highShadow = this.sun.shadow;
     this.highShadow.mapSize.setScalar(QUALITY.high.shadowSize);
@@ -182,6 +184,7 @@ export class GameRenderer {
     const z = this.rig.camZ;
     this.sun.position.set(-3, 14, -z + 6);
     this.sun.target.position.set(4, 0, -z - 6);
+    updateVisibleMatrices(this.scene);
     this.renderer.info.reset();
     if (this.quality.tier === 'high') {
       this.renderer.setRenderTarget(this.target);
