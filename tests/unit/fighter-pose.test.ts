@@ -22,3 +22,12 @@ it('drops, contacts, bounces and settles, with no drop under Reduce Motion', () 
   expect(respawnHeight(.36, false)).toBeGreaterThan(0);
   expect(respawnHeight(.45, false)).toBe(0); expect(respawnHeight(.1, true)).toBe(0);
 });
+
+it('sinks in 150ms without shrinking, and holds the colored pancake for one second before fading', () => {
+  const p = createDeathPose();
+  deathPose('SPLASH!', .075, 1, false, p); expect(p.y).toBeCloseTo(-.75); expect(p.sy).toBe(1);
+  deathPose('SPLASH!', .15, 1, false, p); expect(p.y).toBe(-1.5);
+  deathPose('FLATTENED!', 1, 1, false, p); expect(p.sy).toBeCloseTo(.1); expect(p.opacity).toBe(1);
+  deathPose('FLATTENED!', 1.1, 1, false, p); expect(p.opacity).toBeCloseTo(.5);
+  deathPose('FLATTENED!', 1.2, 1, false, p); expect(p.opacity).toBeCloseTo(0);
+});

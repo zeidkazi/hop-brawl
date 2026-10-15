@@ -15,8 +15,8 @@ export function createDeathPose() { return { x: 0, y: 0, roll: 0, sx: 1, sy: 1, 
 export function deathPose(cause: DeathCause, elapsed: number, side: number, reduced: boolean, out: ReturnType<typeof createDeathPose>): void {
   const t = Math.max(0, Math.min(1, elapsed * 1000 / SOLO.DEATH_MS)), p = ease(t);
   out.x = out.y = out.roll = 0; out.sx = out.sy = out.opacity = 1;
-  if (cause === 'FLATTENED!') { out.sy = 1 - (1 - SOLO.FLATTEN_Y) * ease(t * SOLO.FLATTEN_RATE); out.sx = 1 + (1 - out.sy) * SOLO.FLATTEN_SPREAD; }
-  else if (cause === 'SPLASH!') { out.y = -p * SOLO.SINK_DEPTH; out.sx = out.sy = 1 - p * SOLO.SINK_SCALE; }
+  if (cause === 'FLATTENED!') { out.sy = 1 - (1 - SOLO.FLATTEN_Y) * ease(t * SOLO.FLATTEN_RATE); out.sx = 1 + (1 - out.sy) * SOLO.FLATTEN_SPREAD; out.opacity = 1 - ease((elapsed - SOLO.PANCAKE_HOLD_S) / SOLO.PANCAKE_FADE_S); }
+  else if (cause === 'SPLASH!') { out.y = -ease(elapsed / SOLO.SINK_S) * SOLO.SINK_DEPTH; }
   else if (cause === 'DERAILED!') { out.x = p * SOLO.TRAIN_FLING_X; out.y = Math.sin(p * Math.PI) * SOLO.TRAIN_FLING_Y; out.roll = reduced ? 0 : p * Math.PI * 2 * SOLO.TRAIN_SPINS; }
   else if (cause === 'SWEPT AWAY!') { out.x = side * p * SOLO.SWEPT_TRAVEL; out.roll = reduced ? 0 : Math.sin(t * SOLO.SWEPT_WOBBLE_RATE) * SOLO.SWEPT_WOBBLE; }
   else out.opacity = 1 - p;
