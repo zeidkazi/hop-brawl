@@ -70,6 +70,9 @@ describe('camera stations', () => {
     rig.reducedMotion = true; rig.update(1 / 60, 0);
     expect(rig.camera.position.x).toBeCloseTo(x);
     rig.resetScroll(true); rig.update(0, 0); expect(rig.camera.position.x).toBeCloseTo(x);
+    rig.go('soloEnd'); rig.reducedMotion = false; rig.shake = RAIL.SHAKE_AMPLITUDE;
+    rig.update(1 / 60, 1 / (4 * RAIL.SHAKE_HZ)); expect(rig.camera.position.x - x).toBeCloseTo(RAIL.SHAKE_AMPLITUDE);
+    rig.reducedMotion = true; rig.update(1 / 60, 0); expect(rig.camera.position.x).toBeCloseTo(x);
   });
   it.each([390 / 844, 1440 / 900, 844 / 390])('frames the leader in the lower third and matches server projection at aspect %s', aspect => {
     const rig = new CameraRig(aspect);

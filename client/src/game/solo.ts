@@ -42,6 +42,7 @@ export class Solo {
   private readonly facing = new Facing();
   private readonly hopPose = createHopPose(); private readonly deathPose = createDeathPose();
   private readonly deathEffects = new DeathEffects();
+  private readonly hopReview = { move: 'hop' as const, elapsed: 0 };
   private heading = 0; private lastScore = -1; private lastCountdown = '';
   private boxer: Boxer | null = null;
   private readonly point = new Vector3();
@@ -266,7 +267,8 @@ export class Solo {
     if (this.boxer) {
       this.boxer.comboYaw = Math.atan2(this.game.rig.camera.position.x - actor.position.x, -(this.game.rig.camera.position.z - actor.position.z)) + this.heading;
       this.boxer.comboLift = BOXER.COMBO_LIFT;
-      this.boxer.review = player.hopping && !player.dead ? { move: 'hop', elapsed: player.time - player.hopStart } : null;
+      this.hopReview.elapsed = player.time - player.hopStart;
+      this.boxer.review = player.hopping && !player.dead ? this.hopReview : null;
     }
     this.game.home.updateGameActor(this.poseTime);
     const arena = this.game.home.arena;

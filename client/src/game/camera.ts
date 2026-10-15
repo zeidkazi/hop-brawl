@@ -131,7 +131,7 @@ export class CameraRig {
       this.camera.projectionMatrix.elements[9] = VIEW.GAME_PLAYER_Y * 2 - 1;
       this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
     }
-    if (this.station === 'gameplay' && !this.reducedMotion && this.shake) {
+    if ((this.station === 'gameplay' || this.station === 'soloEnd') && !this.reducedMotion && this.shake) {
       this.shakeOffset = Math.sin(time * Math.PI * 2 * RAIL.SHAKE_HZ) * this.shake;
       this.camera.position.x += this.shakeOffset; this.camera.updateMatrixWorld();
     }

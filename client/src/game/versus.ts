@@ -19,7 +19,7 @@ import { DeathEffects } from './death-effects';
 import { trainX } from '../../../shared/hazards';
 
 export type RoomScreen = 'lobby' | 'versus' | 'roundEnd' | 'matchEnd' | 'friends' | 'home';
-interface Actor { effects: BoxingEffects; root: Group; boxer: Boxer; animal: number; id: string; heading: number; facing: Facing; materials: Material[]; deathAt: number; deathCause: DeathCause | null; deathX: number; deathZ: number; deathEffects: DeathEffects; lifeId: number; respawnAt: number; landedHop: number }
+interface Actor { effects: BoxingEffects; root: Group; boxer: Boxer; animal: number; id: string; heading: number; facing: Facing; materials: Material[]; deathAt: number; deathCause: DeathCause | null; deathX: number; deathZ: number; deathEffects: DeathEffects; lifeId: number; respawnAt: number; landedHop: number; hopReview: { move: 'hop'; elapsed: number } }
 const ANGLE: Record<HopDirection, number> = { up: 0, down: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 };
 
 export class Versus {
@@ -120,7 +120,7 @@ export class Versus {
     };
     const deathEffects = new DeathEffects(); this.game.scene.add(deathEffects.root);
     actor = { effects, root, boxer, animal: p.animal, id: p.id, heading: 0, facing: new Facing(), materials, deathAt: -Infinity,
-      deathCause: null, deathX: 0, deathZ: 0, deathEffects, lifeId: p.lifeId, respawnAt: -Infinity, landedHop: -1 };
+      deathCause: null, deathX: 0, deathZ: 0, deathEffects, lifeId: p.lifeId, respawnAt: -Infinity, landedHop: -1, hopReview: { move: 'hop', elapsed: 0 } };
     this.actors.set(p.id, actor); return actor;
   }
   private receive(state: RoomSnapshot): void {
@@ -294,7 +294,8 @@ export class Versus {
       actor.boxer.comboYaw = Math.atan2(this.game.rig.camera.position.x - actor.root.position.x, -(this.game.rig.camera.position.z - actor.root.position.z)) + actor.root.rotation.y;
       actor.boxer.comboLift = BOXER.COMBO_LIFT;
       // Hop rig follows the same delayed/predicted clock as the body, including buffered hops.
-      actor.boxer.review = pose.hopping && !dying ? { move: 'hop', elapsed: drawTime - movement.hopStart } : null;
+      actor.hopReview.elapsed = drawTime - movement.hopStart;
+      actor.boxer.review = pose.hopping && !dying ? actor.hopReview : null;
       actor.boxer.update(this.poseTime);
       const label = this.element(`match-name-${p.slot}`); label.hidden = !actor.root.visible || lobby;
       label.textContent = `${p.name}${p.id === this.client.id ? ' ▼' : ''}${movement.invulnerableUntil > time ? ' ✦' : ''}`;
