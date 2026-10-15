@@ -11,6 +11,7 @@ import type { Boxer } from './boxer';
 import { RailSound } from './rail-sound';
 import { createHopPose, sampleHop } from '../../../shared/hop';
 import { createDeathPose, deathPose, Facing } from './fighter-pose';
+import { DeathEffects } from './death-effects';
 
 export const SOLO_BEST_KEY = 'hop-brawl-solo-best';
 export function readBest(storage: Pick<Storage, 'getItem'>): number | null {
@@ -40,6 +41,7 @@ export class Solo {
   private deathAt = 0; private bonkAt = -Infinity; private bonkDirection: HopDirection = 'up';
   private readonly facing = new Facing();
   private readonly hopPose = createHopPose(); private readonly deathPose = createDeathPose();
+  private readonly deathEffects = new DeathEffects();
   private heading = 0; private lastScore = -1; private lastCountdown = '';
   private boxer: Boxer | null = null;
   private readonly point = new Vector3();
@@ -54,6 +56,7 @@ export class Solo {
     private readonly motion: Motion, private readonly show: (screen: SoloScreen) => void) {
     const element = (id: string): HTMLElement => root.querySelector<HTMLElement>(`#${id}`)!;
     this.score = element('solo-distance'); this.bestLabel = element('solo-best'); this.countdown = element('solo-countdown');
+    game.scene.add(this.deathEffects.root);
     this.cause = element('solo-cause'); this.danger = element('solo-danger'); this.marker = element('solo-you');
     this.name = element('solo-name'); this.flag = element('solo-best-flag'); this.heart = element('solo-heart');
     this.movement = new Movement(game.world.rowAt);
@@ -109,6 +112,7 @@ export class Solo {
     game.world.actorVisible = false; game.world.animal = this.preferences.animal;
     game.rig.resetScroll(retry); game.go('gameplay'); game.desaturation.value = 0;
     game.home.setActorOpacity(1); game.world.deathCause = null;
+    this.deathEffects.root.visible = false;
     this.roundTime = this.poseTime = 0; this.runBest = this.best ?? 0; this.newBest = false; this.lastScore = -1;
     this.railSound.reset(); this.arenaRow = NaN;
     this.facing.reset(); this.heading = 0; this.bonkAt = -Infinity; this.cause.hidden = true;
@@ -145,6 +149,7 @@ export class Solo {
     this.input.enabled = false; this.input.clear(); this.phase = 'inactive';
     this.game.playing = false; this.game.worldTime = null; this.game.desaturation.value = 0;
     this.game.home.setActorOpacity(1);
+    this.deathEffects.root.visible = false;
     this.game.world.actorVisible = true; this.game.world.showCrates = true;
     const home = this.game.home; home.root.add(home.animalRoot);
     home.root.add(home.effects.root);
@@ -182,7 +187,7 @@ export class Solo {
     if (this.preferences.haptics) navigator.vibrate?.(SOLO.HAPTIC_DEATH_MS);
     this.best = Math.max(this.best ?? 0, this.movement.distance);
     try { localStorage.setItem(SOLO_BEST_KEY, String(this.best)); } catch { /* Session best remains usable. */ }
-    this.game.world.deathCause = cause; this.game.world.deathX = this.movement.x; this.game.world.deathZ = this.movement.z;
+    this.game.world.deathCause = null;
     if (cause === 'SPLASH!' || cause === 'LEFT BEHIND!') this.game.particles.burst(this.movement.x, this.movement.z, cause === 'SPLASH!' ? COLORS.water : COLORS.cream);
     this.heart.style.opacity = '0'; this.heart.style.transform = `translateY(${SOLO.HEART_FALL_PX}px) rotate(${SOLO.HEART_SPIN_DEG}deg)`;
   };
@@ -250,6 +255,7 @@ export class Solo {
     if (player.dead) {
       const t = Math.min(1, (this.poseTime - this.deathAt) * 1000 / SOLO.DEATH_MS);
       this.game.world.deathProgress = t;
+      this.deathEffects.update(player.dead, this.poseTime - this.deathAt, player.x, player.z);
       deathPose(player.dead, this.poseTime - this.deathAt, player.x < 0 ? -1 : 1, this.preferences.reducedMotion, this.deathPose);
       const death = this.deathPose;
       actor.position.x += death.x; actor.position.y += death.y; actor.rotation.z = death.roll;
