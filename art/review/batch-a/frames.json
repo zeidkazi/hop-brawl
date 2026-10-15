@@ -340,12 +340,12 @@
           "path": "output/playwright/batch-a/splash-80.png",
           "ms": 80,
           "x": 1,
-          "y": -0.027264000000000004,
+          "y": -0.8248888888888889,
           "z": -39,
           "scale": [
-            0.9872768,
-            0.9872768,
-            0.9872768
+            1,
+            1,
+            1
           ],
           "onLog": false,
           "cause": "SPLASH!"
@@ -354,12 +354,12 @@
           "path": "output/playwright/batch-a/splash-180.png",
           "ms": 180,
           "x": 1,
-          "y": -0.128304,
+          "y": -1.5,
           "z": -39,
           "scale": [
-            0.9401248,
-            0.9401248,
-            0.9401248
+            1,
+            1,
+            1
           ],
           "onLog": false,
           "cause": "SPLASH!"
@@ -368,12 +368,12 @@
           "path": "output/playwright/batch-a/splash-350.png",
           "ms": 350,
           "x": 1,
-          "y": -0.4226249999999999,
+          "y": -1.5,
           "z": -39,
           "scale": [
-            0.802775,
-            0.802775,
-            0.802775
+            1,
+            1,
+            1
           ],
           "onLog": false,
           "cause": "SPLASH!"
@@ -382,12 +382,12 @@
           "path": "output/playwright/batch-a/splash-600.png",
           "ms": 600,
           "x": 1,
-          "y": -0.972,
+          "y": -1.5,
           "z": -39,
           "scale": [
-            0.5464,
-            0.5464,
-            0.5464
+            1,
+            1,
+            1
           ],
           "onLog": false,
           "cause": "SPLASH!"
@@ -396,12 +396,12 @@
           "path": "output/playwright/batch-a/splash-900.png",
           "ms": 900,
           "x": 1,
-          "y": -1.458,
+          "y": -1.5,
           "z": -39,
           "scale": [
-            0.3196000000000001,
-            0.3196000000000001,
-            0.3196000000000001
+            1,
+            1,
+            1
           ],
           "onLog": false,
           "cause": "SPLASH!"
