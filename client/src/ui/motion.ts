@@ -39,12 +39,13 @@ export class Motion {
       panel.inert = panel !== next;
       if (panel !== next && panel !== previous) { panel.hidden = true; gsap.set(panel, { opacity: 0 }); }
     }
+    const immediate = next.id === 'friends' || next.id === 'name';
     const fresh = next.hidden;
     next.hidden = false;
     const enterItems = this.items.get(next)!;
     if (fresh) {
-      gsap.set(next, { opacity: 0, y: this.reduced ? 0 : VIEW.PANEL_ENTER_PX });
-      gsap.set(enterItems, { opacity: 0, y: this.reduced ? 0 : VIEW.PANEL_ENTER_PX });
+      gsap.set(next, { opacity: immediate ? 1 : 0, y: this.reduced || immediate ? 0 : VIEW.PANEL_ENTER_PX });
+      gsap.set(enterItems, { opacity: immediate ? 1 : 0, y: this.reduced || immediate ? 0 : VIEW.PANEL_ENTER_PX });
     }
     gsap.ticker.tick();
     const timeline = gsap.timeline({ onComplete: () => {
@@ -53,11 +54,11 @@ export class Motion {
     this.transition = timeline;
     if (previous) timeline.to(previous, { opacity: 0, y: this.reduced ? 0 : -VIEW.PANEL_EXIT_PX,
       duration: VIEW.PANEL_EXIT_MS / 1000, ease: 'power2.in', overwrite: 'auto', onComplete: () => { previous.hidden = true; } }, 0);
-    timeline.to(next, { opacity: 1, y: 0, duration: VIEW.PANEL_ENTER_MS / 1000,
-      ease: this.reduced ? 'none' : `back.out(${VIEW.PANEL_OVERSHOOT})`, overwrite: 'auto' }, previous ? VIEW.PANEL_EXIT_MS * VIEW.PANEL_OVERLAP / 1000 : 0);
-    timeline.to(enterItems, { opacity: 1, y: 0, duration: VIEW.PANEL_ENTER_MS / 1000,
-      stagger: this.reduced ? 0 : VIEW.STAGGER_MS / 1000,
-      ease: this.reduced ? 'none' : `back.out(${VIEW.PANEL_OVERSHOOT})`, overwrite: 'auto' }, previous ? VIEW.PANEL_EXIT_MS * VIEW.PANEL_OVERLAP / 1000 : 0);
+    timeline.to(next, { opacity: 1, y: 0, duration: immediate ? 0 : VIEW.PANEL_ENTER_MS / 1000,
+      ease: this.reduced ? 'none' : `back.out(${VIEW.PANEL_OVERSHOOT})`, overwrite: 'auto' }, previous && !immediate ? VIEW.PANEL_EXIT_MS * VIEW.PANEL_OVERLAP / 1000 : 0);
+    timeline.to(enterItems, { opacity: 1, y: 0, duration: immediate ? 0 : VIEW.PANEL_ENTER_MS / 1000,
+      stagger: this.reduced || immediate ? 0 : VIEW.STAGGER_MS / 1000,
+      ease: this.reduced ? 'none' : `back.out(${VIEW.PANEL_OVERSHOOT})`, overwrite: 'auto' }, previous && !immediate ? VIEW.PANEL_EXIT_MS * VIEW.PANEL_OVERLAP / 1000 : 0);
   }
 
   settle(): void {
