@@ -1,0 +1,128 @@
+import { Howl, Howler } from 'howler';
+import { CONFIG, SOUND, VIEW } from '../../../shared/config';
+import type { Biome } from '../../../shared/types';
+import type { DeathCause } from '../../../shared/movement';
+import manifest from './audio-manifest.json';
+import { downloads, registerAsset } from '../ui/downloads';
+import { voiceToSteal } from './audio-policy';
+import type { Voice } from './audio-policy';
+type Cue = keyof typeof manifest.sfx;
+type Track = keyof typeof manifest.music;
+type Sprite = Record<string, [number, number, boolean]>;
+let musicFile = 'brawl.ogg';
+export function registerAudio(): void {
+  musicFile = Howler.codecs('ogg') ? 'brawl.ogg' : 'brawl.m4a';
+  registerAsset('/sfx/brawl.mp3', 'brawl.mp3'); registerAsset(`/music/${musicFile}`, musicFile);
+}
+/** Howler owns playback/decoding; this small adapter routes only music through a low-pass.
+ * _soundById/_node are isolated here and covered by browser tests against the pinned Howler version. */
+function musicNode(howl: Howl, id: number): GainNode | undefined {
+  return (howl as unknown as { _soundById(id: number): { _node: GainNode } | undefined })._soundById(id)?._node;
+}
+export class BoxingSound {
+  private sfx?: Howl; private music?: Howl; private filter?: BiquadFilterNode;
+  private loaded = false; private unlocked = false; private loading: Promise<void> | undefined;
+  private sfxVolume: number = VIEW.SFX_VOLUME; private musicLevel: number = VIEW.MUSIC_VOLUME;
+  private voices: Voice[] = []; private seen = new Set<string>();
+  private track: Track = 'menu'; private musicId = -1; private fadingId = -1;
+  private rate = 1; private muffled = false; private paused = false; private ducked = false;
+  private duckTimer = 0; private fanfareTimer = 0;
+  get volume(): number { return this.sfxVolume; }
+  set volume(value: number) { this.sfxVolume = value; for (const v of this.voices) this.sfx?.volume(value * v.level, v.id); }
+  get musicVolume(): number { return this.musicLevel; }
+  set musicVolume(value: number) { this.musicLevel = value; this.mix(); }
+  get diagnostics() { return { loaded: this.loaded, unlocked: this.unlocked, track: this.track, musicId: this.musicId,
+    musicRate: this.rate, muffled: this.muffled, paused: this.paused, ducked: this.ducked,
+    voices: this.voices.filter(v => this.sfx?.playing(v.id)).length + (this.music?.playing(this.musicId) ? 1 : 0) + (this.music?.playing(this.fadingId) ? 1 : 0),
+    filterHz: this.filter?.frequency.value ?? SOUND.MUSIC_OPEN_HZ, musicVolume: this.musicLevel, sfxVolume: this.volume }; }
+  load(): Promise<void> {
+    return this.loading ??= this.decode().catch(error => { this.loading = undefined; throw error; });
+  }
+  private async decode(): Promise<void> {
+    await downloads.load();
+    const load = (path: string, format: string, sprite: Sprite) => new Promise<Howl>((resolve, reject) => {
+      const url = URL.createObjectURL(new Blob([downloads.bytes(path)]));
+      const howl = new Howl({ src: [url], format: [format], sprite, volume: 0, preload: true, pool: SOUND.MAX_VOICES,
+        onload: () => { URL.revokeObjectURL(url); resolve(howl); },
+        onloaderror: (_id, error) => { URL.revokeObjectURL(url); downloads.invalidate(path); howl.unload(); reject(new Error(`Audio decode failed: ${path}: ${error}`)); } });
+    });
+    this.sfx?.unload(); this.music?.unload();
+    const [sfx, music] = await Promise.all([load('/sfx/brawl.mp3', 'mp3', manifest.sfx as unknown as Sprite), load(`/music/${musicFile}`, musicFile.endsWith('ogg') ? 'ogg' : 'm4a', manifest.music as unknown as Sprite)]);
+    this.sfx = sfx; this.music = music;
+    if (Howler.ctx) { this.filter = Howler.ctx.createBiquadFilter(); this.filter.type = 'lowpass'; this.filter.frequency.value = SOUND.MUSIC_OPEN_HZ; this.filter.connect(Howler.masterGain); }
+    this.loaded = true;
+  }
+  unlock(): void {
+    if (!this.loaded || this.unlocked && Howler.ctx?.state === 'running') return;
+    const start = () => { this.unlocked = true; if (this.musicId < 0) this.startMusic(CONFIG.MUSIC_CROSSFADE_MS); };
+    if (Howler.ctx?.state !== 'running') void Howler.ctx?.resume().then(start).catch(() => {}); else start();
+  }
+  play(cue: Cue | 'hop' | 'win', pan = 0, level = SOUND.PLAYER_GAIN as number, animal = 2): number {
+    if (!this.unlocked || !this.sfx || !this.volume || document.hidden) return -1;
+    const key: Cue = cue === 'hop' ? `hop${Math.floor(Math.random() * 3)}` as Cue : cue === 'win' ? 'roundWin' : cue;
+    const priority = key === 'bell' || key === 'horn' ? 3 : 2;
+    const id = this.allocate(key, pan, level, priority, false, '');
+    if (id >= 0 && cue === 'hop') this.sfx.rate(SOUND.ANIMAL_PITCH[animal] ?? 1, id);
+    return id;
+  }
+  private allocate(cue: Cue, pan: number, level: number, priority: number, loop: boolean, key: string): number {
+    this.voices = this.voices.filter(v => this.sfx!.playing(v.id));
+    const steal = voiceToSteal(this.voices, priority, loop);
+    if (steal === -1) return -1;
+    if (steal !== null) { this.sfx!.stop(steal); this.voices = this.voices.filter(v => v.id !== steal); }
+    const id = this.sfx!.play(cue);
+    this.sfx!.loop(loop, id); this.sfx!.stereo(Math.max(-1, Math.min(1, pan)), id); this.sfx!.rate(1, id); this.sfx!.volume(this.volume * level, id);
+    this.voices.push({ id, priority, level, loop, key }); return id;
+  }
+  beginWorld(): void { this.seen.clear(); }
+  loop(key: string, cue: Cue, pan: number, level: number): void {
+    if (!this.unlocked || !this.sfx || document.hidden || this.volume === 0 || level <= 0) return;
+    this.seen.add(key);
+    const existing = this.voices.find(v => v.key === key && this.sfx!.playing(v.id));
+    if (existing) { existing.level = level; this.sfx.volume(this.volume * level, existing.id); this.sfx.stereo(pan, existing.id); }
+    else this.allocate(cue, pan, level, 0, true, key);
+  }
+  endWorld(): void { for (const v of this.voices) if (v.loop && !this.seen.has(v.key)) this.sfx?.stop(v.id); }
+  stopWorld(): void { this.beginWorld(); this.endWorld(); }
+  death(cause: DeathCause, pan = 0): void {
+    if (cause === 'FLATTENED!') this.play('squash', pan);
+    else if (cause === 'SPLASH!' || cause === 'SWEPT AWAY!') { this.play('splash', pan); if (cause === 'SWEPT AWAY!') this.play('whoosh', pan); }
+    else if (cause === 'DERAILED!') { this.play('impact', pan); this.play('horn', pan, SOUND.WARNING_GAIN); }
+    else this.play('fall', pan);
+    this.play('heartLost', pan);
+  }
+  menu(): void {
+    clearTimeout(this.fanfareTimer); this.muffle(false); this.rate = 1; this.changeMusic('menu', CONFIG.MUSIC_CROSSFADE_MS);
+  }
+  gameplay(biome: Biome = 'meadow', final = false): void {
+    clearTimeout(this.fanfareTimer); this.rate = final ? CONFIG.FINAL_ROUND_MUSIC_RATE : 1;
+    this.muffle(false); this.changeMusic(biome, this.track === 'menu' ? CONFIG.MUSIC_CROSSFADE_MS : SOUND.MUSIC_BIOME_FADE_MS);
+    if (this.musicId >= 0) this.music?.rate(this.rate, this.musicId);
+  }
+  muffle(value: boolean, pause = false): void {
+    if (this.muffled === value && this.paused === pause) return;
+    this.muffled = value; this.paused = pause;
+    this.filter?.frequency.setTargetAtTime(value ? SOUND.MUSIC_FILTER_HZ : SOUND.MUSIC_OPEN_HZ, Howler.ctx.currentTime, SOUND.MIX_RAMP_S); this.mix();
+  }
+  sting(cue: 'roundWin' | 'matchWin' | 'gameOver' | 'newBest'): void {
+    this.play(cue); this.ducked = true; this.mix(); clearTimeout(this.duckTimer);
+    this.duckTimer = window.setTimeout(() => { this.ducked = false; this.mix(); }, manifest.sfx[cue][1] as number);
+    if (cue === 'matchWin') { clearTimeout(this.fanfareTimer); this.fanfareTimer = window.setTimeout(() => this.menu(), manifest.sfx.matchWin[1] as number); }
+  }
+  private targetVolume(): number { return this.musicLevel * SOUND.MUSIC_GAIN * (this.paused ? SOUND.PAUSE_GAIN : 1) * (this.ducked ? SOUND.MUSIC_DUCK : 1); }
+  private mix(): void { if (this.musicId >= 0) this.music?.fade(this.music.volume(this.musicId) as number, this.targetVolume(), SOUND.MIX_RAMP_S * 1000, this.musicId); }
+  private changeMusic(track: Track, ms: number): void {
+    if (this.track === track && this.musicId >= 0) return;
+    this.track = track; if (this.unlocked) this.startMusic(ms);
+  }
+  private startMusic(ms: number): void {
+    if (!this.music) return;
+    if (this.fadingId >= 0) this.music.stop(this.fadingId);
+    const previous = this.musicId;
+    const id = this.music.play(this.track); this.musicId = id;
+    const node = musicNode(this.music, id); if (node && this.filter) { node.disconnect(); node.connect(this.filter); }
+    this.music.rate(this.rate, id); this.music.volume(0, id); this.music.fade(0, this.targetVolume(), ms, id);
+    if (previous >= 0) { this.fadingId = previous; this.music.fade(this.music.volume(previous) as number, 0, ms, previous);
+      window.setTimeout(() => { if (this.fadingId === previous) { this.music?.stop(previous); this.fadingId = -1; } }, ms); }
+  }
+}
