@@ -85,6 +85,9 @@ export class WorldView {
   private preparedBottom = NaN;
   private requestedBottom = 0;
   private pending = false;
+  private staticDirty = true;
+  private readonly staticMeshes: InstancedMesh[] = [];
+  private readonly uploadMeshes: InstancedMesh[] = [];
   private tier: Tier = 'high';
   private readonly groundCounts = new Int32Array(KINDS.length);
   private readonly waterMaterials: (MeshStandardMaterial | MeshLambertMaterial)[] = [];
@@ -172,6 +175,9 @@ export class WorldView {
       material.customProgramCacheKey = () => 'hop-brawl-water';
       this.waterMaterials.push(material);
     }
+    this.staticMeshes.push(this.obstacles, this.trees, this.crates, this.railPosts, this.podium);
+    this.root.traverse(node => { if (node instanceof InstancedMesh) { node.updateMatrix(); node.matrixAutoUpdate = false; this.uploadMeshes.push(node); } });
+    for (const mesh of this.staticMeshes) mesh.userData.staticBatch = true;
     this.prepareWindow(0);
     this.update(0);
     this.outlines.add(this.animals, 'animal'); this.outlines.add(this.vehicles, 'vehicle');
@@ -201,7 +207,7 @@ export class WorldView {
   private batch(size: number): InstancedMesh {
     const mesh = new InstancedMesh(this.cube, this.standard, size);
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
-    mesh.castShadow = true;
+    mesh.castShadow = false;
     mesh.receiveShadow = true;
     mesh.boundingSphere = new Sphere(new Vector3(4, 0, -8), VIEW.FAR);
     // Allocate instance colours now, even when the first world has no such object.
@@ -215,7 +221,7 @@ export class WorldView {
   prepareWindow(camZ: number): void {
     const bottom = Math.floor(Math.min(camZ, Number.isFinite(this.viewBottom) ? this.viewBottom : camZ)) - WORLD.STREAM_BEHIND_ROWS;
     if (bottom === this.preparedBottom) return;
-    this.preparedBottom = bottom;
+    this.preparedBottom = bottom; this.staticDirty = true;
     this.groundCounts.fill(0);
     for (let i = 0; i < this.rows.length; i++) {
       const z = bottom + i;
@@ -279,9 +285,9 @@ export class WorldView {
     for (const mesh of [...this.grounds, ...this.outsideGrounds]) mesh.material = material;
     for (const mesh of [this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.railPosts, this.logs, this.crates, this.animals, this.podium, this.backdrop, this.markings]) mesh.material = material;
     this.grounds[2]!.material = tier === 'low' ? this.lambert : this.waterMaterials[tier === 'high' ? 0 : 1]!;
-    this.obstacles.castShadow = this.logs.castShadow = this.crates.castShadow = this.podium.castShadow = tier === 'high';
+    this.obstacles.castShadow = this.logs.castShadow = this.crates.castShadow = this.podium.castShadow = this.railPosts.castShadow = false;
     this.vehicles.castShadow = this.animals.castShadow = tier !== 'low';
-    this.trucks.castShadow = this.trains.castShadow = this.carriages.castShadow = tier !== 'low'; this.trees.castShadow = tier === 'high';
+    this.trucks.castShadow = this.trains.castShadow = this.carriages.castShadow = tier !== 'low'; this.trees.castShadow = false;
     this.blobs.visible = tier === 'low';
   }
 
@@ -292,6 +298,7 @@ export class WorldView {
       (this.color.b + (gray - this.color.b) * VIEW.OUTSIDE_DESATURATION) * VIEW.OUTSIDE_BRIGHTNESS);
   }
   private put(mesh: InstancedMesh, x: number, y: number, z: number, sx: number, sy: number, sz: number, color: string, facing = 0): void {
+    if (mesh.userData.staticBatch && !this.staticDirty) return;
     const index = mesh.count++;
     this.transform.position.set(x, y + sy / 2, -z);
     this.transform.scale.set(sx, sy, sz);
@@ -325,9 +332,10 @@ export class WorldView {
 
   update(time: number): void {
     this.waterUniform.value = time;
-    this.obstacles.count = this.vehicles.count = this.logs.count = this.crates.count = this.animals.count = this.blobs.count = this.podium.count = 0;
-    this.trucks.count = this.trees.count = this.trains.count = this.carriages.count = 0;
-    this.railPosts.count = this.railLights.count = this.headlights.count = 0;
+    this.vehicles.count = this.logs.count = this.animals.count = this.blobs.count = 0;
+    if (this.staticDirty) for (const mesh of this.staticMeshes) mesh.count = 0;
+    this.trucks.count = this.trains.count = this.carriages.count = 0;
+    this.railLights.count = this.headlights.count = 0;
     this.markings.count = 0; this.boundaryPulse.count = 0;
     this.backdrop.count = 0;
     this.put(this.backdrop, 4, -VIEW.GROUND_DEPTH * 2, this.requestedBottom, VIEW.FAR, VIEW.GROUND_DEPTH, VIEW.FAR, COLORS.grass);
@@ -335,17 +343,6 @@ export class WorldView {
     this.backdrop.boundingSphere!.center.set(4, 0, -this.requestedBottom); this.backdrop.boundingSphere!.radius = VIEW.FAR;
     for (let i = 0; i < this.rows.length; i++) {
       const row = this.rows[i]!.row!;
-      // Section 31: every prepared row renders; the frustum culls props, never an eleven-row cutoff.
-      const inWindow = true;
-      const ground = this.grounds[KINDS.indexOf(row.kind)]!;
-      if (inWindow) this.matrix.makeTranslation(0, 0, -row.z);
-      else this.matrix.makeScale(0, 0, 0);
-      ground.setMatrixAt(this.rows[i]!.groundIndex, this.matrix);
-      ground.instanceMatrix.needsUpdate = true;
-      const outside = this.outsideGrounds[KINDS.indexOf(row.kind)]!;
-      if (inWindow) this.matrix.makeTranslation(0, -VIEW.OUTSIDE_DROP, -row.z);
-      outside.setMatrixAt(this.rows[i]!.groundIndex, this.matrix); outside.instanceMatrix.needsUpdate = true;
-      if (!inWindow) continue;
       for (let side = -1; side <= 1; side += 2) {
         const warning = this.boundaryWarning === side && Math.sin(time * Math.PI * 2 * VIEW.LOG_EDGE_PULSE_HZ) > 0;
         this.put(this.markings, side < 0 ? -.5 : 8.5, 0, row.z, VIEW.BOUNDARY_WIDTH,
@@ -354,7 +351,8 @@ export class WorldView {
       }
       this.rowBounds.min.set(VIEW.DECOR_MIN_X, -VIEW.GROUND_DEPTH, -row.z - 0.5);
       this.rowBounds.max.set(VIEW.DECOR_MAX_X + 1, 2, -row.z + 0.5);
-      if (this.hasView && !this.frustum.intersectsBox(this.rowBounds)) continue;
+      // Static instances remain valid across sub-row camera motion; GPU frustum bounds cull them.
+      if (!this.staticDirty && this.hasView && !this.frustum.intersectsBox(this.rowBounds)) continue;
       if (row.kind === 'grass') {
         for (let j = 0; j < row.obstacles.length; j++) {
           const obstacle = row.obstacles[j]!;
@@ -446,20 +444,21 @@ export class WorldView {
     this.blob(this.animalX + this.animalSwap, this.animalZ, 0.45, 0.4);
     if (!this.actorVisible) this.animals.count = 0;
     for (let i = 0; i < 3; i++) this.put(this.podium, VIEW.PODIUM_X + i - 1, 0, 1, 1, i === 1 ? 1 : 0.5, 1, COLORS.yellow);
-    this.obstacles.instanceMatrix.needsUpdate = this.vehicles.instanceMatrix.needsUpdate = this.logs.instanceMatrix.needsUpdate = true;
-    this.crates.instanceMatrix.needsUpdate = this.animals.instanceMatrix.needsUpdate = this.blobs.instanceMatrix.needsUpdate = this.podium.instanceMatrix.needsUpdate = true;
-    this.obstacles.instanceColor!.needsUpdate = this.vehicles.instanceColor!.needsUpdate = this.logs.instanceColor!.needsUpdate = true;
-    this.crates.instanceColor!.needsUpdate = this.animals.instanceColor!.needsUpdate = this.podium.instanceColor!.needsUpdate = true;
-    this.trucks.instanceMatrix.needsUpdate = this.trees.instanceMatrix.needsUpdate = this.trains.instanceMatrix.needsUpdate = this.carriages.instanceMatrix.needsUpdate = true;
-    this.trucks.instanceColor!.needsUpdate = this.trees.instanceColor!.needsUpdate = this.trains.instanceColor!.needsUpdate = this.carriages.instanceColor!.needsUpdate = true;
     if (this.tier === 'low') {
       this.color.copy(this.palette.get(COLORS.water)!).multiplyScalar(1 + Math.sin(time * VIEW.WATER_SPEED) * VIEW.WATER_AMPLITUDE);
       const water = this.grounds[2]!;
       for (let i = 0; i < water.count; i++) water.setColorAt(i, this.color);
       if (water.instanceColor) water.instanceColor.needsUpdate = true;
     }
-    this.railPosts.instanceMatrix.needsUpdate = this.railLights.instanceMatrix.needsUpdate = this.headlights.instanceMatrix.needsUpdate = true;
-    this.railPosts.instanceColor!.needsUpdate = this.railLights.instanceColor!.needsUpdate = this.headlights.instanceColor!.needsUpdate = true;
+    for (const mesh of this.uploadMeshes) {
+      if (this.grounds.includes(mesh) || this.outsideGrounds.includes(mesh)) continue;
+      if (mesh.userData.staticBatch && !this.staticDirty) continue;
+      if (mesh.count) {
+        mesh.instanceMatrix.clearUpdateRanges(); mesh.instanceMatrix.addUpdateRange(0, mesh.count * 16); mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) { mesh.instanceColor.clearUpdateRanges(); mesh.instanceColor.addUpdateRange(0, mesh.count * 3); mesh.instanceColor.needsUpdate = true; }
+      }
+    }
+    this.staticDirty = false;
     this.outlines.sync();
   }
 }

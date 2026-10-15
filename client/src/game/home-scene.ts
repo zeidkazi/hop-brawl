@@ -285,7 +285,7 @@ export class HomeScene {
       mesh.material = mesh.userData.player_color ? (tier === 'high' ? this.gloveStandard : this.gloveLambert) : (tier === 'high' ? this.standard : this.lambert);
       if (mesh.userData.shadowKind === 'animal' && !mesh.userData.player_color) mesh.material = tier === 'high' ? this.actorStandard : this.actorLambert;
       if (mesh.userData.shadowKind === 'logo') mesh.material = mesh.userData.player_color ? this.logoGlove : this.logoMaterial;
-      mesh.castShadow = !['eyes', 'headband', 'headband_stripe'].includes(mesh.userData.part as string) && ['animal', 'vehicle', 'prop', 'log'].includes(mesh.userData.shadowKind as string) && (tier === 'high' || (tier === 'medium' && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string)));
+      mesh.castShadow = !['eyes', 'headband', 'headband_stripe'].includes(mesh.userData.part as string) && ['animal', 'vehicle'].includes(mesh.userData.shadowKind as string) && tier !== 'low';
     }
     if (this.blobs) this.blobs.visible = tier === 'low';
     if (this.water) this.water.material = tier === 'low' ? this.flatWater : this.waterMaterials[tier === 'high' ? 0 : 1]!;

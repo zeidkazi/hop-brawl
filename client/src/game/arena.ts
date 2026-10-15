@@ -50,7 +50,7 @@ export class Arena {
       const mesh = new InstancedMesh(geometry, standard, count);
       mesh.name = `arena_${name}`; mesh.userData.arena = true;
       mesh.boundingSphere = new Sphere(new Vector3(4, 0, 0), HOME.GROUND_WIDTH);
-      mesh.receiveShadow = true; this.root.add(mesh); this.batches.set(name, mesh); return mesh;
+      mesh.receiveShadow = true; mesh.updateMatrix(); mesh.matrixAutoUpdate = false; this.root.add(mesh); this.batches.set(name, mesh); return mesh;
     };
     const stands = STREET.ARENA_ROWS.length * 2;
     for (const name of ['bleacher', 'snow_bleacher', 'bunting', 'barrier', 'hay', 'pumpkin', 'neon_sign']) batch(name, stands);
@@ -159,7 +159,7 @@ export class Arena {
     this.tier = tier; this.outlines.applyTier(tier);
     for (const [name, mesh] of this.batches) {
       mesh.material = tier === 'high' ? this.standard : this.lambert;
-      mesh.castShadow = tier === 'high' && ['bleacher', 'snow_bleacher', 'spotlight', 'barrier'].includes(name);
+      mesh.castShadow = false;
       mesh.visible = name === 'snow_bleacher' || name === 'scarf' ? this.biome === 'snow'
         : name === 'bleacher' ? this.biome !== 'snow'
           : name === 'hay' || name === 'pumpkin' ? this.biome === 'autumn'

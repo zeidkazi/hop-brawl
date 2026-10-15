@@ -46,6 +46,8 @@ export class Solo {
   private heading = 0; private lastScore = -1; private lastCountdown = '';
   private boxer: Boxer | null = null;
   private readonly point = new Vector3();
+  private viewportWidth = innerWidth; private viewportHeight = innerHeight;
+  private readonly guardReview = { move: 'guard' as const, elapsed: 0 };
   private readonly seed = new Uint32Array(1);
   private readonly score: HTMLElement; private readonly bestLabel: HTMLElement;
   private readonly countdown: HTMLElement; private readonly cause: HTMLElement; private readonly danger: HTMLElement;
@@ -93,6 +95,7 @@ export class Solo {
         if (this.phase === 'paused') this.resume(); else this.pause();
       }
     });
+    window.addEventListener('resize', () => { this.viewportWidth = innerWidth; this.viewportHeight = innerHeight; });
     window.addEventListener('blur', () => this.pause());
     window.addEventListener('pagehide', () => this.pause());
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.pause(); });
@@ -252,8 +255,8 @@ export class Solo {
     this.marker.hidden = (this.roundTime * 1000 > SOLO.MARKER_MS && !this.game.world.boundaryWarning) || this.phase === 'dying' || this.phase === 'over';
     this.name.hidden = this.phase === 'over' || (this.phase === 'dying' && this.movement.dead === 'LEFT BEHIND!');
     this.flag.hidden = this.runBest === 0 || this.runBest < this.movement.camZ || this.runBest >= this.movement.camZ + CONFIG.VIEW_ROWS;
-    this.project(this.marker, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z, -SOLO.MARKER_GAP_PX);
-    this.project(this.name, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z);
+    if (!this.marker.hidden) this.project(this.marker, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z, -SOLO.MARKER_GAP_PX);
+    if (!this.name.hidden) this.project(this.name, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z);
     if (!this.flag.hidden) this.project(this.flag, SOLO.FLAG_X, SOLO.FLAG_HEIGHT, this.runBest);
   };
   private renderPose(_dt: number): void {
@@ -281,7 +284,7 @@ export class Solo {
       this.boxer.comboYaw = Math.atan2(this.game.rig.camera.position.x - actor.position.x, -(this.game.rig.camera.position.z - actor.position.z)) + this.heading;
       this.boxer.comboLift = BOXER.COMBO_LIFT;
       this.hopReview.elapsed = player.time - player.hopStart;
-      this.boxer.review = player.dead ? { move: 'guard', elapsed: 0 } : player.hopping ? this.hopReview : null;
+      this.boxer.review = player.dead ? this.guardReview : player.hopping ? this.hopReview : null;
     }
     this.game.home.updateGameActor(this.poseTime);
     const arena = this.game.home.arena;
@@ -293,7 +296,7 @@ export class Solo {
   }
   private project(element: HTMLElement, x: number, y: number, z: number, offsetY = 0): void {
     this.point.set(x, y, -z).project(this.game.rig.camera);
-    element.style.transform = `translate(${(this.point.x + 1) * innerWidth / 2}px,${(1 - this.point.y) * innerHeight / 2 + offsetY}px) translate(-50%,-50%)`;
+    element.style.transform = `translate(${(this.point.x + 1) * this.viewportWidth / 2}px,${(1 - this.point.y) * this.viewportHeight / 2 + offsetY}px) translate(-50%,-50%)`;
     element.style.visibility = this.point.z > 1 || Math.abs(this.point.y) > SOLO.LABEL_CLIP ? 'hidden' : 'visible';
   }
 }
