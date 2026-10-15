@@ -31,6 +31,7 @@ export class Arena {
   private readonly originals = new Map<InstancedMesh, Float32Array>();
   private readonly placement = new Matrix4();
   private readonly footprint = new Box3();
+  private readonly soundPoints = Array.from({ length: STREET.ARENA_ROWS.length * 2 }, () => ({ x: 0, z: 0, count: 0 }));
 
   constructor(assets: Group, private readonly standard: MeshStandardMaterial, private readonly lambert: MeshLambertMaterial) {
     const batch = (name: string, count: number): InstancedMesh => {
@@ -114,6 +115,20 @@ export class Arena {
       }
       mesh.instanceMatrix.needsUpdate = true;
     }
+  }
+  /** Audio follows the surviving crowd instances after terrain filtering, not invisible stands. */
+  soundSources(): readonly { x: number; z: number; count: number }[] {
+    this.root.updateWorldMatrix(true, false);
+    for (const point of this.soundPoints) { point.x = point.z = point.count = 0; }
+    const mesh = this.batches.get('spectator')!;
+    for (let i = 0; i < mesh.count; i++) {
+      mesh.getMatrixAt(i, this.placement); const e = this.placement.elements;
+      if (Math.hypot(e[0]!, e[1]!, e[2]!) === 0) continue;
+      this.placement.premultiply(this.root.matrixWorld); const point = this.soundPoints[Math.floor(i / 6)]!;
+      point.x += this.placement.elements[12]!; point.z -= this.placement.elements[14]!; point.count++;
+    }
+    for (const point of this.soundPoints) if (point.count) { point.x /= point.count; point.z /= point.count; }
+    return this.soundPoints;
   }
   restoreHome(): void {
     for (const [mesh, original] of this.originals) { mesh.instanceMatrix.array.set(original); mesh.instanceMatrix.needsUpdate = true; }

@@ -14,3 +14,12 @@ it('plays distinct nearby engines, ignores distant rows and emits one horn per n
   loops.length = 0; audio.update([{ z: 5, row }], 2, .2, sound, 4, 9); expect(loops).not.toContain('car'); expect(loops).not.toContain('truck');
   audio.reset(); audio.update([{ z: 5, row }], 2, 0, sound, 5.5, 5); expect(shots).toHaveLength(2);
 });
+
+it('crowd ambience follows actual visible bleachers and is absent for filtered-out spectators', () => {
+  const pans: number[] = [], levels: number[] = [];
+  const sound = { beginWorld() {}, endWorld() {}, loop(_key: string, cue: string, pan: number, level: number) { if (cue === 'crowd') { pans.push(pan); levels.push(level); } } } as unknown as BoxingSound;
+  const arena = { soundSources: () => [{ x: -3, z: 5, count: 6 }, { x: 12, z: 5, count: 0 }] } as unknown as import('../../client/src/game/arena').Arena;
+  const audio = new WorldSound(); audio.menu(0, sound, arena, 4, 5);
+  expect(pans).toEqual([-1]); expect(levels[0]).toBeGreaterThan(0);
+  audio.menu(1, sound, arena, 4, 40); expect(levels[1]).toBe(0);
+});
