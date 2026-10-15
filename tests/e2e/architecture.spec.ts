@@ -35,7 +35,7 @@ test('keeps one canvas through menus, tier swaps, streaming and tile flips', asy
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().tier)).toBe('low');
   await page.keyboard.press('Escape');
   await expect(page.locator('#home')).toBeVisible();
-  await page.getByRole('button', { name: 'FRIENDS', exact: true }).click();
+  await page.getByRole('button', { name: 'MULTIPLAYER', exact: true }).click();
   await page.getByLabel('Room code letter 1').fill('a');
   await expect(page.getByLabel('Room code letter 2')).toBeFocused();
   await page.goBack();

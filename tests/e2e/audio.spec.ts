@@ -12,7 +12,7 @@ test('predecodes silently, keeps menu playback continuous, honors mute and bound
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.solo.game.home.sound.diagnostics.unlocked)).toBe(true);
   const id = await page.evaluate(() => window.__HOP_DEBUG__!.solo.game.home.sound.diagnostics.musicId);
   await page.keyboard.press('Escape'); await expect(page.locator('#home')).toBeVisible();
-  await page.getByRole('button', { name: 'PLAY', exact: true }).click();
+  await page.getByRole('button', { name: 'MULTIPLAYER', exact: true }).click();
   expect(await page.evaluate(() => window.__HOP_DEBUG__!.solo.game.home.sound.diagnostics.musicId)).toBe(id);
   const result = await page.evaluate(async () => {
     const sound = window.__HOP_DEBUG__!.solo.game.home.sound;

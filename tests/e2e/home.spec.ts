@@ -10,9 +10,9 @@ test('Home keeps its loaded scene through animal and name controls', async ({ pa
   const loaded = models.length;
   await expect(page.locator('#animal-label')).toHaveText('fox');
   expect(models.filter(url => url.endsWith('/logo.glb'))).toHaveLength(1);
-  await expect(page.locator('.mode-buttons button')).toHaveCount(3);
+  await expect(page.locator('.mode-buttons button')).toHaveCount(2);
   await expect(page.locator('#home .panel')).toHaveCount(0);
-  await page.getByRole('button', { name: 'FRIENDS', exact: true }).click();
+  await page.getByRole('button', { name: 'MULTIPLAYER', exact: true }).click();
   await expect(page.locator('#home-name')).toBeFocused();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('#name')).toBeVisible();
@@ -101,4 +101,19 @@ test('carousel follows arrows and finger direction; crowd cheers without replaci
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().crowdCheering)).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.snapshot().crowdCheering)).toBe(false);
   await expect(page.locator('#game-canvas')).toHaveCount(1);
+});
+
+
+test('Home has two modes with Enter and S shortcuts and softer default music', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('hop-brawl-settings', JSON.stringify({ name: 'Shortcuts' })));
+  await page.goto('/?debug=1'); await expect(page.locator('#ui-root')).not.toHaveAttribute('inert', '', { timeout: 30000 });
+  await expect(page.locator('.mode-buttons button')).toHaveText(['MULTIPLAYER', 'SOLO']);
+  await page.getByRole('button', { name: 'Edit name', exact: true }).focus();
+  await page.keyboard.press('Enter'); await expect(page.locator('#friends')).toBeVisible();
+  await expect(page.locator('#name')).toBeHidden();
+  await page.keyboard.press('Escape'); await expect(page.locator('#home')).toBeVisible();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.locator('#music')).toHaveValue('0.35');
+  await page.keyboard.press('Escape'); await expect(page.locator('#home')).toBeVisible();
+  await page.keyboard.press('s'); await expect(page.locator('#solo')).toBeVisible();
 });

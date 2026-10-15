@@ -56,8 +56,7 @@ export class Screens {
         </div>
         <div class="home-actions">
           <div class="mode-buttons">
-            <button class="yellow primary" data-mode="play">PLAY</button>
-            <button class="green" data-screen="friends">FRIENDS</button>
+            <button class="yellow primary" data-mode="play">MULTIPLAYER</button>
             <button class="blue" data-mode="solo" aria-label="SOLO">SOLO</button>
           </div>
         </div>
@@ -70,8 +69,8 @@ export class Screens {
         </form>
       </section>
       <section id="friends" class="screen modal" aria-labelledby="friends-title" hidden>
-        <div class="panel"><h2 id="friends-title">PLAY WITH FRIENDS</h2>
-          <button class="green" data-room="create">Create Room</button><p class="divider">or join</p>
+        <div class="panel"><h2 id="friends-title">MULTIPLAYER</h2>
+          <button class="green" data-room="create">Create Room</button><p class="divider">Join by code</p>
           <div class="room-code" aria-label="Room code">${Array.from({ length: 4 }, (_, i) => `<input aria-label="Room code letter ${i + 1}" maxlength="1" autocomplete="off" autocapitalize="characters" inputmode="text">`).join('')}</div>
           <button class="yellow" data-room="join">Join</button><p id="room-error" role="status"></p><button class="text-button" data-back>Back</button>
         </div>
@@ -95,7 +94,7 @@ export class Screens {
         </div>
       </section>
       <section id="credits" class="screen modal" aria-labelledby="credits-title" hidden>
-        <div class="panel"><h2 id="credits-title">CREDITS</h2><p>Models and scenery: Hop Brawl. Music: Juhani Junkala. Sounds: Kenney + Hop Brawl. All CC0.</p>
+        <div class="panel"><h2 id="credits-title">CREDITS</h2><p>Models and scenery: Hop Brawl. Music: extenz + Juhani Junkala. Sounds: Kenney + Hop Brawl. All CC0.</p>
           <p>Lilita One — Juan Montoreano.<br><a href="/licenses/lilita-one.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
           <p>Nunito — The Nunito Project Authors.<br><a href="/licenses/nunito.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
           <button class="yellow" data-back>Back</button>
@@ -185,9 +184,8 @@ export class Screens {
       if (event.key === 'Escape' && this.screen !== 'home') { this.back(); return; }
       if (this.screen !== 'home' || event.repeat || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); this.changeAnimal(event.key === 'ArrowRight' ? 1 : -1); }
-      else if (event.key.toLowerCase() === 'f') this.navigate('friends');
-      else if (event.key.toLowerCase() === 's') root.querySelector<HTMLButtonElement>('[data-mode="solo"]')!.click();
-      else if (event.key === 'Enter' && !(event.target instanceof HTMLButtonElement)) root.querySelector<HTMLButtonElement>('[data-mode="play"]')!.click();
+      else if (event.key.toLowerCase() === 's') { event.preventDefault(); root.querySelector<HTMLButtonElement>('[data-mode="solo"]')!.click(); }
+      else if (event.key === 'Enter') { event.preventDefault(); root.querySelector<HTMLButtonElement>('[data-mode="play"]')!.click(); }
     });
     this.applyPreferences(); this.game.setGraphics(this.preferences.graphics);
     this.game.world.animal = this.preferences.animal;

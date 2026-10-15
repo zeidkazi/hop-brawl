@@ -32,7 +32,7 @@ a { color: inherit; }
 .icon-button { width: 48px; height: 48px; padding: 3px; border-radius: 50%; font-size: 28px; box-shadow: 0 4px 0 #1b1b2f; }
 .icon-button svg { width: 27px; height: 27px; fill: none; stroke: var(--ink); stroke-width: 2; vertical-align: middle; }
 .home-actions { position: absolute; bottom: 0; left: 0; right: 0; padding: 72px max(24px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); background: linear-gradient(transparent, #16253c87); }
-.mode-buttons { display: grid; grid-template-columns: 1.45fr 1fr 1fr; gap: 18px; width: min(760px, 100%); margin: auto; }
+.mode-buttons { display: grid; grid-template-columns: 1.45fr 1fr; gap: 18px; width: min(760px, 100%); margin: auto; }
 .mode-buttons button { pointer-events: auto; min-height: 68px; font-size: 29px; border-radius: 10px; color: white; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); box-shadow: 0 7px 0 var(--side), 0 10px 0 var(--ink); }
 .yellow { background: var(--yellow); --side: #b88318; }
 .green { background: #3BCEAC; --side: #238773; }
@@ -119,9 +119,9 @@ a { color: inherit; }
   .name-pill { max-width: calc(100% - 116px); padding: 8px 12px; }
   .home-toolbar nav { gap: 8px; }
   .home-actions { padding: 70px max(16px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
-  .mode-buttons { grid-template-columns: 1fr 1fr; gap: 18px 14px; }
-  .mode-buttons .primary { grid-column: 1 / -1; font-size: 36px; min-height: 72px; }
-  .mode-buttons button { min-height: 60px; font-size: 27px; }
+  .mode-buttons { grid-template-columns: 1fr; gap: 14px; }
+  .mode-buttons .primary { font-size: 30px; min-height: 64px; }
+  .mode-buttons button { min-height: 64px; font-size: 30px; }
   .modal { align-items: flex-end; }
   .panel { padding: 22px; border-radius: 18px 18px 8px 8px; }
 }
