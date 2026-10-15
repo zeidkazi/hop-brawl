@@ -13,7 +13,7 @@ test('hop feedback is immediate and any key or blank tap retries within the reve
   expect(immediate.hopping).toBe(true); expect(immediate.cues).toContain('hop');
   await expect.poll(() => page.locator('#solo-distance').textContent()).toBe('2');
   for (const trigger of ['key', 'tap']) {
-    await page.evaluate(() => { const solo = window.__HOP_DEBUG__!.solo; solo.movement.kill('FLATTENED!'); });
+    await page.evaluate(() => { const solo = window.__HOP_DEBUG__!.solo; Reflect.get(solo.movement, 'kill').call(solo.movement, 'FLATTENED!'); });
     await page.waitForFunction(() => window.__HOP_DEBUG__!.solo.phase === 'over');
     const result = await page.evaluate(async trigger => {
       const start = performance.now();
@@ -26,3 +26,4 @@ test('hop feedback is immediate and any key or blank tap retries within the reve
     expect(result.score).toBe(0);
   }
 });
+
