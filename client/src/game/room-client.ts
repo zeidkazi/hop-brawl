@@ -1,4 +1,5 @@
-import { CONFIG, ROOM } from '../../../shared/config';
+import { NetworkTiming } from './network-timing';
+import { ROOM } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
 import type { RoomSnapshot } from '../../../shared/room';
@@ -7,6 +8,8 @@ import { gameplayScreenY } from '../../../shared/camera';
 import type { Row } from '../../../shared/types';
 
 export class RoomClient {
+  readonly timing = new NetworkTiming();
+  private interpolation: { a: RoomSnapshot; b: RoomSnapshot; mix: number } | null = null;
   id = ''; state: RoomSnapshot | null = null; offset = 0; sequence = 0; ready = false;
   private readonly rows = new Map<number, Row>();
   readonly prediction = new Movement(z => {
@@ -41,7 +44,7 @@ export class RoomClient {
     return response.json() as Promise<{ code: string; token: string }>;
   }
   connect(code: string, name: string, animal: number, token = ''): void {
-    this.close(); this.reportedLife = -1; this.id = ''; this.state = null; this.history.length = this.pending.length = 0; this.sequence = 0;
+    this.close(); this.timing.reset(); this.interpolation = null; this.reportedLife = -1; this.id = ''; this.state = null; this.history.length = this.pending.length = 0; this.sequence = 0;
     const url = new URL(`/ws/room/${code}`, this.base); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     url.search = new URLSearchParams({ name, animal: String(animal), aspect: String(innerWidth / innerHeight), token }).toString();
     const socket = this.socket = new WebSocket(url); let failed = false;
@@ -51,10 +54,11 @@ export class RoomClient {
       this.lastMessage = Date.now(); if (event.data === 'pong') return;
       const data = JSON.parse(String(event.data)) as { type: string; id: string; snapshot: RoomSnapshot; now: number; sent: number; error: string };
       if (data.type === 'error') { failed = true; this.onError?.(data.error); }
-      else if (data.type === 'clock') this.offset = data.now - (Date.now() + data.sent) / 2;
+      else if (data.type === 'clock') { this.timing.ping = Math.max(0, Date.now() - data.sent); this.offset = data.now - (Date.now() + data.sent) / 2; }
       else if (data.type === 'welcome' || data.type === 'state') {
         if (data.type === 'welcome') { this.id = data.id; this.offset = data.snapshot.now - Date.now(); }
         const changed = this.state?.startAt !== data.snapshot.startAt;
+        this.timing.sample(performance.now(), data.snapshot.now);
         this.state = data.snapshot; this.ready = true;
         if (changed) { this.pending.length = 0; this.history.length = 0; this.rows.clear(); }
         for (const z of this.rows.keys()) if (z < data.snapshot.camZ - ROOM.RESPAWN_LOOKAHEAD) this.rows.delete(z);
@@ -103,10 +107,11 @@ export class RoomClient {
   }
   pair(): { a: RoomSnapshot; b: RoomSnapshot; mix: number } | null {
     if (!this.history.length) return null;
-    const at = this.now - CONFIG.INTERP_DELAY_MS;
+    const at = this.now - this.timing.delay;
     let a = this.history[0]!, b = this.history.at(-1)!;
     for (const snapshot of this.history) { if (snapshot.now <= at) a = snapshot; else { b = snapshot; break; } }
-    return { a, b, mix: Math.max(0, Math.min(1, (at - a.now) / Math.max(1, b.now - a.now))) };
+    const pair = this.interpolation ??= { a, b, mix: 0 };
+    pair.a = a; pair.b = b; pair.mix = Math.max(0, Math.min(1, (at - a.now) / Math.max(1, b.now - a.now))); return pair;
   }
   close(): void {
     const socket = this.socket; this.socket = null; this.ready = false;

@@ -61,6 +61,8 @@ export const CONFIG = Object.freeze({
   HOME_DIORAMA_SEED: 20261030,
 } as const);
 
+export const NETWORK = Object.freeze({ MIN_MS: 90, MAX_MS: 220, BASE_MS: 60, JITTER_ALPHA: .1 });
+
 export const ROOM = Object.freeze({
   CODE_ALPHABET: 'ABCDEFGHJKLMNPQRSTUVWXYZ', CODE_LENGTH: 4, CREATE_ATTEMPTS: 10,
   COUNTDOWN_MS: 3000, FREEZE_MS: 800, ROUND_END_MS: 4000, MAX_ROUNDS: 3,

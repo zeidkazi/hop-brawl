@@ -270,7 +270,10 @@ export class Versus {
     this.input.enabled = this.client.ready && state.phase === 'playing' && !me?.waiting && (me?.hearts ?? 0) > 0;
     this.game.playing = state.phase === 'playing';
     const time = roomWorldTime(state, this.client.time, this.poseTime);
-    this.game.worldTime = time; this.game.rig.targetCamZ = state.camZ; this.game.rig.leaderZ = state.leaderZ;
+    const pair = this.client.pair();
+    this.game.worldTime = time;
+    this.game.rig.targetCamZ = pair && state.phase === 'playing' ? pair.a.camZ + (pair.b.camZ - pair.a.camZ) * pair.mix : state.camZ;
+    this.game.rig.leaderZ = pair && state.phase === 'playing' ? pair.a.leaderZ + (pair.b.leaderZ - pair.a.leaderZ) * pair.mix : state.leaderZ;
     if (state.phase === 'playing') {
       this.railSound.update(this.game.world.rows, state.camZ, time, this.game.home.sound, this.client.prediction.x, this.client.prediction.z, !this.client.prediction.dead, this.game.home.arena);
 
@@ -287,7 +290,6 @@ export class Versus {
     status.textContent = !this.client.ready ? 'Resyncing…' : me?.waiting ? 'Watching — you join next match' : me?.respawnAt ? `Back in ${Math.max(1, Math.ceil((me.respawnAt - now) / 1000))}…` : me?.hearts === 0 ? 'OUT — watching the brawl' : '';
     const last = state.players.some(p => p.wins >= CONFIG.ROUNDS_TO_WIN) || state.round >= ROOM.MAX_ROUNDS && !!state.winner;
     this.element('round-next').textContent = `${last ? 'Match results' : 'Next round'} in ${Math.max(1, Math.ceil((state.nextAt - now) / 1000))}`;
-    const pair = this.client.pair();
     for (const p of state.players) {
       const actor = this.actors.get(p.id); if (!actor) continue;
       const lobby = state.phase === 'lobby';
@@ -296,7 +298,7 @@ export class Versus {
       if (p.id !== this.client.id && pair && state.phase === 'playing') {
         const a = pair.a.players.find(v => v.id === p.id), b = pair.b.players.find(v => v.id === p.id);
         if (a && b) {
-          drawTime = Math.max(0, (this.client.now - CONFIG.INTERP_DELAY_MS - state.startAt) / 1000);
+          drawTime = Math.max(0, (this.client.now - this.client.timing.delay - state.startAt) / 1000);
           movement = remoteMovement(a, b, drawTime);
         }
       }
