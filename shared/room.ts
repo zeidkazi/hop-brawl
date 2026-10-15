@@ -224,7 +224,7 @@ export class RoomGame {
   }
   restore(state: RoomSnapshot): void {
     const { players, code: _code, ...rest } = state; Object.assign(this, rest); this.rows.clear();
-    this.players = players.map(({ movement, ...p }) => { const move = this.movement(); move.restore(movement); return { ...p, move }; });
+    this.players = players.map(({ movement, ...p }) => { const move = this.movement(); move.restore(movement); return { ...p, lifeId: p.lifeId ?? 0, deadLifeId: p.deadLifeId ?? -1, move }; });
   }
 }
 

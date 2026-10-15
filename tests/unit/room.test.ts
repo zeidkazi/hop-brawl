@@ -158,3 +158,12 @@ it('suffixes duplicate names without colliding with an existing numbered name', 
   for (const [id, name] of ['Brawler', 'Brawler 2', 'Brawler', 'brawler'].entries()) game.join(String(id), name, id, 1, 0);
   expect(game.players.map(p => p.name)).toEqual(['Brawler', 'Brawler 2', 'Brawler 3', 'brawler 4']);
 });
+
+it('upgrades rooms saved before life IDs without making their players immortal', () => {
+  const game = playing(), snapshot = game.snapshot();
+  for (const p of snapshot.players) { Reflect.deleteProperty(p, 'lifeId'); Reflect.deleteProperty(p, 'deadLifeId'); }
+  const restored = new RoomGame('ABCD'); restored.restore(snapshot);
+  restored.players[0]!.move.dead = 'FLATTENED!'; restored.tick(3050); restored.tick(3100);
+  expect(restored.players[0]!.hearts).toBe(1);
+  expect(restored.events.filter(e => e.kind === 'death')).toHaveLength(1);
+});

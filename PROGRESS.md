@@ -4,6 +4,7 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 
 ## Local multiplayer playtest repairs (in progress; no deployment)
 
+- Existing saved rooms without life IDs are upgraded on restore, so pre-fix rooms retain authoritative deaths after a Worker restart.
 - Added monotonic life IDs, one server death-commit path and validated client reports. Every live player is simulated on the server, independent of browser frames. Regression tests cover idle players, both report/backstop orders, stale reports and respawn IDs. 137 unit tests and build pass.
 - Local predicted deaths now animate immediately and report their life ID; confirmation owns the single toast/sound. Animation and confirmation gates reject repeated or older lives.
 - Duplicate names now receive the first available numeric suffix, including collisions with already numbered names.
