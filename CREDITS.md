@@ -140,3 +140,8 @@ The six HUD/result animal portraits, heart icons and win pips in client/src/ui/r
 ## Historical announcer acquisition plan (deferred by §31.5)
 
 Find one consistent, energetic voice for: "Round one", "Round two", "Final round", "Showdown", "Hop!", "K.O.!", "Winner!". Search free voice packs, including Kenney and CC0-filtered OpenGameArt/Freesound sources. Verify each file's license; free download alone is not license permission. Record missing same-voice lines and ask the owner to record them at M11. Until then use text slams and SFX. No announcer files have been selected or downloaded yet.
+
+## Detail pass Batch A
+
+- The broader fox tail is an original revision to `art/recipes/fox.py`, built and AO-baked in Blender into `art/fox.blend`, `art/voxels/fox.json` and `client/public/models/fox.glb`. CC0 1.0, same provenance as the original fox above; no downloaded assets.
+- `art/review/batch-a/hop.png`, `log-landing.png`, `flattened.png` and `splash.png` are original six-frame game-renderer captures, CC0 1.0. `scripts/review-batch-a.mjs` records seeded collision/landing fixtures with controlled timestamps; it composites the captured frames without substituting artwork. Raw pose timestamps and fixture coordinates are in `art/review/batch-a/frames.json`.

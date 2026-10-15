@@ -1,5 +1,9 @@
 # Hop Brawl decisions
 
+- 2026-10-15, section 33 supersedes the ship-today scope and deadline: work locally only, finish movement/animation Batch A, provide the four six-frame strips, then STOP for owner approval before B (audio), C (presentation), D and E. No deployment until explicitly requested. The combo/tail improvements previously deferred to M12 are now authorized in A.
+- Batch A keeps the 140 ms total hop: 40 ms anticipation, 75 ms eased airborne travel, 25 ms landing squash/settle. The existing halfway hazard-row switch remains authoritative. Local and delayed remote rendering sample the identical trajectory, including its curved log-slot target.
+- Respawn rows are discrete: search integer rows at or above camZ+1 through camZ+5, nearest grass first and center-out free columns. The specified fallback is the first integer row at/above camZ+2 with three seconds protection. Camera follow uses a critically damped spring bounded to the existing 0.05-tile death-line tolerance.
+
 - 2026-10-15, latest owner steering supersedes section 32's deployment instruction: finish steps 1–4 and cover step 7 locally, use npm run dev plus wrangler dev --local, keep single-Worker deployment configured in wrangler.toml, verify normal/incognito/owner phone on Wi-Fi, then stop. Owner will log in and deploy later. Do not deploy or tag an undeployed commit as v0.9-submission.
 
 - 2026-10-15, owner sections 31–32 supersede previous milestone gates: ship the listed Solo corrections and Private Rooms, then PLAY-to-Friends, minimum sounds, single-Worker static-assets deployment, live verification and cover. No Vercel, DNS, Quick Play, boosts, awards, sinking logs, new biome art or full audio today. Existing approved models remain unchanged.

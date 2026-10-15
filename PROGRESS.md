@@ -2,6 +2,22 @@
 
 Last updated: 2026-10-15 (Asia/Calcutta).
 
+## Detail pass Batch A (complete locally; STOP for owner approval)
+
+- Current owner scope is SPEC section 33. Local only. Stop after Batch A for approval before B (audio), C (visuals/presentation), D and E. No deployment or submission tag.
+- Hop now uses 40 ms anticipation, eased curved travel/stretch, landing squash and settle within 140 ms. Facing eases over 80 ms. Solo, local prediction and remote snapshot reconstruction share the same curve; remote lives are never blended across respawn. Existing single-input buffer, held-key suppression and 24 px swipes remain covered.
+- Landing dust uses the row biome color. Log-slot aim assist curves to the actual target, riders sway, and up to four independently landed logs dip and ease back without moving every log in their row.
+- All five causes have distinct death poses in Solo and multiplayer: pancake/tire marks, sinking/splash/ripple, spinning train fling, edge flailing, fade/poof. Per-fighter effects preserve simultaneous deaths. Life IDs still prevent duplicate animations, heart losses and confirmed toasts.
+- Respawns search grass at camZ+1 through +5, center-out free columns, then use the specified +2 fallback with three-second protection. Respawn drop/bounce and protection blink are visible; Reduce Motion removes drop/spin/shake and automatic flourishes, halves bounce. START is visibly grey/pressed down until a second player joins.
+- Boxer combos travel toward the gameplay camera; glove taps lift into view and hops have visible back/forward follow-through. Fox tail widened through the Blender pipeline (38,824-byte GLB, 466 triangles). Camera follow is critically damped while retaining the 0.05-tile death-line bound; nearby deaths/trains shake briefly unless Reduce Motion is on.
+- Unit verification: 158 tests in 32 files pass, both TypeScript projects pass, production bundle builds. New regressions cover bounded grass/fallback respawns, trajectory reconstruction, per-cause poses, 80 ms turns, respawn bounce, camera shake, independent log dips and camera-facing glove travel.
+- Production local performance: 10-second sustained-hop samples, 43 completed hops each. Desktop 1440x900: 59.80 FPS, p95 16.8 ms, max 33.4 ms. Phone emulation 390x844: 60.00 FPS, p95 16.7 ms, max 16.8 ms. No page errors; High desktop/Medium mobile stayed at 100% resolution. This is local GPU emulation, not a physical-phone benchmark. Measurements: art/review/batch-a/performance.json.
+- Four six-frame strips captured from real seeded world/collision fixtures and visually inspected: art/review/batch-a/{hop,log-landing,flattened,splash}.png. Pose timestamps/coordinates are in frames.json; scripts/review-batch-a.mjs reproduces them. No external artwork or replacement animation was used.
+- Browser verification: all 12 desktop/mobile scenarios have passing results, including observed remote arc, disabled START appearance, three rounds, rematch, frozen-tab authoritative deaths, host handoff, Solo pause/retry and keyboard/touch controls. The initial run passed 11/12; one test raced its freeze against an immediate road collision. The fixture now buffers the road hop while still on grass, and all four targeted repeat runs passed (desktop/mobile twice each), with one heart/event and zero client reports. Logs: tmp/e2e-batch-a-final.log and tmp/e2e-batch-a-frozen.log.
+- Known limitations: physical-phone retest is owner-assisted. Existing production bundle-size warning remains; no new known Batch A gameplay defect.
+- How to run: npm run dev and npm run dev:server in separate terminals. Frontend http://localhost:5173/; same-Wi-Fi phone http://192.168.7.7:5173/; packaged local Worker http://localhost:8787/. Restart Vite after rebuilding models so its real-byte loading manifest is refreshed.
+- Next exact step: STOP for owner Batch A playtest/approval at http://localhost:5173/. Review the four frame strips and movement in Solo or a private room. After approval only, read section 33 Batch B and implement its audio scope. Do not deploy.
+
 ## Local multiplayer playtest repairs (complete; awaiting owner retest; no deployment)
 
 - Existing saved rooms without life IDs are upgraded on restore, so pre-fix rooms retain authoritative deaths after a Worker restart.
@@ -21,7 +37,7 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 - Cover re-exported and visually inspected: 1800x1200, 828,445 bytes, both players during a confirmed shove with impact/stun stars, existing 3D logo in the corner, traffic, grass-only scenery, no HUD/buttons/focus rings.
 - Next exact step: STOP for the owner to retest at http://localhost:5173/; no deployment. Run npm run dev and npm run dev:server in separate terminals. Physical-phone retest remains owner-assisted.
 
-## Ship today: sections 31–32 (current, overrides historical gates below)
+## Ship today: sections 31–32 (historical; superseded by section 33 above)
 
 - Latest owner instruction (2026-10-15): complete steps 1–4 and cover step 7, verify everything locally including owner phone on Wi-Fi, then STOP. Do not deploy or wait for Cloudflare login. Keep the single-Worker static-assets/SQLite DO setup ready in wrangler.toml; the owner will log in and deploy afterward. No submission tag until there is a deployed commit.
 - Step 1 complete: 64 recycled rows cover the angled camera frustum, lower-third player, 1.0-tile log-slot assist and T2–T4 log speeds. Painted boundaries remain. Desktop playfield 48.6%; phone 92.1%; player anchor 65% from top. Rows 5/35/70/150 have zero missing ground and at least seven rows ahead on both viewports. No screenshot sets generated.
