@@ -95,7 +95,7 @@ export class Screens {
         </div>
       </section>
       <section id="credits" class="screen modal" aria-labelledby="credits-title" hidden>
-        <div class="panel"><h2 id="credits-title">CREDITS</h2><p>Original Hop Brawl models and scenery — CC0.</p>
+        <div class="panel"><h2 id="credits-title">CREDITS</h2><p>Original Hop Brawl models, scenery, music and sound — CC0.</p>
           <p>Lilita One — Juan Montoreano.<br><a href="/licenses/lilita-one.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
           <p>Nunito — The Nunito Project Authors.<br><a href="/licenses/nunito.txt" target="_blank" rel="noopener">SIL Open Font License 1.1</a></p>
           <button class="yellow" data-back>Back</button>
@@ -133,7 +133,7 @@ export class Screens {
       input.addEventListener('input', () => {
         if (key === 'music' || key === 'sfx') this.preferences[key] = Number(input.value);
         else this.preferences[key] = input.checked;
-        this.applyPreferences(); this.save();
+        this.applyPreferences(); this.game.home.sound.play('toggle'); this.save();
       });
     }
     const graphics = root.querySelector<HTMLSelectElement>('#graphics')!;
@@ -146,7 +146,8 @@ export class Screens {
       const button = event.target instanceof Element ? event.target.closest('button') : null;
       if (!button) return;
       // Paint the requested panel before opening the OS audio device on the first gesture.
-      requestAnimationFrame(() => window.setTimeout(() => this.game.home.sound.unlock(), 0));
+      this.game.home.sound.unlock();
+      this.game.home.sound.play(button.hasAttribute('data-back') ? 'back' : 'click');
       if (button.dataset.screen) this.navigate(button.dataset.screen as Screen);
       else if (button.dataset.mode === 'play') this.navigate('friends');
       else if (button.dataset.mode === 'solo') this.navigate('solo');
@@ -178,6 +179,8 @@ export class Screens {
     this.swipe(root.querySelector('#how-card')!, direction => this.changeCard(direction));
     this.setupRoomCode();
     window.addEventListener('popstate', () => this.show(this.route()));
+    window.addEventListener('pointerdown', () => this.game.home.sound.unlock(), { capture: true });
+    window.addEventListener('keydown', () => this.game.home.sound.unlock(), { capture: true });
     window.addEventListener('keydown', event => {
       if (event.key === 'Escape' && this.screen !== 'home') { this.back(); return; }
       if (this.screen !== 'home' || event.repeat || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
@@ -218,6 +221,8 @@ export class Screens {
     if (screen === 'solo' && !this.solo.active) { this.solo.start(); return; }
     if (screen === 'home' && this.solo.active) { this.solo.quit(); return; }
     if (screen !== 'name') this.afterName = null;
+    if (screen !== this.screen) this.game.home.sound.play(screen === 'home' ? 'close' : 'open');
+    if (!this.solo.active && !this.versus.active) { this.game.home.sound.stopWorld(); this.game.home.sound.menu(); }
     this.screen = screen;
     this.root.dataset.screen = screen;
     this.motion.show(this.panels[screen]);
@@ -235,6 +240,7 @@ export class Screens {
     this.motion.reduced = this.preferences.reducedMotion;
     this.game.setReducedMotion(this.preferences.reducedMotion);
     this.game.home.sound.volume = this.preferences.sfx;
+    this.game.home.sound.musicVolume = this.preferences.music;
   }
   private updateAnimal(): void { this.animalLabel.textContent = ANIMALS[this.preferences.animal]!; }
   private updateName(): void { this.root.querySelector('#name-caption')!.textContent = this.preferences.name.trim() || 'Tap to set name'; }

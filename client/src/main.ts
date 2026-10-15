@@ -4,6 +4,7 @@ import { preloadFonts } from './ui/fonts';
 import { Screens } from './ui/screens';
 import { Loading } from './ui/loading';
 import { downloads } from './ui/downloads';
+import { registerAudio } from './game/audio';
 import styles from './ui/styles.css?inline';
 
 // Keep the game stylesheet out of index.html's render-blocking critical path.
@@ -15,6 +16,7 @@ root.inert = true;
 root.style.setProperty('--flip-columns', String(VIEW.TILE_FLIP_COLUMNS));
 root.style.setProperty('--flip-rows', String(VIEW.TILE_FLIP_ROWS));
 let game: GameRenderer | undefined;
+registerAudio();
 async function boot(): Promise<void> {
   try {
     performance.mark('hop-boot-start');
@@ -23,7 +25,7 @@ async function boot(): Promise<void> {
     void transfer.catch(() => {});
     game ??= new GameRenderer(document.querySelector<HTMLCanvasElement>('#game-canvas')!);
     performance.mark('hop-renderer-ready');
-    await Promise.all([transfer, preloadFonts(), game.warmup()]);
+    await Promise.all([transfer, preloadFonts(), game.warmup(), game.home.sound.load()]);
     const screens = new Screens(root, game);
     game.home.logo.visible = false;
     game.start(false);

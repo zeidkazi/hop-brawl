@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { COLORS, LOADING } from './shared/config';
 
 const assetBytes: Record<string, number> = {};
-for (const directory of ['client/public/models', 'node_modules/@fontsource/lilita-one/files', 'node_modules/@fontsource/nunito/files']) {
-  for (const name of readdirSync(directory)) if (/\.glb$|latin-(400|700|800)-normal\.woff2$/.test(name)) assetBytes[name] = statSync(join(directory, name)).size;
+for (const directory of ['client/public/sfx', 'client/public/music', 'client/public/models', 'node_modules/@fontsource/lilita-one/files', 'node_modules/@fontsource/nunito/files']) {
+  for (const name of readdirSync(directory)) if (/\.(glb|mp3|ogg|m4a)$|latin-(400|700|800)-normal\.woff2$/.test(name)) assetBytes[name] = statSync(join(directory, name)).size;
 }
 
 export default defineConfig({
