@@ -26,19 +26,37 @@ test('private room: isolated browsers play three rounds, rematch and hand off ho
   const guestContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const guest = await guestContext.newPage(), hostState = observe(page), guestState = observe(guest);
   try {
-    await open(page, 'Coral', 2); await page.locator('[data-mode="play"]').click(); await page.locator('[data-room="create"]').click();
+    await open(page, 'Coral', 2, '?debug=1');
+    await page.waitForFunction(() => !!window.__HOP_DEBUG__);
+    const responseMs = await page.evaluate(() => { const start = performance.now(); document.querySelector<HTMLButtonElement>('[data-mode=play]')!.click(); return new Promise<number>(resolve => requestAnimationFrame(() => resolve(performance.now() - start))); });
+    expect(responseMs).toBeLessThan(150); console.log('PLAY response ms', responseMs);
+    await expect(page.locator('#friends')).toHaveCSS('opacity', '1'); await page.locator('[data-room="create"]').click();
     await expect(page.locator('#lobby')).toBeVisible(); const code = await page.locator('#lobby-code').innerText();
     await expect(page.locator('[data-room="start"]')).toBeDisabled();
-    await open(guest, 'Mint', 4, `?room=${code}`); await guest.locator('[data-room="join"]').click();
+    await open(guest, 'Coral', 4, `?room=${code}&debug=1`); await guest.locator('[data-room="join"]').click();
     await expect(guest.locator('#lobby')).toBeVisible(); await expect(page.locator('[data-room="start"]')).toBeEnabled();
+    await expect(guest.locator('[data-room="start"]')).toBeHidden();
+    await expect(guest.locator('#lobby-status')).toHaveText('Waiting for host…');
+    await expect(guest.locator('#lobby-players')).toContainText('Coral 2');
+    const worldBefore = await page.evaluate(() => ({ time: window.__HOP_DEBUG__!.solo.game.worldTime, rows: window.__HOP_DEBUG__!.snapshot().generatedRows }));
     await guest.locator('[data-room-animal="5"]').click();
     await expect.poll(() => hostState.current?.players.find(p => p.id === guestState.id)?.animal).toBe(5);
+    await page.waitForTimeout(200);
+    const worldAfter = await page.evaluate(() => ({ time: window.__HOP_DEBUG__!.solo.game.worldTime, rows: window.__HOP_DEBUG__!.snapshot().generatedRows }));
+    expect(worldAfter.rows).toBe(worldBefore.rows); expect(worldAfter.time).toBeGreaterThan(worldBefore.time!);
+    await page.evaluate(() => window.__HOP_DEBUG__!.toast('OLD ROUND'));
     await page.locator('[data-room="start"]').click();
+    await expect(page.locator('.toast:visible')).toHaveCount(0);
+    expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('BUTTON');
     for (let round = 1; round <= 3; round++) {
       await expect.poll(() => hostState.current?.phase, { timeout: 15000 }).toBe('playing');
       expect(guestState.current?.seed).toBe(hostState.current?.seed);
       expect(hostState.current?.round).toBe(round);
       if (round === 1) {
+        await page.locator('#versus [data-room="leave"]').focus();
+        await expect(page.locator('#match-player-0 .heart-icons svg')).toHaveCount(2);
+        await expect(page.locator('#match-player-0 .win-pips i')).toHaveCount(2);
+        await expect(page.locator('#match-player-0 .animal-icon')).toBeVisible();
         await page.keyboard.press('ArrowRight'); await page.waitForTimeout(250); await page.keyboard.press('ArrowRight');
         await expect.poll(() => hostState.current?.events.some(event => event.kind === 'shove' && event.by === hostState.id)).toBe(true);
         expect(hostState.current?.players.find(p => p.id === hostState.id)?.movement.x).toBe(4);
@@ -53,6 +71,8 @@ test('private room: isolated browsers play three rounds, rematch and hand off ho
       }
       await expect.poll(() => hostState.current?.phase, { timeout: 5000 }).toMatch(/freeze|roundEnd/);
       await expect(page.locator('#roundEnd')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('#round-result-title')).toContainText(`ROUND ${round}`);
+      await expect(page.locator('#round-winner-animal svg')).toBeVisible();
       console.log('ROUND', round, JSON.stringify(hostState.current?.players.map(p => ({ name: p.name, wins: p.wins, hearts: p.hearts }))));
     }
     await expect(page.locator('#matchEnd')).toBeVisible({ timeout: 15000 });
@@ -118,4 +138,31 @@ test('a first-time room link collects a name and retains the code', async ({ pag
   await expect(page.locator('#friends')).toBeVisible();
   await expect(page.locator('.room-code input').first()).toHaveValue('Z');
   await page.locator('[data-room="join"]').click(); await expect(page.locator('#room-error')).toHaveText('Room not found');
+});
+
+test('a frozen browser still loses a life to authoritative traffic', async ({ browser, page }) => {
+  test.setTimeout(60000);
+  const guestContext = await browser.newContext(), guest = await guestContext.newPage();
+  const hostState = observe(page), guestState = observe(guest); let reports = 0;
+  guest.on('websocket', ws => ws.on('framesent', frame => { if (String(frame.payload).includes('"type":"death"')) reports++; }));
+  const cdp = await guestContext.newCDPSession(guest);
+  try {
+    await open(page, 'Watcher', 2); await page.locator('[data-mode="play"]').click(); await page.locator('[data-room="create"]').click();
+    await expect(page.locator('#lobby')).toBeVisible();
+    const code = await page.locator('#lobby-code').innerText();
+    await open(guest, 'Sleeper', 5, `?room=${code}`); await guest.locator('[data-room="join"]').click();
+    await expect(page.locator('[data-room="start"]')).toBeEnabled(); await page.locator('[data-room="start"]').click();
+    await expect.poll(() => hostState.current?.phase).toBe('playing');
+    for (let i = 0; i < 3; i++) { await guest.keyboard.press('ArrowUp'); await page.waitForTimeout(200); }
+    await expect.poll(() => hostState.current?.players.find(p => p.id === guestState.id)?.movement.z).toBe(4);
+    const life = hostState.current!.players.find(p => p.id === guestState.id)!.lifeId;
+    await guest.keyboard.press('ArrowUp'); await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
+    await expect.poll(() => hostState.current?.events.some(e => e.id === guestState.id && e.lifeId === life && e.kind === 'death'), { timeout: 20000 }).toBe(true);
+    const dead = hostState.current!.players.find(p => p.id === guestState.id)!;
+    expect(dead.hearts).toBe(1); expect(dead.movement.dead).toBe('FLATTENED!'); expect(reports).toBe(0);
+    expect(hostState.current!.events.filter(e => e.id === guestState.id && e.lifeId === life && e.kind === 'death')).toHaveLength(1);
+    await expect(page.locator('.toast:visible')).toHaveCount(1);
+    await page.waitForTimeout(2600); await expect(page.locator('.toast:visible')).toHaveCount(0);
+    console.log('FROZEN TAB', { lifeId: life, hearts: dead.hearts, cause: dead.movement.dead, clientReports: reports });
+  } finally { await cdp.send('Page.setWebLifecycleState', { state: 'active' }); await guestContext.close(); }
 });

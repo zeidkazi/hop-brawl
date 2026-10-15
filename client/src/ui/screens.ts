@@ -145,7 +145,8 @@ export class Screens {
     root.addEventListener('click', event => {
       const button = event.target instanceof Element ? event.target.closest('button') : null;
       if (!button) return;
-      this.game.home.sound.unlock();
+      // Paint the requested panel before opening the OS audio device on the first gesture.
+      requestAnimationFrame(() => window.setTimeout(() => this.game.home.sound.unlock(), 0));
       if (button.dataset.screen) this.navigate(button.dataset.screen as Screen);
       else if (button.dataset.mode === 'play') this.navigate('friends');
       else if (button.dataset.mode === 'solo') this.navigate('solo');
