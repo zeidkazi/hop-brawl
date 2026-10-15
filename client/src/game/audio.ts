@@ -56,7 +56,7 @@ export class BoxingSound {
   }
   unlock(): void {
     if (!this.loaded || this.unlocked && Howler.ctx?.state === 'running') return;
-    const start = () => { this.unlocked = true; if (this.musicId < 0) this.startMusic(CONFIG.MUSIC_CROSSFADE_MS); };
+    const start = () => { this.unlocked = true; if (this.musicId < 0) this.startMusic(SOUND.MUSIC_INTRO_MS); };
     if (Howler.ctx?.state !== 'running') void Howler.ctx?.resume().then(start).catch(() => {}); else start();
   }
   play(cue: Cue | 'hop' | 'win', pan = 0, level = SOUND.PLAYER_GAIN as number, animal = 2): number {

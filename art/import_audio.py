@@ -50,14 +50,13 @@ CUES = {
 }
 for cue, (pack, filename) in CUES.items():
     convert(source(pack, "Audio/" + filename + ".ogg"), cue,
-        "silenceremove=start_periods=1:start_threshold=-50dB,alimiter=limit=0.75:level=false,afade=t=in:d=0.003")
+        "silenceremove=start_periods=1:start_threshold=-50dB,areverse,silenceremove=start_periods=1:start_threshold=-48dB,areverse,alimiter=limit=0.75:level=false,afade=t=in:d=0.003")
 
 # Measured beat grids (spectral-flux peaks and exact full-file bar counts):
 # Title Screen: 4 bars at 85 BPM; Level 1: 28 bars at 90.5;
 # Level 2: 32 bars at 105.5; Level 3: 36 bars at 105.5 (half-time grids).
 # Each selection starts on a phrase downbeat. Title repeats its complete four bars.
 TRACKS = {
-    "menu": ("Title Screen", 85, 0, 16, MENU_BPM),
     "meadow": ("Level 1", 90.5, 0, 32, GAME_BPM),
     "autumn": ("Level 2", 105.5, 0, 32, GAME_BPM),
     "snow": ("Level 3", 105.5, 0, 32, GAME_BPM),
@@ -68,3 +67,13 @@ for name, (title, bpm, start_beat, beats, target) in TRACKS.items():
     filters = f"atrim=start={start_beat * 60 / bpm}:duration={beats * 60 / bpm},asetpts=PTS-STARTPTS,atempo={target / bpm},volume=0.36"
     convert(path, name, filters)
 print("Prepared nine Kenney effects and five OpenGameArt music edits (CC0).")
+
+# extenz, Short kalimba loop (CC0): acoustic kalimba, celeste and strings.
+menu = CACHE / "Kalimba.wav"
+if not menu.exists():
+    with urllib.request.urlopen("https://opengameart.org/sites/default/files/Kalimba.wav", timeout=120) as response:
+        menu.write_bytes(response.read())
+if hashlib.sha256(menu.read_bytes()).hexdigest() != "cc402dce63f6cb9235ac093e2f4d25dcf81f6d1f031a2fd3cc8e8738a5d9a568":
+    raise RuntimeError("Kalimba source checksum mismatch")
+# Source beat-grid measured at 82 BPM; take the first complete eight-bar phrase.
+convert(menu, "menu", f"atrim=duration={BARS * 4 * 60 / 82},asetpts=PTS-STARTPTS,atempo={MENU_BPM / 82}")

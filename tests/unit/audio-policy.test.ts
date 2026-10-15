@@ -19,6 +19,6 @@ it('exports complete finite sprites, specified sting durations and exact eight-b
   expect(Object.keys(manifest.sfx)).toHaveLength(44);
   expect(manifest.sfx.roundWin[1]).toBe(2500); expect(manifest.sfx.matchWin[1]).toBe(5000); expect(manifest.sfx.gameOver[1]).toBe(2000);
   for (const [name, sprite] of Object.entries(manifest.music)) {
-    expect(sprite[2]).toBe(true); expect(sprite[1]).toBeCloseTo(32 * 60 / (name === 'menu' ? 110 : 130) * 1000, 1);
+    expect(sprite[2]).toBe(true); expect(sprite[1]).toBeCloseTo(32 * 60 / (name === 'menu' ? 100 : 130) * 1000, 1);
   }
 });

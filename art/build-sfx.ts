@@ -74,8 +74,8 @@ const tracks: Record<string, Samples> = {};
 for (const name of ['menu', 'meadow', 'autumn', 'snow', 'nightCity']) {
   const source = pcm(name), bpm = name === 'menu' ? SOUND.MENU_BPM : SOUND.GAME_BPM;
   const a = buffer(SOUND.MUSIC_BARS * 4 * 60 / bpm);
-  // Repeat the complete four-bar title phrase; other selections are eight bars.
-  const phrase = Math.round((name === 'menu' ? 16 : 32) * 60 / bpm * rate);
+  // All selections are complete eight-bar phrases.
+  const phrase = Math.round(32 * 60 / bpm * rate);
   for (let i = 0; i < a.length; i++) a[i] = source[Math.min(i % phrase, source.length - 1)]!;
   // Five-millisecond boundary ramps remove codec/transient clicks without adding a silent gap.
   const edge = Math.round(rate * .005);
@@ -88,7 +88,7 @@ for (const name of ['menu', 'meadow', 'autumn', 'snow', 'nightCity']) {
 mkdirSync('tmp/audio', { recursive: true }); mkdirSync('client/public/sfx', { recursive: true }); mkdirSync('client/public/music', { recursive: true });
 function wav(path: string, samples: Samples) {
   const b = Buffer.alloc(44 + samples.length * 2); b.write('RIFF'); b.writeUInt32LE(b.length - 8, 4); b.write('WAVEfmt ', 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(rate, 24); b.writeUInt32LE(rate * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(samples.length * 2, 40);
-  samples.forEach((s, i) => b.writeInt16LE(Math.round(Math.max(-1, Math.min(1, s)) * 28000), 44 + i * 2)); writeFileSync(path, b);
+  samples.forEach((s, i) => b.writeInt16LE(Math.round(Math.max(-1, Math.min(1, s)) * 32767), 44 + i * 2)); writeFileSync(path, b);
 }
 function pack(values: Record<string, Samples>, name: string, loop: boolean) {
   let offset = 0; const sprite: Record<string, [number, number, boolean]> = {}, gap = Math.round(rate * SOUND.SPRITE_GAP_S);
@@ -96,6 +96,45 @@ function pack(values: Record<string, Samples>, name: string, loop: boolean) {
   for (const [key, a] of Object.entries(values)) { samples.set(a, offset); sprite[key] = [offset / rate * 1000, a.length / rate * 1000, loop]; offset += a.length + gap; }
   wav(`tmp/audio/${name}.wav`, samples); return sprite;
 }
+// Normalize each cue, not merely the aggregate bank. Repeat short effects for a
+// valid >=3-second BS.1770 measurement, then keep only their original duration.
+const loudness: Record<string, unknown> = {};
+function normalize(values: Record<string, Samples>, target: number) {
+  for (const [name, a] of Object.entries(values)) {
+    const repeated = new Float32Array(a.length * Math.max(1, Math.ceil(3 / (a.length / rate))));
+    for (let i = 0; i < repeated.length; i += a.length) repeated.set(a, i);
+    wav(`tmp/audio/normalize.wav`, repeated);
+    const filter = `loudnorm=I=${target}:LRA=11:TP=${SOUND.TRUE_PEAK_DB}`;
+    const pass = spawnSync(ffmpeg!, ['-hide_banner', '-i', 'tmp/audio/normalize.wav', '-af', `${filter}:print_format=json`, '-f', 'null', '-'], { encoding: 'utf8' });
+    if (pass.status !== 0) throw new Error(`Loudness analysis failed: ${name}`);
+    const measured = JSON.parse(pass.stderr.slice(pass.stderr.lastIndexOf('{')));
+    const stats = `:measured_I=${measured.input_i}:measured_LRA=${measured.input_lra}:measured_TP=${measured.input_tp}:measured_thresh=${measured.input_thresh}:offset=${measured.target_offset}:linear=true`;
+    const result = spawnSync(ffmpeg!, ['-y', '-hide_banner', '-i', 'tmp/audio/normalize.wav', '-af', `${filter}${stats}:print_format=json`, '-ar', String(rate), '-f', 'f32le', 'tmp/audio/normalized.pcm'], { encoding: 'utf8' });
+    if (result.status !== 0) throw new Error(`Loudness export failed: ${name}`);
+    let report = JSON.parse(result.stderr.slice(result.stderr.lastIndexOf('{')));
+    // Very brief sampled transients can hit the true-peak ceiling before their
+    // body reaches the target. Raise the body through a look-ahead limiter.
+    for (let attempt = 0; attempt < 32 && Math.abs(Number(report.output_i) - target) > .6; attempt++) {
+      const gain = target - Number(report.output_i), limit = 10 ** (SOUND.TRUE_PEAK_DB / 20);
+      const compressed = spawnSync(ffmpeg!, ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'f32le', '-ar', String(rate), '-ac', '1', '-i', 'tmp/audio/normalized.pcm',
+        '-af', `aresample=192000,volume=${gain}dB,alimiter=limit=${limit}:attack=0.1:release=1:level=false:latency=true,aresample=${rate}`, '-f', 'f32le', 'tmp/audio/limited.pcm']);
+      if (compressed.status !== 0) throw new Error(`Transient leveling failed: ${name}`);
+      writeFileSync('tmp/audio/normalized.pcm', readFileSync('tmp/audio/limited.pcm'));
+      const check = spawnSync(ffmpeg!, ['-hide_banner', '-f', 'f32le', '-ar', String(rate), '-ac', '1', '-i', 'tmp/audio/normalized.pcm', '-af', `${filter}:print_format=json`, '-f', 'null', '-'], { encoding: 'utf8' });
+      if (check.status !== 0) throw new Error(`Transient measurement failed: ${name}`);
+      const measured = JSON.parse(check.stderr.slice(check.stderr.lastIndexOf('{')));
+      report = { ...report, output_i: measured.input_i, output_tp: measured.input_tp, normalization_type: 'limited-linear' };
+    }
+    const bytes = readFileSync('tmp/audio/normalized.pcm');
+    values[name] = Float32Array.from({ length: a.length }, (_, i) => bytes.readFloatLE(i * 4));
+    if (Math.abs(Number(report.output_i) - target) > 1) throw new Error(`Loudness target missed: ${name}`);
+    loudness[name] = { target, repeatedForMeasurement: repeated.length !== a.length, ...report };
+
+  }
+}
+normalize(sounds, SOUND.SFX_LUFS); normalize(tracks, SOUND.MUSIC_LUFS);
+mkdirSync('art/review/batch-b-stable', { recursive: true });
+writeFileSync('art/review/batch-b-stable/loudness.json', JSON.stringify(loudness, null, 2) + '\n');
 const manifest = { sfx: pack(sounds, 'sfx', false), music: pack(tracks, 'music', true) };
 function encode(input: string, output: string, args: string[]) { const result = spawnSync(ffmpeg!, ['-y', '-hide_banner', '-loglevel', 'error', '-i', input, '-map_metadata', '-1', ...args, output], { stdio: 'inherit' }); if (result.status !== 0) throw new Error(`Encoding failed: ${output}`); }
 encode('tmp/audio/sfx.wav', 'client/public/sfx/brawl.mp3', ['-ac', '1', '-codec:a', 'libmp3lame', '-b:a', '96k']);
