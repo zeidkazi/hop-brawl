@@ -127,6 +127,9 @@ function normalize(values: Record<string, Samples>, target: number) {
     }
     const bytes = readFileSync('tmp/audio/normalized.pcm');
     values[name] = Float32Array.from({ length: a.length }, (_, i) => bytes.readFloatLE(i * 4));
+    // Boundaries must remain click-free after normalization/limiter delay.
+    const ramp = Math.min(Math.round(rate * .003), Math.floor(a.length / 2));
+    for (let i = 0; i < ramp; i++) { values[name]![i]! *= i / ramp; values[name]![a.length - 1 - i]! *= i / ramp; }
     if (Math.abs(Number(report.output_i) - target) > 1) throw new Error(`Loudness target missed: ${name}`);
     loudness[name] = { target, repeatedForMeasurement: repeated.length !== a.length, ...report };
 
