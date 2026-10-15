@@ -1114,3 +1114,35 @@ Quick Play + 60 s Solo prompt → crates/boosts → awards → environmental bou
 - No review stops until the live URL works end to end; then stop and report: URL, what was tested, known issues.
 - Unit tests for room/shove/round logic; skip screenshot sets except the cover image.
 - Commit maxing continues (small commits, pushed regularly). Tag `v0.9-submission` on the deployed commit.
+
+## 33. Detail pass (owner decision, 2026-10-15 — overrides §32 where it conflicts)
+- **No deployment until the owner asks.** Work locally only.
+- The real deadline is Oct 30; features cut in §31.5/§32 come back, in the batches below. Finish and verify each batch locally before the next.
+
+### Batch A — Movement & animation feel
+- **Hop:** re-tune per §13 and verify at 60 fps: 40 ms anticipation squash → arc with stretch → landing squash → settle; body turns to face the hop direction (80 ms ease); gloves swing back on take-off and forward on landing; landing dust puff (biome-colored). No linear motion anywhere — every move eased.
+- **Input feel:** one buffered input during a hop; held arrow key = one hop (no auto-repeat); swipe decided at 24 px.
+- **Logs:** player sways slightly with the log; log dips on landing; aim-assist hop arc curves to the slot it lands on.
+- **Remote players** hop with the same arc/squash (reconstructed), never slide.
+- **Deaths, per cause, polished:** FLATTENED pancake + tire marks; SPLASH sink + splash particles + ripple; DERAILED flung spinning off screen; SWEPT AWAY flailing off the edge; LEFT BEHIND fade + poof. Respawn: drop from above with a bounce, blinking during protection.
+- **Boxer moves** (§29.7) visible from the gameplay camera: 1-2 combo punches travel **toward the camera/forward**, glove tap reads clearly; fix the fox tail so it reads as a bushy tail from the top-down camera.
+- **Camera:** critically damped follow, small shake on nearby deaths and train pass (off with Reduce motion).
+- Respawn on the nearest grass row at or above camZ+1 (search up to camZ+5), nearest free column to center; else camZ+2 with 3 s protection. START looks disabled until 2 players.
+
+### Batch B — Audio
+- Full §31.6 sound pass and §14 music with the §8.3 rules (continuous menu loop, crossfade into gameplay at HOP!, low-pass on death/OUT, stings). Announcer lines from a CC0 voice pack if one consistent voice covers them; otherwise text slams + SFX. Everything CC0, logged in CREDITS.md.
+
+### Batch C — Visuals & presentation
+- Fighting-game presentation: VS splash, "ROUND {n}" → 3·2·1 → "HOP!", "K.O.!" stamp on shove kills, "FINAL ROUND", winner banners; camera flights between Home / Lobby / match / results (§8.3); onboarding control hints for the first 3 hops.
+- Environmental boundaries §31.4 (fence/hedge + crowd behind it, zebra crossing, reeds/rocks, railway barrier arms, arena light pool) replacing the painted lines.
+- Crowd reacts: cheers + raised arms on K.O.s and round wins.
+- Lobby: animals larger and centered on a starting line; the card no longer covers half the scene.
+- Re-export the cover image closer on the two players mid-shove.
+
+### Batch D — Gameplay depth
+- Crates & boosts (§4.6) with leader crown + padlock; awards + match stats on Match End (§4.7); sinking logs + 2-tile logs (§31.3).
+
+### Batch E — Breadth
+- Quick Play (§6.2) with the 60 s Solo prompt; biomes autumn / snow / night (§10, §12.3) with their props; reconnect via resumeToken, version-refresh prompt, late joiners spectate; adaptive quality tuning; camera debug sliders.
+
+Then (owner decides): Vercel + custom domain (§15a) and deployment.
