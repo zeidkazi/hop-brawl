@@ -76,7 +76,8 @@ export function setupDebug(game: GameRenderer, screens: Screens): void {
     stats.update();
     if (now < nextReadout) return;
     nextReadout = now + VIEW.DEBUG_UPDATE_MS;
-    readout.textContent = `${game.quality.tier.toUpperCase()} · ${(game.quality.resolution * 100).toFixed(0)}% resolution\n`
+    readout.textContent = `${Math.round(1000 / Math.max(1, game.metrics.delta))} FPS � ${Math.round(screens.versus.client.timing.ping)} ms ping � ${Math.round(screens.versus.client.timing.delay)} ms interpolation\n`
+      + `${game.quality.tier.toUpperCase()} · ${(game.quality.resolution * 100).toFixed(0)}% resolution\n`
       + `p95 ${game.quality.frames.p95.toFixed(1)}ms · max ${game.quality.frames.worst.toFixed(1)}ms\n`
       + `${game.metrics.calls} calls · ${game.metrics.triangles} triangles\n`
       + `${game.metrics.geometries} geometries · ${game.world.rows.length} row slots\n`
