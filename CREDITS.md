@@ -131,9 +131,11 @@ These sounds are generated in the browser, with no downloaded clips, external se
 
 | Asset | Source | License |
 |---|---|---|
-| `art/cover/hop-brawl-1800x1200.png` | [Original local multiplayer capture](https://github.com/zeidkazi/hop-brawl/blob/main/scripts/capture-submission.mjs), two real room clients using authoritative hops | Original game artwork, CC0 1.0; font/model provenance above |
+| `art/cover/hop-brawl-1800x1200.png` | [Original local multiplayer capture](https://github.com/zeidkazi/hop-brawl/blob/main/scripts/capture-submission.mjs), two real room clients using an authoritative shove | Original game artwork, CC0 1.0; font/model provenance above |
 
-The cover is an uncomposited 1800×1200 production-renderer screenshot: two animals, player-colored boxing gloves, traffic and the logo-free multiplayer HUD. Capture metadata is in art/cover/capture.json.
+The revised cover is a 1800×1200 production-renderer screenshot of a server-confirmed shove: two animals, player-colored gloves, contact/stun stars and traffic. The capture hides the HUD/buttons/debug UI and places the existing approved 3D logo in the upper-left corner. The contact frame is frozen for capture; no gameplay geometry or authoritative state is fabricated. Capture metadata is in art/cover/capture.json.
+
+The six HUD/result animal portraits, heart icons and win pips in client/src/ui/room-icons.ts are original inline SVG/CSS artwork, CC0 1.0, derived from the approved animal identities. No external image assets were downloaded.
 
 ## Historical announcer acquisition plan (deferred by §31.5)
 

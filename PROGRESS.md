@@ -2,10 +2,10 @@
 
 Last updated: 2026-10-15 (Asia/Calcutta).
 
-## Local multiplayer playtest repairs (in progress; no deployment)
+## Local multiplayer playtest repairs (complete; awaiting owner retest; no deployment)
 
 - Existing saved rooms without life IDs are upgraded on restore, so pre-fix rooms retain authoritative deaths after a Worker restart.
-- Added monotonic life IDs, one server death-commit path and validated client reports. Every live player is simulated on the server, independent of browser frames. Regression tests cover idle players, both report/backstop orders, stale reports and respawn IDs. 137 unit tests and build pass.
+- Added monotonic life IDs, one server death-commit path and validated client reports. Every live player is simulated on the server, independent of browser frames. Regression tests cover idle players, both report/backstop orders, stale reports and respawn IDs. 147 unit tests in 30 files, client/server typechecks and production build pass (final repair suite).
 - Local predicted deaths now animate immediately and report their life ID; confirmation owns the single toast/sound. Animation and confirmation gates reject repeated or older lives.
 - Duplicate names now receive the first available numeric suffix, including collisions with already numbered names.
 - Countdown/gameplay no longer focuses Leave. Window capture handles movement keys even over focused buttons, suppressing button activation and repeat hops; editable fields remain excluded.
@@ -16,16 +16,19 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 - PLAY now reveals Friends (or the required name panel) immediately while Home exits; the existing 60 ms press animation remains. A regression asserts the panel and buttons are visible without waiting for exit animation.
 - Impact-star size scales independently of stun-orbit height so effects remain attached to the animals. Multiplayer shove punches now connect the existing impact-star effect to the glove contact cue (and stun stars to the victim), respecting Reduce Motion and disposing effects on departure.
 - Browser regression: four cases pass, including a full three-round match/rematch and a frozen real browser losing exactly one heart to traffic with zero client death reports. PLAY next-paint latency measured 13.6 ms after deferring OS audio-device startup until after panel paint.
-- Next: replacement cover and production-packaged local verification, then STOP for owner playtest.
+- Shared-input safety: all 4 Solo desktop/mobile regressions pass (keyboard/swipes, buffering, pause, death, retry and persistent canvas).
+- Packaged local Worker: all 8 multiplayer browser cases pass across desktop and mobile viewports, including frozen-client hazard death, first-time invites, room capacity/errors, three rounds, rematch and host handoff. PLAY next-paint response: 20.0 ms desktop / 10.7 ms mobile. No new screenshot sets.
+- Cover re-exported and visually inspected: 1800x1200, 828,445 bytes, both players during a confirmed shove with impact/stun stars, existing 3D logo in the corner, traffic, grass-only scenery, no HUD/buttons/focus rings.
+- Next exact step: STOP for the owner to retest at http://localhost:5173/; no deployment. Run npm run dev and npm run dev:server in separate terminals. Physical-phone retest remains owner-assisted.
 
 ## Ship today: sections 31–32 (current, overrides historical gates below)
 
 - Latest owner instruction (2026-10-15): complete steps 1–4 and cover step 7, verify everything locally including owner phone on Wi-Fi, then STOP. Do not deploy or wait for Cloudflare login. Keep the single-Worker static-assets/SQLite DO setup ready in wrangler.toml; the owner will log in and deploy afterward. No submission tag until there is a deployed commit.
 - Step 1 complete: 64 recycled rows cover the angled camera frustum, lower-third player, 1.0-tile log-slot assist and T2–T4 log speeds. Painted boundaries remain. Desktop playfield 48.6%; phone 92.1%; player anchor 65% from top. Rows 5/35/70/150 have zero missing ground and at least seven rows ahead on both viewports. No screenshot sets generated.
-- Step 2 complete locally: private-room authority, lobby, unique animal picks, player-colored gloves, clock sync, predicted local hops, 100 ms remote interpolation, hearts/respawn/protection/shove, three-round matches, rematch, host handoff and forfeit. 133 unit tests in 27 files and both client/server typechecks pass. Local Worker runs on 8787; Vite proxies API/WebSocket requests on 5173.
+- Step 2 complete locally: private-room authority, lobby, unique animal picks, player-colored gloves, clock sync, predicted local hops, 100 ms remote interpolation, hearts/respawn/protection/shove, three-round matches, rematch, host handoff and forfeit. 147 unit tests in 30 files and both client/server typechecks pass. Local Worker runs on 8787; Vite proxies API/WebSocket requests on 5173.
 - Steps 2–4 checked: a complete three-round match, rematch, shove, host handoff, forfeit and Back to lobby passed between independent desktop/phone-sized browser contexts. Four-client admission, fifth-client ROOM_FULL, ROOM_NOT_FOUND, foreign-Origin rejection and first-time invite/name flow pass. PLAY opens Friends. Original procedural sounds cover bell/horn/hop/splash/squash/bonk/punch/round win.
 - Camera/Solo/menu regressions: 16 targeted browser cases have passing results across desktop and mobile. Two old forced-death fixtures were updated for the new frustum and rerun successfully. No screenshot sets were exported. Desktop animal height is 76.9 px; real rendered Left Behind deaths remain below the visible screen and camera lag stays within 0.05 tile.
-- Step 7 complete: art/cover/hop-brawl-1800x1200.png (1800×1200, 833,904 bytes), inspected after capture from two real local Worker clients. Both animals and gloves, traffic and the logo-free HUD are visible. Capture script/metadata and CREDITS entry are committed.
+- Step 7 complete: art/cover/hop-brawl-1800x1200.png (1800×1200, 828,445 bytes), inspected after capture from two real local Worker clients. Both animals/gloves, a confirmed shove with stars, traffic and the corner 3D logo are visible; HUD/buttons are hidden. Capture script/metadata and CREDITS entry are committed.
 - Production-packaged local verification: all three multiplayer browser tests pass against http://127.0.0.1:8787, including the full three-round match and rematch. Frontend and room API are served by the same local Worker. This was local verification only, not a public deployment.
 - Physical-phone live testing requires the owner's device. Automated touch/mobile tests are reported separately.
 

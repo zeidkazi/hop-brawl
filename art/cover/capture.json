@@ -2,25 +2,32 @@
   "width": 1800,
   "height": 1200,
   "source": "http://127.0.0.1:8787",
-  "seed": 2519741947,
+  "seed": 591718608,
   "phase": "playing",
   "players": [
     {
       "animal": 2,
       "slot": 0,
-      "x": 2,
-      "row": 4,
+      "x": 4,
+      "row": 3,
       "hearts": 2
     },
     {
       "animal": 5,
       "slot": 1,
       "x": 6,
-      "row": 4,
+      "row": 3,
       "hearts": 2
     }
   ],
   "hostIdPresent": true,
   "guestIdPresent": true,
+  "impactVisible": true,
+  "hudVisible": false,
+  "logoVisible": true,
+  "shove": {
+    "direction": "right",
+    "confirmed": true
+  },
   "errors": []
 }
