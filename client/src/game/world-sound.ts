@@ -12,7 +12,9 @@ export class WorldSound {
     sound.beginWorld(); this.rail.update(rows, camZ, time, sound, x, z);
     const water = rows.find(s => s.row?.kind === 'river' && s.z >= camZ && s.z <= camZ + CONFIG.VIEW_ROWS);
     if (water) sound.loop('water', 'water', 0, SOUND.AMBIENCE_GAIN);
-    sound.loop('birds', 'birds', 0, SOUND.AMBIENCE_GAIN);
+    const biome = rows.find(s => s.z === Math.round(z))?.row?.biome ?? 'meadow';
+    sound.biome(biome);
+    if (biome === 'meadow') sound.loop('birds', 'birds', 0, SOUND.AMBIENCE_GAIN);
     for (const side of STREET.ARENA_SIDE_X) {
       const position = spatial(side, z, x, z, CONFIG.VIEW_ROWS);
       sound.loop(`crowd-${side}`, 'crowd', position.pan, SOUND.AMBIENCE_GAIN / (1 + Math.abs(side - x) / SOUND.PAN_TILES));

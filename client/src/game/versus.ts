@@ -139,7 +139,7 @@ export class Versus {
     if (this.startAt !== state.startAt) {
       this.motion.clearToasts(); this.eventSequence = state.eventSequence;
       this.startAt = state.startAt; this.game.world.reset(state.seed); this.game.rig.resetScroll(!first);
-      this.arenaRow = NaN; this.railSound.reset(); this.lastCountdown = ''; this.game.home.sound.stopWorld(); this.game.home.sound.muffle(false); for (const actor of this.actors.values()) actor.boxer.countdown();
+      this.arenaRow = NaN; this.railSound.reset(); this.lastCountdown = ''; this.game.home.sound.resetRound(); for (const actor of this.actors.values()) actor.boxer.countdown();
     }
     for (const p of state.players) {
       const actor = this.actors.get(p.id); if (!actor || actor.lifeId === p.lifeId) continue;

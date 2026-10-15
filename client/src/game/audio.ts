@@ -1,5 +1,5 @@
 import { Howl, Howler } from 'howler';
-import { CONFIG, SOUND, VIEW } from '../../../shared/config';
+import { CONFIG, SOLO, SOUND, VIEW } from '../../../shared/config';
 import type { Biome } from '../../../shared/types';
 import type { DeathCause } from '../../../shared/movement';
 import manifest from './audio-manifest.json';
@@ -26,11 +26,13 @@ export class BoxingSound {
   private voices: Voice[] = []; private seen = new Set<string>();
   private track: Track = 'menu'; private musicId = -1; private fadingId = -1;
   private rate = 1; private muffled = false; private paused = false; private ducked = false;
+  private delayed = new Set<number>();
   private duckTimer = 0; private fanfareTimer = 0;
+  constructor() { if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) this.stopWorld(); }); }
   get volume(): number { return this.sfxVolume; }
   set volume(value: number) { this.sfxVolume = value; for (const v of this.voices) this.sfx?.volume(value * v.level, v.id); }
   get musicVolume(): number { return this.musicLevel; }
-  set musicVolume(value: number) { this.musicLevel = value; this.mix(); }
+  set musicVolume(value: number) { this.musicLevel = value; this.music?.mute(value === 0); this.mix(); }
   get diagnostics() { return { loaded: this.loaded, unlocked: this.unlocked, track: this.track, musicId: this.musicId,
     musicRate: this.rate, muffled: this.muffled, paused: this.paused, ducked: this.ducked,
     voices: this.voices.filter(v => this.sfx?.playing(v.id)).length + (this.music?.playing(this.musicId) ? 1 : 0) + (this.music?.playing(this.fadingId) ? 1 : 0),
@@ -84,15 +86,23 @@ export class BoxingSound {
   }
   endWorld(): void { for (const v of this.voices) if (v.loop && !this.seen.has(v.key)) this.sfx?.stop(v.id); }
   stopWorld(): void { this.beginWorld(); this.endWorld(); }
+  resetRound(): void {
+    for (const timer of this.delayed) clearTimeout(timer); this.delayed.clear();
+    this.sfx?.stop(); this.voices.length = 0; clearTimeout(this.duckTimer); clearTimeout(this.fanfareTimer);
+    this.ducked = false; this.muffle(false); this.mix();
+  }
+  biome(biome: Biome): void { if (this.track !== 'menu' && this.track !== biome) this.changeMusic(biome, SOUND.MUSIC_BIOME_FADE_MS); }
   death(cause: DeathCause, pan = 0): void {
     if (cause === 'FLATTENED!') this.play('squash', pan);
     else if (cause === 'SPLASH!' || cause === 'SWEPT AWAY!') { this.play('splash', pan); if (cause === 'SWEPT AWAY!') this.play('whoosh', pan); }
     else if (cause === 'DERAILED!') { this.play('impact', pan); this.play('horn', pan, SOUND.WARNING_GAIN); }
     else this.play('fall', pan);
     this.play('heartLost', pan);
+    if (cause === 'SPLASH!') { const timer = window.setTimeout(() => { this.delayed.delete(timer); this.play('bubbles', pan); }, SOLO.BUBBLE_START_S * 1000); this.delayed.add(timer); }
   }
   menu(): void {
-    clearTimeout(this.fanfareTimer); this.muffle(false); this.rate = 1; this.changeMusic('menu', CONFIG.MUSIC_CROSSFADE_MS);
+    if (this.track !== 'menu' || this.muffled) this.resetRound();
+    this.rate = 1; this.changeMusic('menu', CONFIG.MUSIC_CROSSFADE_MS);
   }
   gameplay(biome: Biome = 'meadow', final = false): void {
     clearTimeout(this.fanfareTimer); this.rate = final ? CONFIG.FINAL_ROUND_MUSIC_RATE : 1;

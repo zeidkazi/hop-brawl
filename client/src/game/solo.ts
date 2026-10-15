@@ -125,7 +125,7 @@ export class Solo {
     this.renderPose(0);
   }
   private beginCountdown(duration: number, origin = performance.now()): void {
-    this.game.home.sound.stopWorld(); this.game.home.sound.muffle(false);
+    this.game.home.sound.resetRound();
     this.phase = 'countdown'; this.input.enabled = false; this.input.clear(); this.game.playing = false;
     this.previousWall = performance.now(); this.countdownEnd = origin + duration;
     this.countdownDuration = duration;
