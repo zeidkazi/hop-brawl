@@ -69,6 +69,7 @@ export class Room extends DurableObject<Env> {
       this.game.tick(now); ws.send(JSON.stringify({ type: 'state', snapshot: this.game.snapshot() })); return;
     }
     if (body.type === 'hop' && validDirection(body.direction) && typeof body.sequence === 'number') this.game.hop(a.id, body.direction, body.sequence, now);
+    else if (body.type === 'death' && Number.isSafeInteger(body.lifeId)) this.game.reportDeath(a.id, body.lifeId as number, now);
     else if (body.type === 'animal' && typeof body.animal === 'number') this.game.choose(a.id, body.animal);
     else if (body.type === 'start') this.game.start(a.id, now);
     else if (body.type === 'lobby' && this.game.phase === 'matchEnd') this.game.lobby(a.id, now);

@@ -2,6 +2,11 @@
 
 Last updated: 2026-10-15 (Asia/Calcutta).
 
+## Local multiplayer playtest repairs (in progress; no deployment)
+
+- Added monotonic life IDs, one server death-commit path and validated client reports. Every live player is simulated on the server, independent of browser frames. Regression tests cover idle players, both report/backstop orders, stale reports and respawn IDs. 137 unit tests and build pass.
+- Next: local animation deduplication, controls/lobby/toasts, scenery, results/HUD and replacement cover; then stop for owner playtest.
+
 ## Ship today: sections 31–32 (current, overrides historical gates below)
 
 - Latest owner instruction (2026-10-15): complete steps 1–4 and cover step 7, verify everything locally including owner phone on Wi-Fi, then STOP. Do not deploy or wait for Cloudflare login. Keep the single-Worker static-assets/SQLite DO setup ready in wrangler.toml; the owner will log in and deploy afterward. No submission tag until there is a deployed commit.

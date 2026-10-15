@@ -122,3 +122,33 @@ describe('hearts, respawn and rounds', () => {
   });
 });
 
+
+describe('per-life hazard authority', () => {
+  it.each(['client-first', 'server-first'])('%s loses exactly one heart and emits one event', order => {
+    const game = playing(), p = game.players[0]!, life = p.lifeId;
+    const water = Array.from({ length: 100 }, (_, z) => z).find(z => game.rowAt(z).kind === 'river')!;
+    position(game, 0, 4, water);
+    if (order === 'client-first') expect(game.reportDeath(p.id, life, 3050)).toBe(true);
+    game.tick(3050); game.reportDeath(p.id, life, 3060); game.tick(3100);
+    expect(p.hearts).toBe(1); expect(game.events.filter(e => e.kind === 'death' && e.id === p.id)).toHaveLength(1);
+    expect(game.events.at(-1)?.lifeId).toBe(life);
+    game.tick(4550); expect(p.lifeId).toBe(life + 1);
+    expect(game.reportDeath(p.id, life, 4600)).toBe(false); expect(p.hearts).toBe(1);
+  });
+  it('runs deterministic traffic collisions for every idle player without client messages', () => {
+    const game = playing(4);
+    const road = Array.from({ length: 20 }, (_, z) => z).find(z => game.rowAt(z).kind === 'road')!;
+    for (let i = 0; i < 4; i++) position(game, i, i * 2, road);
+    for (let now = 3050; now < 15000 && game.players.some(p => p.deadLifeId < 0); now += 50) game.tick(now);
+    expect(game.players.every(p => p.deadLifeId >= 0)).toBe(true);
+    for (const p of game.players) expect(game.events.some(e => e.id === p.id && e.kind === 'death')).toBe(true);
+  });
+  it('rejects fabricated, protected, stale and repeated death reports', () => {
+    const game = playing(), p = game.players[0]!;
+    expect(game.reportDeath(p.id, p.lifeId, 3050)).toBe(false);
+    expect(game.reportDeath(p.id, p.lifeId + 1, 3050)).toBe(false);
+    expect(p.hearts).toBe(2);
+    const restored = new RoomGame('ABCD'); restored.restore(JSON.parse(JSON.stringify(game.snapshot())));
+    expect(restored.players[0]!.lifeId).toBe(p.lifeId);
+  });
+});

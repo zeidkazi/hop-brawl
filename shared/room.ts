@@ -7,10 +7,10 @@ import { generateRow } from './worldgen';
 import type { Row } from './types';
 
 export type RoomPhase = 'lobby' | 'countdown' | 'playing' | 'freeze' | 'roundEnd' | 'matchEnd';
-export interface RoomEvent { seq: number; kind: 'hop' | 'bonk' | 'shove' | 'death' | 'round' | 'forfeit'; id: string; by: string; cause: string; direction: HopDirection }
+export interface RoomEvent { seq: number; lifeId: number; kind: 'hop' | 'bonk' | 'shove' | 'death' | 'round' | 'forfeit'; id: string; by: string; cause: string; direction: HopDirection }
 export interface PlayerState {
   id: string; name: string; animal: number; slot: number; joined: number; connected: boolean; waiting: boolean; aspect: number;
-  hearts: number; wins: number; totalDistance: number; reachedAt: number; eliminatedAt: number;
+  lifeId: number; deadLifeId: number; hearts: number; wins: number; totalDistance: number; reachedAt: number; eliminatedAt: number;
   respawnAt: number; stunUntil: number; proofUntil: number; cooldownUntil: number;
   shoverId: string; shovedAt: number; sequence: number; queued: HopDirection | null; movement: MovementState;
 }
@@ -49,7 +49,7 @@ export class RoomGame {
     const slot = [0, 1, 2, 3].find(i => !used.some(p => p.slot === i))!;
     this.players.push({ id, name: name.trim(), animal, aspect: Math.max(ROOM.MIN_ASPECT, Math.min(ROOM.MAX_ASPECT, aspect || ROOM.DEFAULT_ASPECT)),
       slot, joined: ++this.joinedSequence, connected: true, waiting: this.phase !== 'lobby', hearts: CONFIG.HEARTS_VERSUS,
-      wins: 0, totalDistance: 0, reachedAt: now, eliminatedAt: 0, respawnAt: 0, stunUntil: 0, proofUntil: 0,
+      lifeId: 0, deadLifeId: -1, wins: 0, totalDistance: 0, reachedAt: now, eliminatedAt: 0, respawnAt: 0, stunUntil: 0, proofUntil: 0,
       cooldownUntil: 0, shoverId: '', shovedAt: -CONFIG.SHOVE_KO_WINDOW_MS, sequence: 0, queued: null, move: this.movement() });
     if (!this.host || creator) this.host = id;
     this.now = now; return null;
@@ -92,7 +92,7 @@ export class RoomGame {
     this.decidingAt = 0; this.winner = ''; this.reason = ''; this.phase = 'countdown'; this.now = now;
     const participants = this.players.filter(p => p.connected && !p.waiting);
     participants.forEach((p, index) => {
-      p.move.reset(); p.move.x = p.move.fromX = p.move.toX = ROOM.SPAWNS[participants.length - 2]![index]!;
+      p.lifeId++; p.move.reset(); p.move.x = p.move.fromX = p.move.toX = ROOM.SPAWNS[participants.length - 2]![index]!;
       p.hearts = CONFIG.HEARTS_VERSUS; p.respawnAt = p.stunUntil = p.proofUntil = p.cooldownUntil = p.eliminatedAt = 0;
       p.shovedAt = -CONFIG.SHOVE_KO_WINDOW_MS; p.shoverId = ''; p.reachedAt = now; p.queued = null;
     });
@@ -129,7 +129,7 @@ export class RoomGame {
     this.event('shove', victim.id, p.id, '', dir); return true;
   }
   private event(kind: RoomEvent['kind'], id: string, by = '', cause = '', direction: HopDirection = 'up'): void {
-    this.events.push({ seq: ++this.eventSequence, kind, id, by, cause, direction });
+    this.events.push({ seq: ++this.eventSequence, kind, id, by, cause, direction, lifeId: this.players.find(p => p.id === id)?.lifeId ?? 0 });
     if (this.events.length > ROOM.MAX_EVENTS) this.events.shift();
   }
   private respawn(p: Player, now: number): void {
@@ -143,7 +143,7 @@ export class RoomGame {
         let x = column;
         if (row.kind === 'river') { logSlotAtLanding(row, column, time, slot); if (slot.log < 0 || slot.x < 0 || slot.x > 8) continue; x = slot.x; }
         if (this.occupied(x, z, p)) continue;
-        p.move.reset(); p.move.x = p.move.fromX = p.move.toX = x; p.move.z = p.move.fromZ = p.move.toZ = z;
+        p.lifeId++; p.move.reset(); p.move.x = p.move.fromX = p.move.toX = x; p.move.z = p.move.fromZ = p.move.toZ = z;
         p.move.time = time; p.move.distance = savedDistance; p.move.camZ = this.camZ;
         p.move.invulnerableUntil = time + CONFIG.SPAWN_PROTECT_MS / 1000;
         if (row.kind === 'river') { p.move.onLog = true; p.move.logIndex = slot.log; p.move.slotIndex = slot.slot; }
@@ -151,6 +151,22 @@ export class RoomGame {
       }
     }
     p.respawnAt = now + ROOM.SNAPSHOT_MS;
+  }
+  /** Reports never supply positions or damage: validate against the same server collision simulation. */
+  reportDeath(id: string, lifeId: number, now: number): boolean {
+    const p = this.players.find(p => p.id === id && p.connected);
+    if (this.phase !== 'playing' || !p || p.waiting || p.hearts <= 0 || p.lifeId !== lifeId || p.deadLifeId === lifeId) return false;
+    p.move.camZ = this.camZ;
+    p.move.advance(Math.max(p.move.time, (now - this.startAt) / 1000));
+    return this.confirmDeath(p, now);
+  }
+  private confirmDeath(p: Player, now: number): boolean {
+    if (!p.move.dead || p.deadLifeId === p.lifeId) return false;
+    p.deadLifeId = p.lifeId; p.hearts--; p.queued = null;
+    if (p.hearts) p.respawnAt = now + CONFIG.RESPAWN_DELAY_MS;
+    else { p.eliminatedAt = now; this.decidingAt = now + CONFIG.TIE_WINDOW_MS; }
+    const by = now - p.shovedAt <= CONFIG.SHOVE_KO_WINDOW_MS ? p.shoverId : '';
+    this.event('death', p.id, by, p.move.dead); return true;
   }
   tick(now: number): void {
     this.now = now;
@@ -174,11 +190,7 @@ export class RoomGame {
       p.move.camZ = this.camZ; const distance = p.move.distance; p.move.advance(time);
       if (p.move.distance > distance) p.reachedAt = now;
       if (p.move.dead) {
-        p.hearts--; p.queued = null;
-        if (p.hearts) p.respawnAt = now + CONFIG.RESPAWN_DELAY_MS;
-        else { p.eliminatedAt = now; this.decidingAt = now + CONFIG.TIE_WINDOW_MS; }
-        const by = now - p.shovedAt <= CONFIG.SHOVE_KO_WINDOW_MS ? p.shoverId : '';
-        this.event('death', p.id, by, p.move.dead);
+        this.confirmDeath(p, now);
       } else if (!p.move.hopping && p.queued && now >= p.stunUntil) {
         const dir = p.queued; p.queued = null; this.performHop(p, dir, now);
       }
