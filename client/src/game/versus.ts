@@ -12,7 +12,7 @@ import { RoomClient } from './room-client';
 import { animalIcon, heartIcons, winPips } from '../ui/room-icons';
 import { lobbyControls, remoteMovement, roomWorldTime } from './room-presentation';
 import { LifeEvents } from './life-events';
-import { RailSound } from './rail-sound';
+import { WorldSound } from './world-sound';
 import { createHopPose, sampleHop } from '../../../shared/hop';
 import { createDeathPose, deathPose, Facing, respawnHeight } from './fighter-pose';
 import { DeathEffects } from './death-effects';
@@ -26,10 +26,11 @@ export class Versus {
   readonly client = new RoomClient();
   readonly input: HopInput;
   active = false;
+  private lastCountdown = '';
   private connecting = false; private phase = ''; private startAt = -1; private eventSequence = 0;
   private poseTime = 0; private arenaRow = NaN;
   private readonly deaths = new LifeEvents();
-  private readonly railSound = new RailSound();
+  private readonly railSound = new WorldSound();
   private readonly actors = new Map<string, Actor>();
   private readonly point = new Vector3();
   private readonly hopPose = createHopPose(); private readonly deathPose = createDeathPose();
@@ -138,12 +139,13 @@ export class Versus {
     if (this.startAt !== state.startAt) {
       this.motion.clearToasts(); this.eventSequence = state.eventSequence;
       this.startAt = state.startAt; this.game.world.reset(state.seed); this.game.rig.resetScroll(!first);
-      this.arenaRow = NaN; this.railSound.reset(); for (const actor of this.actors.values()) actor.boxer.countdown();
+      this.arenaRow = NaN; this.railSound.reset(); this.lastCountdown = ''; this.game.home.sound.stopWorld(); this.game.home.sound.muffle(false); for (const actor of this.actors.values()) actor.boxer.countdown();
     }
     for (const p of state.players) {
       const actor = this.actors.get(p.id); if (!actor || actor.lifeId === p.lifeId) continue;
       actor.lifeId = p.lifeId; actor.deathCause = null; actor.deathAt = -Infinity; actor.landedHop = -1;
-      actor.respawnAt = state.phase === 'playing' ? this.poseTime : -Infinity; actor.facing.reset();
+      actor.respawnAt = state.phase === 'playing' ? this.poseTime : -Infinity;
+      if (state.phase === 'playing') this.game.home.sound.play('respawn', (p.movement.x - this.client.prediction.x) / SOUND.PAN_TILES); actor.facing.reset();
       for (const material of actor.materials) material.opacity = 1;
     }
     for (const event of state.events) if (event.seq > this.eventSequence) {
@@ -159,17 +161,24 @@ export class Versus {
       const player = state.players.find(p => p.id === event.id);
       const pan = player ? (player.movement.x - this.client.prediction.x) / SOUND.PAN_TILES : 0;
       const sound = this.game.home.sound;
-      if (event.kind === 'hop') sound.play('hop', pan);
+      if (event.kind === 'hop') sound.play('hop', pan, undefined, player?.animal);
       else if (event.kind === 'bonk') sound.play('bonk', pan);
-      else if (event.kind === 'shove') sound.play('punch', pan);
-      else if (event.kind === 'round' || event.kind === 'forfeit') sound.play('win');
-      else if (event.kind === 'death') { sound.play(event.cause === 'SPLASH!' || event.cause === 'SWEPT AWAY!' ? 'splash' : 'squash', pan); if (event.cause === 'DERAILED!') sound.play('horn', pan); }
+      else if (event.kind === 'shove') { sound.play('punch', pan); sound.play(`grunt${player?.animal ?? 2}` as 'grunt2', pan); }
+      else if (event.kind === 'round') sound.sting('roundWin');
+      else if (event.kind === 'death') { sound.death(event.cause as DeathCause, pan); if (player?.hearts === 0) sound.play('cheer', pan); }
       this.eventSequence = event.seq;
     }
     const screen: RoomScreen = state.phase === 'lobby' ? 'lobby' : state.phase === 'roundEnd' ? 'roundEnd' : state.phase === 'matchEnd' ? 'matchEnd' : 'versus';
     if (this.phase !== state.phase || first) {
       this.phase = state.phase; this.show(screen);
-      if (state.phase === 'playing') for (const actor of this.actors.values()) actor.boxer.countdown(true);
+      if (state.phase === 'playing') {
+        for (const actor of this.actors.values()) actor.boxer.countdown(true);
+        this.game.home.sound.gameplay('meadow', state.round >= 3); this.game.home.sound.play('go');
+      } else {
+        this.game.home.sound.stopWorld();
+        if (state.phase === 'lobby') this.game.home.sound.menu();
+        if (state.phase === 'matchEnd') this.game.home.sound.sting('matchWin');
+      }
     }
     this.updateUI(state);
   }
@@ -236,10 +245,17 @@ export class Versus {
     this.game.playing = state.phase === 'playing';
     const time = roomWorldTime(state, this.client.time, this.poseTime);
     this.game.worldTime = time; this.game.rig.targetCamZ = state.camZ; this.game.rig.leaderZ = state.leaderZ;
-    if (state.phase === 'playing') this.railSound.update(this.game.world.rows, state.camZ, time, this.game.home.sound);
+    if (state.phase === 'playing') {
+      this.railSound.update(this.game.world.rows, state.camZ, time, this.game.home.sound, this.client.prediction.x, this.client.prediction.z, !this.client.prediction.dead);
+      this.game.home.sound.muffle(me?.hearts === 0);
+    }
     const countdown = this.element('match-countdown');
     countdown.textContent = state.phase === 'countdown' ? String(Math.max(1, Math.ceil((state.startAt - now) / 1000)))
       : state.phase === 'playing' && now - state.startAt < SOLO.HOP_BANNER_MS ? 'HOP!' : '';
+    if (countdown.textContent !== this.lastCountdown) {
+      this.lastCountdown = countdown.textContent ?? '';
+      if (/^[123]$/.test(this.lastCountdown)) this.game.home.sound.play('countdown');
+    }
     const status = this.element('match-status');
     status.textContent = !this.client.ready ? 'Resyncing…' : me?.waiting ? 'Watching — you join next match' : me?.respawnAt ? `Back in ${Math.max(1, Math.ceil((me.respawnAt - now) / 1000))}…` : me?.hearts === 0 ? 'OUT — watching the brawl' : '';
     const last = state.players.some(p => p.wins >= CONFIG.ROUNDS_TO_WIN) || state.round >= ROOM.MAX_ROUNDS && !!state.winner;
@@ -263,7 +279,7 @@ export class Versus {
       if (!lobby && !movement.dead && !pose.hopping && movement.hops > 0 && actor.landedHop !== movement.hopStart) {
         actor.landedHop = movement.hopStart;
         this.game.particles.burst(x, z, BIOME_PALETTES[this.game.world.rowAt(z).biome].grass[0]);
-        if (movement.onLog) this.game.world.dipLog(z, movement.logIndex, time);
+        if (movement.onLog) { this.game.world.dipLog(z, movement.logIndex, time); this.game.home.sound.play('log', (x - this.client.prediction.x) / SOUND.PAN_TILES); }
       }
       actor.root.visible = p.connected && !p.waiting;
       actor.root.position.set(x, pose.y + respawnHeight(this.poseTime - actor.respawnAt, this.preferences.reducedMotion), -z);

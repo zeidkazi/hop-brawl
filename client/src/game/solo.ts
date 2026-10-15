@@ -8,7 +8,7 @@ import { HopInput } from './input';
 import type { Preferences } from '../ui/settings';
 import type { Motion } from '../ui/motion';
 import type { Boxer } from './boxer';
-import { RailSound } from './rail-sound';
+import { WorldSound } from './world-sound';
 import { createHopPose, sampleHop } from '../../../shared/hop';
 import { createDeathPose, deathPose, Facing } from './fighter-pose';
 import { DeathEffects } from './death-effects';
@@ -35,7 +35,7 @@ export class Solo {
   private runBest = 0; private newBest = false;
   private countdownEnd = 0; private previousWall = 0; private roundTime = 0; private poseTime = 0;
   private countdownDuration: number = SOLO.COUNTDOWN_MS;
-  private readonly railSound = new RailSound();
+  private readonly railSound = new WorldSound();
   private arenaRow = NaN;
   private readonly sceneryRow = (z: number) => this.game.world.rows.find(slot => slot.z === z)?.row ?? undefined;
   private deathAt = 0; private bonkAt = -Infinity; private bonkDirection: HopDirection = 'up';
@@ -125,6 +125,7 @@ export class Solo {
     this.renderPose(0);
   }
   private beginCountdown(duration: number, origin = performance.now()): void {
+    this.game.home.sound.stopWorld(); this.game.home.sound.muffle(false);
     this.phase = 'countdown'; this.input.enabled = false; this.input.clear(); this.game.playing = false;
     this.previousWall = performance.now(); this.countdownEnd = origin + duration;
     this.countdownDuration = duration;
@@ -132,6 +133,7 @@ export class Solo {
   }
   pause(): void {
     if (this.phase !== 'playing' && this.phase !== 'countdown') return;
+    this.game.home.sound.stopWorld(); this.game.home.sound.muffle(true, true);
     this.phase = 'paused'; this.input.enabled = false; this.input.clear(); this.movement.buffered = null;
     this.game.playing = false; this.show('pause');
   }
@@ -164,16 +166,16 @@ export class Solo {
   }
   private readonly hop = (direction: HopDirection): void => { if (this.phase === 'playing') this.movement.input(direction); };
   private readonly hopped = (): void => {
-    this.boxer?.play('hop'); this.game.home.sound.unlock(); this.game.home.sound.play('hop');
+    this.boxer?.play('hop'); this.game.home.sound.unlock(); this.game.home.sound.play('hop', 0, undefined, this.preferences.animal);
     if (this.preferences.haptics) navigator.vibrate?.(SOLO.HAPTIC_HOP_MS);
   };
   private readonly landed = (): void => {
     const player = this.movement;
     this.game.particles.burst(player.x, player.z, BIOME_PALETTES[this.game.world.rowAt(player.z).biome].grass[0]);
-    if (player.onLog) this.game.world.dipLog(player.z, player.logIndex, player.time);
+    if (player.onLog) { this.game.world.dipLog(player.z, player.logIndex, player.time); this.game.home.sound.play('log'); }
     if (player.distance > this.runBest && !this.newBest) {
       this.newBest = true; this.motion.toast('NEW BEST!');
-      this.game.home.sound.play('win');
+      this.game.home.sound.sting('newBest'); this.game.home.sound.play('cheer');
       for (let i = 0; i < SOLO.NEW_BEST_PARTICLES; i++) this.game.particles.burst(player.x, player.z, BIOME_PALETTES[this.game.world.rowAt(player.z).biome].grass[0]);
     }
   };
@@ -183,8 +185,8 @@ export class Solo {
     this.game.rig.update(0, this.poseTime);
     this.phase = 'dying'; this.deathAt = this.poseTime; this.input.enabled = false; this.game.playing = false;
     this.game.go('soloEnd'); this.cause.textContent = cause; this.cause.hidden = false; this.countdown.hidden = true;
-    this.game.home.sound.play(cause === 'SPLASH!' || cause === 'SWEPT AWAY!' ? 'splash' : 'squash');
-    if (cause === 'DERAILED!') this.game.home.sound.play('horn');
+    this.game.home.sound.stopWorld(); this.game.home.sound.death(cause); this.game.home.sound.muffle(true);
+    this.game.home.sound.sting('gameOver');
     if (this.preferences.haptics) navigator.vibrate?.(SOLO.HAPTIC_DEATH_MS);
     this.best = Math.max(this.best ?? 0, this.movement.distance);
     try { localStorage.setItem(SOLO_BEST_KEY, String(this.best)); } catch { /* Session best remains usable. */ }
@@ -200,14 +202,15 @@ export class Solo {
     if (this.phase === 'countdown') {
       const remaining = this.countdownEnd - now;
       const label = String(Math.max(1, Math.ceil(remaining / (this.countdownDuration / 3))));
-      if (label !== this.lastCountdown) { this.countdown.textContent = label; this.lastCountdown = label; }
+      if (label !== this.lastCountdown) { this.countdown.textContent = label; this.lastCountdown = label; this.game.home.sound.play('countdown'); }
       if (remaining <= 0) {
         this.phase = 'playing'; this.input.enabled = true; this.game.playing = true;
         this.countdown.textContent = 'HOP!'; this.boxer?.countdown(true);
+        this.game.home.sound.gameplay(this.game.world.rowAt(this.movement.z).biome); this.game.home.sound.play('go');
       }
     } else if (this.phase === 'playing') {
       this.roundTime += elapsed; this.movement.advance(this.roundTime);
-      this.railSound.update(this.game.world.rows, this.movement.camZ, this.movement.time, this.game.home.sound);
+      this.railSound.update(this.game.world.rows, this.movement.camZ, this.movement.time, this.game.home.sound, this.movement.x, this.movement.z, !this.movement.dead);
       for (const slot of this.game.world.rows) if (slot.row?.kind === 'rail' && slot.z >= this.movement.camZ && slot.z <= this.movement.camZ + CONFIG.VIEW_ROWS) {
         const train = trainX(slot.row, this.movement.time);
         if (train !== null && Math.abs(train - this.movement.x) < WORLD.TRAIN_LENGTH / 2 + CONFIG.COLUMNS
