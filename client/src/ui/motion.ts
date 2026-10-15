@@ -10,7 +10,7 @@ export class Motion {
   private flip: gsap.core.Timeline | null = null;
   private readonly tiles: HTMLElement[] = [];
   private readonly items = new Map<HTMLElement, HTMLElement[]>();
-  private readonly toasts: Pool<{ element: HTMLElement; timeline: gsap.core.Timeline | null }>;
+  private readonly toasts: Pool<{ element: HTMLElement; timeline: gsap.core.Timeline | null; timer: ReturnType<typeof setTimeout> | null }>;
 
   constructor(private readonly panels: readonly HTMLElement[], private readonly cover: HTMLElement, toastRoot: HTMLElement) {
     for (const panel of panels) this.items.set(panel, Array.from(panel.querySelectorAll<HTMLElement>('.mode-buttons > button, .panel > label, .panel > button')));
@@ -20,7 +20,7 @@ export class Motion {
     }
     this.toasts = new Pool(VIEW.TOAST_POOL, () => {
       const element = document.createElement('div'); element.className = 'toast'; element.hidden = true;
-      toastRoot.append(element); return { element, timeline: null };
+      toastRoot.append(element); return { element, timeline: null, timer: null };
     });
     document.addEventListener('pointerdown', event => this.press(event, true));
     document.addEventListener('pointerup', event => this.press(event, false));
@@ -97,14 +97,22 @@ export class Motion {
     }
   }
 
+  clearToasts(): void {
+    this.toasts.items.forEach((slot, index) => {
+      slot.timeline?.kill(); if (slot.timer !== null) clearTimeout(slot.timer);
+      slot.timer = null; slot.element.hidden = true; slot.element.textContent = ''; this.toasts.release(index);
+    });
+  }
   toast(text: string): void {
     let index = this.toasts.acquire();
     if (index < 0) { index = 0; this.toasts.items[index]!.timeline?.kill(); }
     const slot = this.toasts.items[index]!;
+    if (slot.timer !== null) clearTimeout(slot.timer);
+    slot.timer = setTimeout(() => { slot.timeline?.kill(); slot.element.hidden = true; this.toasts.release(index); }, VIEW.TOAST_HOLD_MS);
     slot.element.textContent = text; slot.element.hidden = false;
     gsap.set(slot.element, { opacity: 0, y: this.reduced ? 0 : -VIEW.PANEL_EXIT_PX });
     slot.timeline = gsap.timeline({ onComplete: () => { slot.element.hidden = true; this.toasts.release(index); } })
       .to(slot.element, { opacity: 1, y: 0, duration: VIEW.TOAST_IN_MS / 1000, ease: `back.out(${VIEW.PANEL_OVERSHOOT})` })
-      .to(slot.element, { opacity: 0, y: this.reduced ? 0 : -VIEW.PANEL_EXIT_PX, duration: VIEW.TOAST_OUT_MS / 1000, ease: 'power2.in' }, `+=${VIEW.TOAST_HOLD_MS / 1000}`);
+      .to(slot.element, { opacity: 0, y: this.reduced ? 0 : -VIEW.PANEL_EXIT_PX, duration: VIEW.TOAST_OUT_MS / 1000, ease: 'power2.in' }, (VIEW.TOAST_HOLD_MS - VIEW.TOAST_OUT_MS) / 1000);
   }
 }

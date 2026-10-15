@@ -76,7 +76,7 @@ export class Versus {
   }
   leave(screen: RoomScreen = 'home'): void {
     this.client.close(); this.input.enabled = false; this.input.clear();
-    this.deaths.clear(); this.active = false; this.phase = ''; this.startAt = -1; this.eventSequence = 0;
+    this.deaths.clear(); this.motion.clearToasts(); this.active = false; this.phase = ''; this.startAt = -1; this.eventSequence = 0;
     for (const actor of this.actors.values()) this.dispose(actor); this.actors.clear();
     this.game.playing = false; this.game.worldTime = null; this.game.world.actorVisible = true;
     this.game.world.showCrates = true; this.game.rig.resetScroll();
@@ -119,6 +119,7 @@ export class Versus {
     for (const [id, actor] of this.actors) if (!state.players.some(p => p.id === id && p.connected)) { this.dispose(actor); this.actors.delete(id); }
     for (const p of state.players) if (p.connected) this.actor(p);
     if (this.startAt !== state.startAt) {
+      this.motion.clearToasts(); this.eventSequence = state.eventSequence;
       this.startAt = state.startAt; this.game.world.reset(state.seed); this.game.rig.resetScroll(!first);
       this.arenaRow = NaN; this.railSound.reset(); for (const actor of this.actors.values()) actor.boxer.countdown();
     }
