@@ -1,6 +1,7 @@
 import { ROOM } from '../shared/config';
 export { Room } from './room';
-export interface Env { ROOMS: DurableObjectNamespace; ASSETS: Fetcher; ALLOWED_ORIGINS?: string }
+export { Matchmaker } from './matchmaker';
+export interface Env { MATCHMAKER: DurableObjectNamespace; ROOMS: DurableObjectNamespace; ASSETS: Fetcher; ALLOWED_ORIGINS?: string }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -26,6 +27,9 @@ export default {
         if (result.ok) return json({ code, token }, 201);
       }
       return json({ error: 'TRY_AGAIN' }, 503);
+    }
+    if (url.pathname === '/ws/quick' && request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
+      return env.MATCHMAKER.get(env.MATCHMAKER.idFromName('global')).fetch(request);
     }
     const match = /^\/ws\/room\/([A-Z]{4})$/.exec(url.pathname);
     if (match && request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
