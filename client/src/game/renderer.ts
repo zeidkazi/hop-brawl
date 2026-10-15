@@ -46,6 +46,8 @@ export class GameRenderer {
   private appliedTier: Tier | null = null;
   private hitstopUntil = 0;
   private readonly flash = document.createElement('div');
+  private readonly speedLines = document.createElement('div');
+  private speedAnimation: Animation | null = null; private superHop = false;
   playing = false;
   onFrame: ((now: number) => void) | null = null;
   beforeFrame: ((now: number, dt: number) => void) | null = null;
@@ -53,6 +55,8 @@ export class GameRenderer {
   worldTime: number | null = null;
 
   constructor(readonly canvas: HTMLCanvasElement) {
+    this.speedLines.className = 'super-hop-lines'; this.speedLines.hidden = true;
+    this.speedLines.style.cssText = 'position:fixed;inset:0;pointer-events:none;background:repeating-conic-gradient(from 10deg,transparent 0deg 14deg,#fff6e599 14deg 15deg,transparent 15deg 30deg);mask-image:radial-gradient(ellipse,transparent 50%,black 100%)'; document.body.append(this.speedLines);
     this.flash.className = 'impact-flash'; this.flash.style.cssText = 'position:fixed;inset:0;background:white;opacity:0;pointer-events:none;z-index:4'; document.body.append(this.flash);
     const context = canvas.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'high-performance' });
     if (!context) throw new Error('WEBGL_UNSUPPORTED');
@@ -145,6 +149,12 @@ export class GameRenderer {
     this.target.setSize(width, height);
   }
 
+  /** Presentation hook for Batch D's boost; this pass does not introduce pickups or boost rules. */
+  setSuperHop(active: boolean): void {
+    this.superHop = active; this.speedLines.hidden = !active || this.rig.reducedMotion;
+    this.speedAnimation?.cancel(); this.speedAnimation = null;
+    if (!this.speedLines.hidden) this.speedAnimation = this.speedLines.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }], { duration: FEEL.SPEED_LINE_MS, iterations: Infinity });
+  }
   impact(death = false): void {
     if (this.rig.reducedMotion) return;
     this.hitstopUntil = performance.now() + FEEL.HITSTOP_MS;
@@ -164,7 +174,7 @@ export class GameRenderer {
     this.scene.fog.near = playing ? gameplayDistance(this.width / this.height) + SOLO.FOG_MARGIN : VIEW.LOBBY_DISTANCE;
     this.scene.fog.far = playing ? this.scene.fog.near + VIEW.FAR / 2 : VIEW.FAR / 2;
   }
-  setReducedMotion(value: boolean): void { this.rig.reducedMotion = value; this.particles.reducedMotion = value; this.home.setReduced(value); }
+  setReducedMotion(value: boolean): void { this.rig.reducedMotion = value; this.particles.reducedMotion = value; this.home.setReduced(value); this.setSuperHop(this.superHop); }
 
   async warmup(): Promise<void> {
     await this.home.load();
