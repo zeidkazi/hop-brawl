@@ -270,7 +270,7 @@ export class Versus {
       actor.heading = actor.facing.update(ANGLE[movement.direction], this.poseTime);
       actor.root.rotation.set(0, lobby ? HOME.ANIMAL_YAW : actor.heading, this.preferences.reducedMotion ? 0 : pose.roll);
       actor.root.scale.set(pose.sx, pose.sy, pose.sx);
-      const dying = !!movement.dead || (p.id === this.client.id && !!this.client.prediction.dead);
+      const dying = !!p.movement.dead || (p.id === this.client.id && !!this.client.prediction.dead);
       const elapsed = this.poseTime - actor.deathAt;
       if (dying && actor.deathCause) {
         deathPose(actor.deathCause, elapsed, actor.deathX < 0 ? -1 : 1, this.preferences.reducedMotion, this.deathPose);
