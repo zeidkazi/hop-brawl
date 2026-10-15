@@ -260,15 +260,15 @@ export class Solo {
       deathPose(player.dead, this.poseTime - this.deathAt, player.x < 0 ? -1 : 1, this.preferences.reducedMotion, this.deathPose);
       const death = this.deathPose;
       actor.position.x += death.x; actor.position.y += death.y; actor.rotation.z = death.roll;
-      actor.scale.set(death.sx, death.sy, death.sx); this.game.home.setActorOpacity(death.opacity);
-      actor.visible = t < 1;
+      actor.scale.set(death.sx, death.sy, death.sx); this.game.home.setActorOpacity(death.opacity, player.dead === 'FLATTENED!');
+      actor.visible = player.dead === 'FLATTENED!' ? death.opacity > 0 : t < 1;
       if (this.poseTime - this.deathAt < SOLO.DEATH_SHAKE_S) this.game.rig.shake = SOLO.DEATH_SHAKE * (1 - (this.poseTime - this.deathAt) / SOLO.DEATH_SHAKE_S);
     }
     if (this.boxer) {
       this.boxer.comboYaw = Math.atan2(this.game.rig.camera.position.x - actor.position.x, -(this.game.rig.camera.position.z - actor.position.z)) + this.heading;
       this.boxer.comboLift = BOXER.COMBO_LIFT;
       this.hopReview.elapsed = player.time - player.hopStart;
-      this.boxer.review = player.hopping && !player.dead ? this.hopReview : null;
+      this.boxer.review = player.dead ? { move: 'guard', elapsed: 0 } : player.hopping ? this.hopReview : null;
     }
     this.game.home.updateGameActor(this.poseTime);
     const arena = this.game.home.arena;

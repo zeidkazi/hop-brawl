@@ -294,8 +294,9 @@ export class HomeScene {
     this.gloveStandard.color.set(color); this.gloveLambert.color.set(color);
     this.logoGlove.color.set(color);
   }
-  setActorOpacity(value: number): void {
+  setActorOpacity(value: number, flattened = false): void {
     this.actorStandard.opacity = this.actorLambert.opacity = this.gloveStandard.opacity = this.gloveLambert.opacity = this.actorOutline.opacity = value;
+    if (flattened) this.actorOutline.opacity = 0;
   }
   get selectedAnimal(): string { return ANIMALS[this.selected]!; }
   punch(): void { this.move('punch'); }

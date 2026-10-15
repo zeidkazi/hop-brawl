@@ -1,4 +1,4 @@
-import { Group, Material, Mesh, MeshLambertMaterial, MeshStandardMaterial, Vector3 } from 'three';
+import { BackSide, Group, Material, Mesh, MeshLambertMaterial, MeshStandardMaterial, Vector3 } from 'three';
 import { ANIMALS, BIOME_PALETTES, BOXER, COLORS, CONFIG, HOME, RAIL, ROOM, SOLO, SOUND, WORLD } from '../../../shared/config';
 import type { PlayerState, RoomSnapshot } from '../../../shared/room';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
@@ -277,8 +277,8 @@ export class Versus {
         const death = this.deathPose;
         actor.root.position.set(actor.deathX + death.x, death.y, -actor.deathZ);
         actor.root.rotation.z = death.roll; actor.root.scale.set(death.sx, death.sy, death.sx);
-        for (const material of actor.materials) material.opacity = death.opacity;
-        actor.root.visible &&= elapsed < SOLO.DEATH_MS / 1000;
+        for (const material of actor.materials) material.opacity = actor.deathCause === 'FLATTENED!' && material.side === BackSide ? 0 : death.opacity;
+        actor.root.visible &&= actor.deathCause === 'FLATTENED!' ? death.opacity > 0 : elapsed < SOLO.DEATH_MS / 1000;
         if (elapsed < SOLO.DEATH_SHAKE_S && Math.hypot(actor.deathX - this.client.prediction.x, actor.deathZ - this.client.prediction.z) <= SOLO.DEATH_SHAKE_DISTANCE)
           this.game.rig.shake = Math.max(this.game.rig.shake, SOLO.DEATH_SHAKE * (1 - elapsed / SOLO.DEATH_SHAKE_S));
       } else {
@@ -294,7 +294,7 @@ export class Versus {
       actor.boxer.comboLift = BOXER.COMBO_LIFT;
       // Hop rig follows the same delayed/predicted clock as the body, including buffered hops.
       actor.hopReview.elapsed = drawTime - movement.hopStart;
-      actor.boxer.review = pose.hopping && !dying ? actor.hopReview : null;
+      actor.boxer.review = dying ? { move: 'guard', elapsed: 0 } : pose.hopping ? actor.hopReview : null;
       actor.boxer.update(this.poseTime);
       const label = this.element(`match-name-${p.slot}`); label.hidden = !actor.root.visible || lobby;
       label.textContent = `${p.name}${p.id === this.client.id ? ' ▼' : ''}${movement.invulnerableUntil > time ? ' ✦' : ''}`;
