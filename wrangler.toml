@@ -3,6 +3,13 @@ main = "server/index.ts"
 compatibility_date = "2026-10-12"
 workers_dev = true
 
+# PREPARED ONLY: do not deploy this route until the owner confirms the zone is Active.
+# batch-b2-stable is already deployed to workers.dev without this custom domain.
+routes = [{ pattern = "hopbrawl.zeidkazi.in", custom_domain = true }]
+
+[vars]
+ALLOWED_ORIGINS = "https://hopbrawl.zeidkazi.in"
+
 [assets]
 directory = "./client/dist"
 binding = "ASSETS"
