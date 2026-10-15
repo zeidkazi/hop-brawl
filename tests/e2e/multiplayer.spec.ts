@@ -5,7 +5,7 @@ import type { RoomSnapshot } from '../../shared/room';
 const base = process.env.HOP_TEST_URL ?? 'http://127.0.0.1:5173';
 function observe(page: Page) {
   const state = { current: null as RoomSnapshot | null, id: '', errors: [] as string[] };
-  page.on('pageerror', error => state.errors.push(error.message));
+  page.on('pageerror', error => { state.errors.push(error.message); console.error('PAGE ERROR', error.stack); });
   page.on('websocket', socket => socket.on('framereceived', frame => {
     try { const message = JSON.parse(String(frame.payload)) as { snapshot?: RoomSnapshot; id?: string };
       if (message.snapshot) {

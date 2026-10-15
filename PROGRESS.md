@@ -2,7 +2,15 @@
 
 Last updated: 2026-10-15 (Asia/Calcutta).
 
-## Batch B2 Quick Match (complete locally; awaiting login confirmation)
+## Live deployment verification (in progress)
+
+- Owner completed OAuth login; whoami confirmed access. Deployed batch-b2-stable (6feb23f) to https://hop-brawl.hop-brawl.workers.dev, version e9f88025-d858-4ae2-96cf-7767b9471ee9. Initial HTTPS certificate readiness delayed access, then HTTPS returned 200.
+- Live Quick Match passed a full three-round match, mutual rematch, New opponent and Menu using a persistent normal profile plus incognito context. Solo passed movement, pause, death/retry and persistent-canvas checks. The private-room match/rematch/host-handoff assertions completed, but its final error check caught a stale remote-hop rendering error.
+- Fixed stale in-flight snapshots sampled after their hop duration: render the destination rather than a fractional old row, preventing landing-particle row lookup errors. Unit regressions cover stale land/log arrivals, unchanged authority and preserved dead poses. 183 tests, typechecks, production build and workers.dev-only packaging pass. Browser errors now log stack traces as well as failing assertions.
+- Prepared hopbrawl.zeidkazi.in (no hyphen) route and allowed origin in wrangler.toml/README. The route is NOT deployed. The owner must explicitly confirm zone Active before deploying that configuration. For this rendering hotfix only, tmp/workers-dev-only.toml is an ignored derived configuration with routes=[] and adjusted relative source/asset paths; it preserves the same Worker and Durable Object bindings.
+- Next exact step: finish the local private match regression, commit the narrow fix, deploy with the workers.dev-only configuration, and rerun live Quick Match/private/Solo. Do not start Batch C or activate the custom domain.
+
+## Batch B2 Quick Match (historical local checkpoint)
 
 - QUICK MATCH is first in the MULTIPLAYER sheet. Search shows elapsed time, live searching count and Cancel. The sixty-second client prompt repeats after Keep searching; Play Solo exits the queue, and Invite a friend creates a private room with its code.
 - One global SQLite Matchmaker DO uses the WebSocket Hibernation API and FIFO ordering. Assignments use one-use join tokens; quick rooms are strictly 1v1, hostless and return ROOM_NOT_FOUND for code-only joins. Both connections automatically start countdown. Ten-second failures return the connected survivor to the queue front with one toast; countdown departures also recover. Arrivals just before the deadline can finish countdown safely.

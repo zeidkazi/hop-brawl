@@ -30,6 +30,11 @@ export function sampleHop(state: MovementState, time: number, rowAt: (z: number)
     else if (ms < CONFIG.HOP_MS - SOLO.LANDING_MS) out.sy = 1 + (SOLO.STRETCH_Y - 1) * Math.sin(p * Math.PI);
     else out.sy = 1 - (1 - SOLO.SQUASH_Y) * Math.sin(Math.PI * (ms - CONFIG.HOP_MS + SOLO.LANDING_MS) / SOLO.LANDING_MS);
     out.sx = 1 + (1 - out.sy) * (SOLO.SQUASH_XZ - 1) / (1 - SOLO.SQUASH_Y);
+  } else if (state.hopping && !state.dead && ms >= CONFIG.HOP_MS) {
+    // A delayed snapshot can still be mid-flight after its visual hop has ended.
+    // Hold the destination until confirmation, never the fractional sampled row.
+    out.x = state.toX; out.z = state.toZ;
+    out.y = rowAt(state.toZ).kind === 'river' ? SOLO.LOG_TOP : 0;
   } else if (state.onLog && !state.dead) {
     const row = rowAt(state.z);
     if (row.kind === 'river') out.x = logSlotX(row, state.logIndex, state.slotIndex, time);

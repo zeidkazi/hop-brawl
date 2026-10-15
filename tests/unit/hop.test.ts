@@ -28,3 +28,24 @@ it('curves toward the actual future log slot and meets the authoritative endpoin
   }
   move.advance(.14); sampleHop(move.save(), .14, rowAt, pose); expect(pose.x).toBeCloseTo(move.x); expect(pose.y).toBeCloseTo(5 / 12 - .1);
 });
+
+it('finishes a stale in-flight remote hop at its endpoint without mutating authority', () => {
+  const move = new Movement(grass), pose = createHopPose();
+  move.input('up'); move.advance(.14); move.input('up'); move.advance(.21);
+  const snapshot = move.save(), original = structuredClone(snapshot);
+  expect(Number.isInteger(snapshot.z)).toBe(false);
+  sampleHop(snapshot, .35, grass, pose);
+  expect(pose).toMatchObject({ x: 4, z: 3, y: 0, hopping: false, sx: 1, sy: 1 });
+  // Landing effects index the row pool directly; a fractional z used to throw.
+  const rows = Array.from({ length: 8 }, (_, z) => grass(z));
+  expect(rows[pose.z]!.biome).toBe('meadow'); expect(snapshot).toEqual(original);
+  snapshot.dead = 'FLATTENED!'; sampleHop(snapshot, .35, grass, pose);
+  expect(pose.z).toBe(snapshot.z);
+});
+it('holds a stale log landing at the target slot and water surface height', () => {
+  const rowAt = (z: number): Row => z === 2 ? { kind: 'river', z, biome: 'meadow', direction: 1, speed: 1, phase: 0, logs: [{ offset: 10, length: 4 }] } : grass(z);
+  const move = new Movement(rowAt), pose = createHopPose(); move.input('up'); move.advance(.07);
+  sampleHop(move.save(), .2, rowAt, pose);
+  expect(pose.x).toBe(move.toX); expect(pose.z).toBe(2);
+  expect(pose.y).toBeCloseTo(5 / 12 - .1); expect(pose.hopping).toBe(false);
+});
