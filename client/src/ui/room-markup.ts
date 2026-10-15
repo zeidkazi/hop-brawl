@@ -19,5 +19,5 @@ export const ROOM_MARKUP = `
 </section>
 <section id="matchEnd" class="screen modal room-result" aria-label="Match results" hidden>
   <div class="panel"><div class="result-banner"><div class="winner-shout">WINNER!</div><div id="match-winner-animal"></div><h2 id="match-result-title"></h2><div id="match-winner-pips"></div></div><p id="match-result-reason"></p><div id="match-result-score"></div>
-  <button class="yellow" data-room="rematch">REMATCH</button><button class="green" data-room="lobby">Back to lobby</button><p id="match-host-note"></p><button class="text-button" data-room="leave">Leave</button></div>
+  <button class="yellow" data-room="rematch">REMATCH</button><button class="green" data-room="lobby">Back to lobby</button><button class="green" data-quick="new" hidden>New opponent</button><button class="text-button" data-quick="menu" hidden>Menu</button><p id="match-host-note"></p><button class="text-button" data-room="leave">Leave</button></div>
 </section>`;

@@ -18,7 +18,7 @@ import { createDeathPose, deathPose, Facing, respawnHeight } from './fighter-pos
 import { DeathEffects } from './death-effects';
 import { trainX } from '../../../shared/hazards';
 
-export type RoomScreen = 'lobby' | 'versus' | 'roundEnd' | 'matchEnd' | 'friends' | 'home';
+export type RoomScreen = 'search' | 'lobby' | 'versus' | 'roundEnd' | 'matchEnd' | 'friends' | 'home';
 interface Actor { effects: BoxingEffects; root: Group; boxer: Boxer; animal: number; id: string; heading: number; facing: Facing; materials: Material[]; deathAt: number; deathCause: DeathCause | null; deathX: number; deathZ: number; deathEffects: DeathEffects; lifeId: number; respawnAt: number; landedHop: number; hopReview: { move: 'hop'; elapsed: number } }
 const ANGLE: Record<HopDirection, number> = { up: 0, down: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 };
 
@@ -26,6 +26,7 @@ export class Versus {
   readonly client = new RoomClient();
   readonly input: HopInput;
   active = false;
+  onQuickConnectionError: (() => boolean) | null = null;
   private lastCountdown = '';
   private connecting = false; private phase = ''; private startAt = -1; private eventSequence = 0;
   private poseTime = 0; private arenaRow = NaN;
@@ -46,6 +47,7 @@ export class Versus {
     this.client.onPredictedDeath = (lifeId, cause) => this.animateDeath(this.client.id, lifeId, cause);
     this.client.onState = state => this.receive(state);
     this.client.onError = error => {
+      if (this.onQuickConnectionError?.()) return;
       const text = error === 'ROOM_NOT_FOUND' ? 'Room not found' : error === 'ROOM_FULL' ? 'Room full' : error;
       this.leave('friends'); this.motion.toast(text); this.element('room-error').textContent = text;
     };
@@ -58,7 +60,7 @@ export class Versus {
         const action = button.dataset.room;
         if (action === 'create' || action === 'join') void this.connect(action === 'create');
         else if (action === 'leave') this.leave();
-        else if (action === 'start' || action === 'rematch') this.client.send({ type: 'start' });
+        else if (action === 'start' || action === 'rematch') this.client.send({ type: action === 'rematch' && this.client.state?.quick ? 'rematch' : 'start' });
         else if (action === 'lobby') this.client.send({ type: 'lobby' });
         else if (action === 'copy') void this.copy();
       }
@@ -67,7 +69,7 @@ export class Versus {
     window.addEventListener('resize', () => { if (this.active) this.client.sync(); });
   }
   private element(id: string): HTMLElement { return this.root.querySelector<HTMLElement>(`#${id}`)!; }
-  private async connect(create: boolean): Promise<void> {
+  async connect(create: boolean): Promise<void> {
     if (this.connecting) return;
     if (!this.preferences.name.trim()) { this.element('room-error').textContent = 'Set your name on Home first.'; return; }
     this.connecting = true; this.element('room-error').textContent = 'Connecting…';
@@ -125,6 +127,7 @@ export class Versus {
     this.actors.set(p.id, actor); return actor;
   }
   private receive(state: RoomSnapshot): void {
+    if (state.quick && state.phase === 'lobby') return;
     const first = !this.active;
     if (first) this.eventSequence = state.eventSequence;
     this.active = true; this.element('room-error').textContent = '';
@@ -207,10 +210,15 @@ export class Versus {
       this.element('lobby-status').textContent = lobbyControls(state, this.client.id).status;
     }
     for (const action of ['start', 'rematch', 'lobby']) for (const button of this.root.querySelectorAll<HTMLButtonElement>(`[data-room="${action}"]`)) {
-      button.hidden = !host;
-      button.disabled = !host || (action !== 'lobby' && players.length < 2);
+      const quickRematch = state.quick && action === 'rematch';
+      button.hidden = quickRematch ? false : !host;
+      button.disabled = quickRematch ? players.length < 2 || state.rematchReady.includes(this.client.id) || this.client.now >= state.rematchUntil
+        : !host || (action !== 'lobby' && players.length < 2);
     }
-    this.element('match-host-note').textContent = host ? '' : 'Waiting for the host…';
+    this.quickResult(state);
+    if (!state.quick) this.element('match-host-note').textContent = host ? '' : 'Waiting for the host…';
+    for (const button of this.root.querySelectorAll<HTMLElement>('#matchEnd [data-quick]')) button.hidden = !state.quick;
+    this.root.querySelector<HTMLElement>('#matchEnd [data-room=leave]')!.hidden = state.quick;
     this.element('round-label').textContent = `ROUND ${state.round} · FIRST TO 2`;
     for (let slot = 0; slot < CONFIG.MAX_PLAYERS_PRIVATE; slot++) {
       const p = players.find(p => p.slot === slot), card = this.element(`match-player-${slot}`);
@@ -237,8 +245,17 @@ export class Versus {
       this.element(`${kind}-winner-pips`).innerHTML = winner ? winPips(winner.wins) : '';
     }
   }
+  private quickResult(state: RoomSnapshot): void {
+    if (!state.quick || state.phase !== 'matchEnd') return;
+    const remaining = Math.max(0, Math.ceil((state.rematchUntil - this.client.now) / 1000));
+    this.element('match-host-note').textContent = !remaining ? 'Rematch expired — find a new opponent.'
+      : state.rematchReady.some(id => id !== this.client.id) ? `Opponent wants a rematch! · ${remaining}s`
+      : state.rematchReady.includes(this.client.id) ? `Waiting for opponent… · ${remaining}s` : `Rematch? · ${remaining}s`;
+    this.root.querySelector<HTMLButtonElement>('[data-room=rematch]')!.disabled = !remaining || state.rematchReady.includes(this.client.id) || state.players.filter(p => p.connected).length < 2;
+  }
   private frame(dt: number): void {
     const state = this.client.state; if (!state) return;
+    this.quickResult(state);
     this.game.rig.shake = 0;
     this.poseTime += dt; this.client.advance(); const now = this.client.now;
     const me = state.players.find(p => p.id === this.client.id);

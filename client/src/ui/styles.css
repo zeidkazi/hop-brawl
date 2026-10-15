@@ -149,3 +149,8 @@ a { color: inherit; }
 .result-banner .win-pips i { width:21px; height:21px; border-width:3px; }
 .winner-shout { font:clamp(38px,7vw,76px)/1 'Lilita One',sans-serif; color:var(--yellow); -webkit-text-stroke:5px var(--ink); paint-order:stroke fill; }
 @media (orientation:portrait) { .card-animal .animal-icon { width:34px; height:34px; }.card-symbols { gap:8px; }.room-result { align-items:center; }.room-result .panel { padding:18px; }.result-banner { margin:0 0 20px; padding:12px; }.result-banner .animal-icon { width:64px; height:64px; } }
+
+.search-crate { width:56px; height:56px; margin:0 auto 22px; border:4px solid var(--ink); background:var(--yellow); box-shadow:6px 6px 0 var(--ink); font-size:36px; animation:search-bob 1.2s ease-in-out infinite alternate; }
+@keyframes search-bob { from { transform:translateY(0) rotate(-8deg); } to { transform:translateY(-10px) rotate(8deg); } }
+#search[data-reduced="true"] .search-crate { animation:none; }
+#search time { font-variant-numeric:tabular-nums; }

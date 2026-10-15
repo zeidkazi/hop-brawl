@@ -6,10 +6,11 @@ import { readPreferences, savePreferences } from './settings';
 import { Solo } from '../game/solo';
 import { SOLO_MARKUP } from './solo-markup';
 import { ROOM_MARKUP } from './room-markup';
+import { QuickMatch, SEARCH_MARKUP } from './quick-match';
 import { Versus } from '../game/versus';
 
-type Screen = 'home' | 'friends' | 'settings' | 'how' | 'credits' | 'name' | 'solo' | 'pause' | 'soloEnd' | 'lobby' | 'versus' | 'roundEnd' | 'matchEnd';
-const SCREENS: readonly Screen[] = ['home', 'friends', 'settings', 'how', 'credits', 'name', 'solo', 'pause', 'soloEnd', 'lobby', 'versus', 'roundEnd', 'matchEnd'];
+type Screen = 'search' | 'home' | 'friends' | 'settings' | 'how' | 'credits' | 'name' | 'solo' | 'pause' | 'soloEnd' | 'lobby' | 'versus' | 'roundEnd' | 'matchEnd';
+const SCREENS: readonly Screen[] = ['search', 'home', 'friends', 'settings', 'how', 'credits', 'name', 'solo', 'pause', 'soloEnd', 'lobby', 'versus', 'roundEnd', 'matchEnd'];
 const CARDS = [
   ['Hop forward. Survive.', "Tap or swipe on phone · Arrow keys / WASD on PC. Dodge cars and trains, ride logs, and don't fall off the bottom of the screen."],
   ['Shove to win.', "Hop into your opponent to shove them one tile — into traffic, if you're lucky. Shoving has a short cooldown."],
@@ -27,6 +28,7 @@ export class Screens {
   readonly motion: Motion;
   readonly solo: Solo;
   readonly versus: Versus;
+  readonly quick: QuickMatch;
   private screen: Screen = 'home';
   private readonly panels: Record<Screen, HTMLElement>;
   private readonly names: HTMLInputElement[];
@@ -70,6 +72,7 @@ export class Screens {
       </section>
       <section id="friends" class="screen modal" aria-labelledby="friends-title" hidden>
         <div class="panel"><h2 id="friends-title">MULTIPLAYER</h2>
+          <button class="yellow" data-quick="start">QUICK MATCH</button>
           <button class="green" data-room="create">Create Room</button><p class="divider">Join by code</p>
           <div class="room-code" aria-label="Room code">${Array.from({ length: 4 }, (_, i) => `<input aria-label="Room code letter ${i + 1}" maxlength="1" autocomplete="off" autocapitalize="characters" inputmode="text">`).join('')}</div>
           <button class="yellow" data-room="join">Join</button><p id="room-error" role="status"></p><button class="text-button" data-back>Back</button>
@@ -102,6 +105,7 @@ export class Screens {
       </section>
       ${SOLO_MARKUP}
       ${ROOM_MARKUP}
+      ${SEARCH_MARKUP}
       <div id="tile-cover" aria-hidden="true" hidden></div><div id="toasts" role="status" aria-live="polite"></div>`;
     this.panels = Object.fromEntries(SCREENS.map(key => [key, root.querySelector<HTMLElement>(`#${key}`)!])) as Record<Screen, HTMLElement>;
     this.motion = new Motion(Object.values(this.panels), root.querySelector('#tile-cover')!, root.querySelector('#toasts')!);
@@ -109,8 +113,9 @@ export class Screens {
       history.replaceState({ screen }, '', '/'); this.show(screen);
     });
     this.versus = new Versus(root, game, this.preferences, this.motion, screen => {
-      history.replaceState({ screen }, '', this.versus.active ? `?room=${this.versus.client.state!.code}` : '/'); this.show(screen);
+      history.replaceState({ screen }, '', this.versus.active && !this.versus.client.state?.quick ? `?room=${this.versus.client.state!.code}` : '/'); this.show(screen);
     });
+    this.quick = new QuickMatch(root, this.versus, this.preferences, this.motion, screen => this.show(screen));
     game.onDiscontinuity = () => {
       this.solo.pause(); this.carousel?.progress(1); this.motion.settle();
     };
@@ -215,7 +220,8 @@ export class Screens {
     } else history.back();
   }
   private show(screen: Screen): void {
-    if (this.versus.active && !['lobby', 'versus', 'roundEnd', 'matchEnd'].includes(screen)) { this.versus.leave(screen === 'home' ? 'home' : 'friends'); return; }
+    if (['home', 'friends', 'solo'].includes(screen)) this.quick?.stop();
+    if (this.versus.active && !['search', 'lobby', 'versus', 'roundEnd', 'matchEnd'].includes(screen)) { this.versus.leave(screen === 'home' ? 'home' : 'friends'); return; }
     if (screen === 'solo' && !this.solo.active) { this.solo.start(); return; }
     if (screen === 'home' && this.solo.active) { this.solo.quit(); return; }
     if (screen !== 'name') this.afterName = null;
