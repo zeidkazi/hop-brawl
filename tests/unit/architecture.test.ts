@@ -73,7 +73,9 @@ describe('camera stations', () => {
     for (const x of [0, 4, 8]) for (const z of [-5, 0, 1, 8, 15])
       expect(rig.screenY(x, z)).toBeCloseTo(gameplayScreenY(x, z, 0, 1, aspect), 8);
     rig.targetCamZ = 10; rig.update(1 / 60, 1);
-    expect(rig.camZ).toBe(10); expect(rig.screenY(4, 11)).toBeCloseTo(.65, 8);
+    expect(rig.camZ).toBeGreaterThanOrEqual(10 - VIEW.FOLLOW_MAX_LAG);
+    for (let i = 0; i < 120; i++) rig.update(1 / 60, 1 + i / 60);
+    expect(rig.camZ).toBeCloseTo(10, 7); expect(rig.screenY(4, 11)).toBeCloseTo(.65, 7);
   });
   it.each([390 / 844, 1440 / 900])('meets section 31 width framing at %s', aspect => {
     const rig = new CameraRig(aspect); rig.go('gameplay'); rig.update(.7, .7);

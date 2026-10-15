@@ -98,7 +98,9 @@ export class CameraRig {
     const omega = VIEW.RESIZE_SPRING;
     const decay = Math.exp(-omega * dt);
     const term = (this.velocity + omega * error) * dt;
-    const next = this.station === 'gameplay' ? this.targetCamZ : this.targetCamZ + (error + term) * decay;
+    const spring = this.targetCamZ + (error + term) * decay;
+    // Keep the authoritative screen-bottom death line within §30's 0.05-tile bound.
+    const next = this.station === 'gameplay' ? Math.max(this.targetCamZ - VIEW.FOLLOW_MAX_LAG, Math.min(this.targetCamZ, spring)) : spring;
     this.velocity = (this.velocity - omega * term) * decay;
     const shift = next - this.camZ;
     this.camZ = next;
