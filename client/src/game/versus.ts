@@ -8,6 +8,7 @@ import type { Motion } from '../ui/motion';
 import { Boxer } from './boxer';
 import { HopInput } from './input';
 import { RoomClient } from './room-client';
+import { LifeEvents } from './life-events';
 import { RailSound } from './rail-sound';
 
 export type RoomScreen = 'lobby' | 'versus' | 'roundEnd' | 'matchEnd' | 'friends' | 'home';
@@ -20,6 +21,7 @@ export class Versus {
   active = false;
   private connecting = false; private phase = ''; private startAt = -1; private eventSequence = 0;
   private poseTime = 0; private arenaRow = NaN;
+  private readonly deaths = new LifeEvents();
   private readonly railSound = new RailSound();
   private readonly actors = new Map<string, Actor>();
   private readonly point = new Vector3();
@@ -32,6 +34,7 @@ export class Versus {
     });
     const priorFrame = game.beforeFrame;
     game.beforeFrame = (now, dt) => { if (this.active) this.frame(dt); else priorFrame?.(now, dt); };
+    this.client.onPredictedDeath = lifeId => this.animateDeath(this.client.id, lifeId);
     this.client.onState = state => this.receive(state);
     this.client.onError = error => {
       const text = error === 'ROOM_NOT_FOUND' ? 'Room not found' : error === 'ROOM_FULL' ? 'Room full' : error;
@@ -73,7 +76,7 @@ export class Versus {
   }
   leave(screen: RoomScreen = 'home'): void {
     this.client.close(); this.input.enabled = false; this.input.clear();
-    this.active = false; this.phase = ''; this.startAt = -1; this.eventSequence = 0;
+    this.deaths.clear(); this.active = false; this.phase = ''; this.startAt = -1; this.eventSequence = 0;
     for (const actor of this.actors.values()) this.dispose(actor); this.actors.clear();
     this.game.playing = false; this.game.worldTime = null; this.game.world.actorVisible = true;
     this.game.world.showCrates = true; this.game.rig.resetScroll();
@@ -123,7 +126,11 @@ export class Versus {
       const actor = this.actors.get(event.id);
       if (event.kind === 'hop') actor?.boxer.play('hop');
       if (event.kind === 'shove') { actor?.boxer.play('stunned'); this.actors.get(event.by)?.boxer.play('punch'); }
-      if (event.kind === 'death' && actor) { actor.deathAt = this.poseTime; actor.boxer.play('stunned'); this.motion.toast(`${state.players.find(p => p.id === event.id)?.name ?? ''} ${event.cause}`); }
+      if (event.kind === 'death') {
+        this.animateDeath(event.id, event.lifeId);
+        if (!this.deaths.confirmation(event.id, event.lifeId)) { this.eventSequence = event.seq; continue; }
+        this.motion.toast(`${state.players.find(p => p.id === event.id)?.name ?? ''} ${event.cause}`);
+      }
       if (event.kind === 'round') this.actors.get(event.id)?.boxer.play('victory');
       const player = state.players.find(p => p.id === event.id);
       const pan = player ? (player.movement.x - this.client.prediction.x) / SOUND.PAN_TILES : 0;
@@ -141,6 +148,10 @@ export class Versus {
       if (state.phase === 'playing') for (const actor of this.actors.values()) actor.boxer.countdown(true);
     }
     this.updateUI(state);
+  }
+  private animateDeath(id: string, lifeId: number): void {
+    const actor = this.actors.get(id);
+    if (actor && this.deaths.animation(id, lifeId)) { actor.deathAt = this.poseTime; actor.boxer.play('stunned'); }
   }
   private updateUI(state: RoomSnapshot): void {
     const host = state.host === this.client.id, players = state.players.filter(p => p.connected);
@@ -205,12 +216,12 @@ export class Versus {
       if (lobby) { x = ROOM.SPAWNS[2]![p.slot]!; z = SOLO.SPAWN_Z; }
       const hop = !lobby && movement.hopping ? Math.min(1, Math.max(0, (drawTime - movement.hopStart) * 1000 / CONFIG.HOP_MS)) : 0;
       const y = (movement.onLog ? SOLO.LOG_TOP : 0) + Math.sin(hop * Math.PI) * SOLO.HOP_HEIGHT;
-      actor.root.visible = p.connected && !p.waiting && (!p.movement.dead || this.poseTime - actor.deathAt < SOLO.DEATH_MS / 1000);
+      actor.root.visible = p.connected && !p.waiting && (!movement.dead || this.poseTime - actor.deathAt < SOLO.DEATH_MS / 1000);
       actor.root.position.set(x, y, -z);
       const turn = Math.atan2(Math.sin(ANGLE[movement.direction] - actor.heading), Math.cos(ANGLE[movement.direction] - actor.heading));
       actor.heading += turn * Math.min(1, dt * 1000 / SOLO.TURN_MS); actor.root.rotation.y = lobby ? HOME.ANIMAL_YAW : actor.heading;
       const stretch = 1 + Math.sin(hop * Math.PI) * (SOLO.STRETCH_Y - 1); actor.root.scale.set(1 + (1 - stretch) / 2, stretch, 1 + (1 - stretch) / 2);
-      if (p.movement.dead) actor.root.scale.y = SOLO.FLATTEN_Y;
+      if (movement.dead) actor.root.scale.y = SOLO.FLATTEN_Y;
       actor.boxer.reduced = this.preferences.reducedMotion; actor.boxer.update(this.poseTime);
       const label = this.element(`match-name-${p.slot}`); label.hidden = !actor.root.visible || lobby;
       label.textContent = `${p.name}${p.id === this.client.id ? ' ▼' : ''}${movement.invulnerableUntil > time ? ' ✦' : ''}`;

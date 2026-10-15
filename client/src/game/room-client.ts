@@ -1,6 +1,6 @@
 import { CONFIG, ROOM } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
-import type { HopDirection } from '../../../shared/movement';
+import type { DeathCause, HopDirection } from '../../../shared/movement';
 import type { RoomSnapshot } from '../../../shared/room';
 import { generateRow } from '../../../shared/worldgen';
 import { gameplayScreenY } from '../../../shared/camera';
@@ -14,11 +14,20 @@ export class RoomClient {
   });
   readonly history: RoomSnapshot[] = [];
   onState: ((state: RoomSnapshot) => void) | null = null;
+  onPredictedDeath: ((lifeId: number, cause: DeathCause) => void) | null = null;
+  private reportedLife = -1;
   onError: ((error: string) => void) | null = null;
   private socket: WebSocket | null = null;
   private pending: { direction: HopDirection; sequence: number; time: number }[] = [];
   private heartbeat = 0; private lastClock = 0; private lastMessage = 0;
   constructor() {
+    this.prediction.onDeath = cause => {
+      const me = this.state?.players.find(p => p.id === this.id);
+      if (!me || me.movement.dead || me.lifeId <= this.reportedLife) return;
+      this.reportedLife = me.lifeId;
+      this.onPredictedDeath?.(me.lifeId, cause);
+      this.send({ type: 'death', lifeId: me.lifeId });
+    };
     this.prediction.belowScreen = (x, z, cam) => this.state?.players.filter(p => p.connected)
       .every(p => gameplayScreenY(x, z, cam, this.state!.leaderZ, p.aspect) >= 1) ?? false;
   }
@@ -31,7 +40,7 @@ export class RoomClient {
     return response.json() as Promise<{ code: string; token: string }>;
   }
   connect(code: string, name: string, animal: number, token = ''): void {
-    this.close(); this.id = ''; this.state = null; this.history.length = this.pending.length = 0; this.sequence = 0;
+    this.close(); this.reportedLife = -1; this.id = ''; this.state = null; this.history.length = this.pending.length = 0; this.sequence = 0;
     const url = new URL(`/ws/room/${code}`, this.base); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     url.search = new URLSearchParams({ name, animal: String(animal), aspect: String(innerWidth / innerHeight), token }).toString();
     const socket = this.socket = new WebSocket(url); let failed = false;
