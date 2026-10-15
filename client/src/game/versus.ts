@@ -106,7 +106,7 @@ export class Versus {
       node.material = material; materials.push(material); node.castShadow = this.game.quality.tier !== 'low';
     });
     const boxer = new Boxer(body); boxer.reduced = this.preferences.reducedMotion; boxer.joined();
-    const effects = new BoxingEffects(); this.game.scene.add(effects.root);
+    const effects = new BoxingEffects(BOXER.SHOVE_EFFECT_SCALE); this.game.scene.add(effects.root);
     boxer.onCue = cue => {
       if (cue !== 'hit') return;
       const glove = boxer.punchSide < 0 ? boxer.left : boxer.right;
@@ -245,7 +245,6 @@ export class Versus {
       const stretch = 1 + Math.sin(hop * Math.PI) * (SOLO.STRETCH_Y - 1); actor.root.scale.set(1 + (1 - stretch) / 2, stretch, 1 + (1 - stretch) / 2);
       if (movement.dead) actor.root.scale.y = SOLO.FLATTEN_Y;
       actor.effects.root.position.copy(actor.root.position);
-      actor.effects.root.scale.setScalar(BOXER.SHOVE_EFFECT_SCALE);
       actor.effects.update(this.poseTime, actor.boxer.move, this.preferences.reducedMotion);
       actor.boxer.reduced = this.preferences.reducedMotion; actor.boxer.update(this.poseTime);
       const label = this.element(`match-name-${p.slot}`); label.hidden = !actor.root.visible || lobby;

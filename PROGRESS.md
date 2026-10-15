@@ -14,7 +14,7 @@ Last updated: 2026-10-15 (Asia/Calcutta).
 - Tree canopies, including toon hulls, now fit inside grass rows with clearance from hazard kerbs. Arena footprint filtering also reserves this gap; the 1,000-seed/300-row scan checks outlined tree depth and both touching edges.
 - HUD now uses animal portraits, SVG heart icons, round-win pips and player-color borders. Results use large slanted Lilita One winner banners, winner color/animal/pips and match actions.
 - PLAY now reveals Friends (or the required name panel) immediately while Home exits; the existing 60 ms press animation remains. A regression asserts the panel and buttons are visible without waiting for exit animation.
-- Multiplayer shove punches now connect the existing impact-star effect to the glove contact cue (and stun stars to the victim), respecting Reduce Motion and disposing effects on departure.
+- Impact-star size scales independently of stun-orbit height so effects remain attached to the animals. Multiplayer shove punches now connect the existing impact-star effect to the glove contact cue (and stun stars to the victim), respecting Reduce Motion and disposing effects on departure.
 - Browser regression: four cases pass, including a full three-round match/rematch and a frozen real browser losing exactly one heart to traffic with zero client death reports. PLAY next-paint latency measured 13.6 ms after deferring OS audio-device startup until after panel paint.
 - Next: replacement cover and production-packaged local verification, then STOP for owner playtest.
 

@@ -51,7 +51,7 @@ export class BoxingEffects {
   private readonly stars: Mesh[] = [];
   private until = -1;
   private readonly contactPoint = new Vector3();
-  constructor() {
+  constructor(size = 1) {
     const shape = new Shape();
     for (let i = 0; i < 10; i++) {
       const angle = i * Math.PI / 5, radius = i % 2 ? 0.45 : 1;
@@ -61,7 +61,7 @@ export class BoxingEffects {
     shape.closePath();
     const geometry = new ShapeGeometry(shape);
     const material = new MeshBasicMaterial({ color: COLORS.yellow, toneMapped: false, fog: false });
-    for (let i = 0; i < 3; i++) { const star = new Mesh(geometry, material); star.userData.effect = true; star.frustumCulled = false; star.scale.setScalar(BOXER.STAR_SIZE); this.stars.push(star); this.root.add(star); }
+    for (let i = 0; i < 3; i++) { const star = new Mesh(geometry, material); star.userData.effect = true; star.frustumCulled = false; star.scale.setScalar(BOXER.STAR_SIZE * size); this.stars.push(star); this.root.add(star); }
   }
   dispose(): void {
     this.root.removeFromParent(); this.stars[0]?.geometry.dispose();
