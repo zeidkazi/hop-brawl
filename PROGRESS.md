@@ -2,6 +2,14 @@
 
 Last updated: 2026-10-16 (Asia/Calcutta).
 
+## Feel pass section 34 (local only)
+
+- Owner authorized six ordered steps before Batch C. No deployment, including the prepared custom domain.
+- Step 1 complete: visibilitychange/pagehide silence and suspend Howler's AudioContext and cancel the rendering RAF; returning resumes rendering and audio with a 300 ms gain fade. Rapid visibility transitions are serialized. Solo remains paused; versus requests a fresh authoritative snapshot. Late hidden-room music changes are applied on return.
+- Validation: 183 unit tests, both typechecks, production build; desktop/mobile lifecycle suspension and resync browser checks pass. The first room checks failed because the local Worker was not running; both passed after starting it. Evidence: tmp/feel-1-check.log, tmp/feel-1-browser.log, tmp/feel-1-resync.log. Tag feel-stable-1.
+- How to run: npm run dev plus npm run dev:server; http://localhost:5173/. Both servers are running locally.
+- Next exact step: step 2, capture DPR 1/1.25/2/3 baseline crops, fix antialiasing/pixel ratio/degradation order, compare after crops. Then step 3 instant hops; step 4 profiling/optimization/interpolation; step 5 pacing/clarity/juice; step 6 preview new Blender models before placing them, then stop.
+
 ## Live deployment verification (complete; STOP before Batch C)
 
 - Live URL: https://hop-brawl.hop-brawl.workers.dev. OAuth login and whoami succeeded. Initial deployment used batch-b2-stable (6feb23f); live verification exposed a narrow rendering issue, fixed and deployed as f15d94417c53c5cf601fc1dffc9a1a2ea129ae52. Final Cloudflare version: c4042c33-b994-493e-b9f1-7449bc5f2d4f. Tag v0.9-submission points to that deployed fix; batch-b2-stable remains the original local checkpoint.
