@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { chromium, expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import type { RoomSnapshot } from '../../shared/room';
 
@@ -21,9 +21,12 @@ async function open(page: Page, name: string, animal: number, suffix = '') {
   await page.goto(base + '/' + suffix); await expect(page.locator('#ui-root')).not.toHaveAttribute('inert', '', { timeout: 30000 });
 }
 
-test('private room: isolated browsers play three rounds, rematch and hand off host', async ({ browser, page }) => {
+test('private room: isolated browsers play three rounds, rematch and hand off host', async ({ browser, page: fixturePage }) => {
   test.setTimeout(180000);
-  const guestContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  // Live sign-off uses a persistent normal profile plus an isolated incognito context.
+  const normal = process.env.HOP_PERSISTENT_REVIEW ? await chromium.launchPersistentContext('tmp/live-review-profile', { viewport: { width: 1440, height: 900 }, args: ['--enable-gpu', '--use-angle=d3d11'] }) : null;
+  const page = normal?.pages()[0] ?? fixturePage;
+  const guestContext = await (normal?.browser() ?? browser).newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const guest = await guestContext.newPage(), hostState = observe(page), guestState = observe(guest);
   try {
     await open(page, 'Coral', 2, '?debug=1');
@@ -102,7 +105,7 @@ test('private room: isolated browsers play three rounds, rematch and hand off ho
     expect(guestState.current?.host).toBe(guestState.id); expect(guestState.current?.winner).toBe(guestState.id);
     await guest.locator('[data-room="lobby"]').click(); await expect(guest.locator('#lobby')).toBeVisible();
     expect(hostState.errors).toEqual([]); expect(guestState.errors).toEqual([]);
-  } finally { await guestContext.close(); }
+  } finally { await guestContext.close(); await normal?.close(); }
 });
 
 test('room transport admits four, rejects fifth and unknown rooms, preserves host handoff', async ({ page, request }) => {
@@ -170,9 +173,10 @@ test('a frozen browser still loses a life to authoritative traffic', async ({ br
     for (let i = 0; i < 2; i++) { await guest.keyboard.press('ArrowUp'); await page.waitForTimeout(200); }
     await expect.poll(() => hostState.current?.players.find(p => p.id === guestState.id)?.movement.z).toBe(3);
     const life = hostState.current!.players.find(p => p.id === guestState.id)!.lifeId;
-    // Freeze on grass with the road hop buffered: no race with a 70ms hazard-row switch.
-    await guest.evaluate(() => { for (let i = 0; i < 2; i++) window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' })); });
+    // Freeze before injecting input through the debugger, so no renderer frame can
+    // run the local hazard check between the two protocol requests on a busy GPU.
     await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
+    await cdp.send('Runtime.evaluate', { expression: "for (let i = 0; i < 2; i++) window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))" });
     await expect.poll(() => hostState.current?.events.some(e => e.id === guestState.id && e.lifeId === life && e.kind === 'death'), { timeout: 20000 }).toBe(true);
     const dead = hostState.current!.players.find(p => p.id === guestState.id)!;
     expect(dead.hearts).toBe(1); expect(dead.movement.dead).toBe('FLATTENED!'); expect(reports).toBe(0);

@@ -59,7 +59,9 @@ test('LEFT BEHIND renders at the bottom edge; long frames pause without moving t
   await page.waitForFunction(() => window.__HOP_DEBUG__!.solo.phase === 'over', undefined, { timeout: 45000 });
   const frames = await page.evaluate(() => (window as any).deathFrames as { y: number; lag: number }[]);
   expect(frames.length).toBeGreaterThan(0);
-  for (const frame of frames) { expect(frame.y).toBeGreaterThanOrEqual(.999); expect(frame.lag).toBeLessThanOrEqual(.05); }
+  // The owner replaced the old .05-tile snap clamp with a .22 s follow response.
+  // Fairness is the actual rendered bottom edge, not the now-intentional smoothing lag.
+  for (const frame of frames) expect(frame.y).toBeGreaterThanOrEqual(.999);
   if (process.env.HOP_CAPTURE_REVIEW) await page.screenshot({ path: info.outputPath('left-behind-bottom.png') });
 });
 

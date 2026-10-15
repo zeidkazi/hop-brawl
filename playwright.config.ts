@@ -8,7 +8,7 @@ export default defineConfig({
   // benchmarking contention from unrelated test workers.
   workers: 1,
   use: {
-    baseURL: 'http://127.0.0.1:5173', trace: 'retain-on-failure',
+    baseURL: process.env.HOP_TEST_URL ?? 'http://127.0.0.1:5173', trace: 'retain-on-failure',
     // Windows headless defaults to SwiftShader. Exercise the actual local GPU;
     // keep other platforms' native defaults (including CI software fallback).
     launchOptions: process.platform === 'win32' ? { args: ['--enable-gpu', '--use-angle=d3d11'] } : {},
@@ -17,7 +17,7 @@ export default defineConfig({
     { name: 'desktop', use: { browserName: 'chromium', viewport: { width: 1440, height: 900 } } },
     { name: 'mobile', use: { browserName: 'chromium', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } },
   ],
-  webServer: {
+  webServer: process.env.HOP_TEST_URL ? [] : {
     command: 'npm run dev',
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: !process.env.CI,
