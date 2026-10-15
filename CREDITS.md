@@ -145,3 +145,22 @@ Find one consistent, energetic voice for: "Round one", "Round two", "Final round
 
 - The broader fox tail is an original revision to `art/recipes/fox.py`, built and AO-baked in Blender into `art/fox.blend`, `art/voxels/fox.json` and `client/public/models/fox.glb`. CC0 1.0, same provenance as the original fox above; no downloaded assets.
 - `art/review/batch-a/hop.png`, `log-landing.png`, `flattened.png` and `splash.png` are original six-frame game-renderer captures, CC0 1.0. `scripts/review-batch-a.mjs` records seeded collision/landing fixtures with controlled timestamps; it composites the captured frames without substituting artwork. Raw pose timestamps and fixture coordinates are in `art/review/batch-a/frames.json`.
+
+## Detail pass Batch B audio (CC0 1.0)
+
+All 44 sound sprites and five music loops below are original deterministic PCM synthesis/compositions, dedicated to [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). There are no third-party recordings or voice imitations. Source for every sprite: [art/build-sfx.ts](https://github.com/zeidkazi/hop-brawl/blob/main/art/build-sfx.ts). Rebuild with `node art/build-sfx.ts`; the pinned development encoder produces the specified mono MP3 effects and OGG/M4A music. Sprite offsets/durations are individually recorded in `client/src/game/audio-manifest.json`.
+
+| Shipped file | Individual sounds / source | License |
+|---|---|---|
+| `client/public/sfx/brawl.mp3` | `hop0`, `hop1`, `hop2`: three boing/whoosh variants; `bonk`: thud + squeak; `splash`: water burst; `squash`: squash + crunch; `punch`: shove; `whoosh`: swing/swept-away; `hit`: glove impact; `tock`: glove tap. Original build-sfx source above. | CC0 1.0 |
+| Same MP3, hazard sprites | `bell`: double crossing ding; `horn`: train horn; `train`: rush + clatter; `rumble`: approaching train; `car`: engine; `truck`: low engine; `honk`: near-miss horn; `water`: river loop; `log`: landing thunk; `bubbles`: water bubbles. Original build-sfx source above. | CC0 1.0 |
+| Same MP3, death / atmosphere sprites | `fall`: falling whoop; `impact`: derail impact; `crowd`: stylized crowd murmur; `cheer`: stylized crowd cheer; `birds`: meadow birds. Original build-sfx source above. | CC0 1.0 |
+| Same MP3, flow sprites | `countdown`: beep; `go`: HOP slam/whoosh; `newBest`: 1.25 s jingle; `gameOver`: 2 s sting; `roundWin`: 2.5 s sting; `matchWin`: 5 s fanfare; `respawn`: return; `heartLost`: heart loss. Original build-sfx source above. | CC0 1.0 |
+| Same MP3, interface sprites | `click`, `back`, `toggle`, `open`, `close`. Original build-sfx source above. | CC0 1.0 |
+| Same MP3, animal sprites | `grunt0`: chicken cluck; `grunt1`: frog ribbit; `grunt2`: fox yip; `grunt3`: penguin squawk; `grunt4`: pig oink; `grunt5`: cat meow. Stylized synthesized grunts, not animal recordings. Original build-sfx source above. | CC0 1.0 |
+| `client/public/music/brawl.ogg` | Original eight-bar C-major toy-pop/chiptune arrangements: `menu` (110 BPM), `meadow`, `autumn`, `snow`, `nightCity` (130 BPM). Source: build-sfx above. | CC0 1.0 |
+| `client/public/music/brawl.m4a` | AAC alternative of the same five original compositions, for browsers without OGG support. | CC0 1.0 |
+
+Announcer search: [Kenney Voiceover Pack (Fighter)](https://kenney.nl/assets/voiceover-pack-fighter), CC0, and its [creator-posted file inventory](https://opengameart.org/content/voiceover-pack-fighter-40-taunts) cover Round 1, Round 2, Final round and Winner, but lack Hop, Showdown and K.O. Searches of OpenGameArt/Freesound did not establish one CC0 voice covering all seven. No voice files are shipped. Per section 33, use text slams + original SFX throughout; owner recordings remain an option for a later complete voice set.
+
+Bubbles are shipped and used after splash deaths; sinking-log warning playback waits for Batch D's sinking-log mechanic. The four biome music arrangements are ready now; biome visuals/ambience swapping remain Batch E.

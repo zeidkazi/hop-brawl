@@ -1,0 +1,251 @@
+{
+  "sfx": {
+    "hop0": [
+      0,
+      180,
+      false
+    ],
+    "hop1": [
+      260,
+      180,
+      false
+    ],
+    "hop2": [
+      520,
+      180,
+      false
+    ],
+    "bonk": [
+      780,
+      220,
+      false
+    ],
+    "splash": [
+      1080,
+      650,
+      false
+    ],
+    "squash": [
+      1810,
+      360,
+      false
+    ],
+    "punch": [
+      2250,
+      240,
+      false
+    ],
+    "whoosh": [
+      2570,
+      320,
+      false
+    ],
+    "hit": [
+      2970,
+      220,
+      false
+    ],
+    "tock": [
+      3270,
+      130,
+      false
+    ],
+    "bell": [
+      3480,
+      800,
+      false
+    ],
+    "horn": [
+      4360,
+      850,
+      false
+    ],
+    "train": [
+      5290,
+      2000,
+      false
+    ],
+    "rumble": [
+      7370,
+      2000,
+      false
+    ],
+    "car": [
+      9450,
+      2000,
+      false
+    ],
+    "truck": [
+      11530,
+      2000,
+      false
+    ],
+    "honk": [
+      13610,
+      320,
+      false
+    ],
+    "water": [
+      14010,
+      4000,
+      false
+    ],
+    "log": [
+      18090,
+      200,
+      false
+    ],
+    "bubbles": [
+      18370,
+      700,
+      false
+    ],
+    "fall": [
+      19150,
+      750,
+      false
+    ],
+    "impact": [
+      19980,
+      650,
+      false
+    ],
+    "crowd": [
+      20710,
+      4000,
+      false
+    ],
+    "cheer": [
+      24790,
+      1200,
+      false
+    ],
+    "birds": [
+      26070,
+      4000,
+      false
+    ],
+    "countdown": [
+      30150,
+      160,
+      false
+    ],
+    "go": [
+      30390,
+      450,
+      false
+    ],
+    "newBest": [
+      30920,
+      1250,
+      false
+    ],
+    "gameOver": [
+      32250,
+      2000,
+      false
+    ],
+    "roundWin": [
+      34330,
+      2500,
+      false
+    ],
+    "matchWin": [
+      36910,
+      5000,
+      false
+    ],
+    "click": [
+      41990,
+      200,
+      false
+    ],
+    "back": [
+      42270,
+      200,
+      false
+    ],
+    "toggle": [
+      42550,
+      200,
+      false
+    ],
+    "respawn": [
+      42830,
+      200,
+      false
+    ],
+    "heartLost": [
+      43110,
+      200,
+      false
+    ],
+    "open": [
+      43390,
+      200,
+      false
+    ],
+    "close": [
+      43670,
+      200,
+      false
+    ],
+    "grunt0": [
+      43950,
+      300,
+      false
+    ],
+    "grunt1": [
+      44330,
+      300,
+      false
+    ],
+    "grunt2": [
+      44710,
+      300,
+      false
+    ],
+    "grunt3": [
+      45090,
+      300,
+      false
+    ],
+    "grunt4": [
+      45470,
+      300,
+      false
+    ],
+    "grunt5": [
+      45850,
+      300,
+      false
+    ]
+  },
+  "music": {
+    "menu": [
+      0,
+      17454.541666666668,
+      true
+    ],
+    "meadow": [
+      17534.541666666664,
+      14769.25,
+      true
+    ],
+    "autumn": [
+      32383.791666666668,
+      14769.25,
+      true
+    ],
+    "snow": [
+      47233.041666666664,
+      14769.25,
+      true
+    ],
+    "nightCity": [
+      62082.29166666667,
+      14769.25,
+      true
+    ]
+  }
+}
