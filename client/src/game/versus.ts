@@ -8,6 +8,7 @@ import type { Motion } from '../ui/motion';
 import { Boxer } from './boxer';
 import { HopInput } from './input';
 import { RoomClient } from './room-client';
+import { lobbyControls, roomWorldTime } from './room-presentation';
 import { LifeEvents } from './life-events';
 import { RailSound } from './rail-sound';
 
@@ -160,15 +161,16 @@ export class Versus {
     if (state.phase === 'lobby') {
       const list = this.element('lobby-players'); list.replaceChildren();
       for (const p of players) { const line = document.createElement('p'); line.style.borderColor = COLORS.players[p.slot]!;
-        line.textContent = `${p.name}${p.id === state.host ? ' ★ HOST' : ''} · ${ANIMALS[p.animal]}`; list.append(line); }
+        line.textContent = `${p.name}${p.id === state.host ? ' ★ HOST' : ''} · ${ANIMALS[p.animal]!.replace(/^./, c => c.toUpperCase())}`; list.append(line); }
       for (const button of this.root.querySelectorAll<HTMLButtonElement>('[data-room-animal]')) {
         const animal = Number(button.dataset.roomAnimal), me = players.find(p => p.id === this.client.id);
         button.disabled = players.some(p => p.id !== this.client.id && p.animal === animal);
         button.setAttribute('aria-pressed', String(me?.animal === animal));
       }
-      this.element('lobby-status').textContent = players.length < 2 ? 'Share the code or link with a friend.' : host ? `${players.length} players ready` : 'Waiting for the host to start…';
+      this.element('lobby-status').textContent = lobbyControls(state, this.client.id).status;
     }
     for (const action of ['start', 'rematch', 'lobby']) for (const button of this.root.querySelectorAll<HTMLButtonElement>(`[data-room="${action}"]`)) {
+      button.hidden = !host;
       button.disabled = !host || (action !== 'lobby' && players.length < 2);
     }
     this.element('match-host-note').textContent = host ? '' : 'Waiting for the host…';
@@ -193,7 +195,7 @@ export class Versus {
     const me = state.players.find(p => p.id === this.client.id);
     this.input.enabled = this.client.ready && state.phase === 'playing' && !me?.waiting && (me?.hearts ?? 0) > 0;
     this.game.playing = state.phase === 'playing';
-    const time = state.phase === 'playing' ? this.client.time : Math.max(0, (state.now - state.startAt) / 1000);
+    const time = roomWorldTime(state, this.client.time, this.poseTime);
     this.game.worldTime = time; this.game.rig.targetCamZ = state.camZ; this.game.rig.leaderZ = state.leaderZ;
     if (state.phase === 'playing') this.railSound.update(this.game.world.rows, state.camZ, time, this.game.home.sound);
     const countdown = this.element('match-countdown');
