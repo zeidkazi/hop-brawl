@@ -2,7 +2,6 @@ import { ANIMALS, CONFIG, ROOM, VIEW, scrollSpeed } from './config';
 import { gameplayScreenY } from './camera';
 import { Movement } from './movement';
 import type { HopDirection, MovementState } from './movement';
-import { logSlotAtLanding } from './hazards';
 import { generateRow } from './worldgen';
 import type { Row } from './types';
 
@@ -136,19 +135,20 @@ export class RoomGame {
   }
   private respawn(p: Player, now: number): void {
     const time = (now - this.startAt) / 1000, savedDistance = p.move.distance;
-    const slot = { log: -1, slot: -1, x: 0 };
-    for (let z = Math.ceil(this.camZ) + ROOM.RESPAWN_ROW_OFFSET; z < Math.ceil(this.camZ) + ROOM.RESPAWN_LOOKAHEAD; z++) {
+    for (let step = ROOM.RESPAWN_ROW_OFFSET; step <= ROOM.RESPAWN_LOOKAHEAD + 1; step++) {
+      const fallback = step > ROOM.RESPAWN_LOOKAHEAD;
+      const z = Math.ceil(this.camZ + (fallback ? ROOM.RESPAWN_FALLBACK_OFFSET : step));
+      if (!fallback && z > this.camZ + ROOM.RESPAWN_LOOKAHEAD) continue;
       const row = this.rowAt(z);
+      if (!fallback && row.kind !== 'grass') continue;
       for (let offset = 0; offset < CONFIG.COLUMNS; offset++) {
         const column = 4 + Math.ceil(offset / 2) * (offset % 2 ? -1 : 1);
         if (column < 0 || column >= CONFIG.COLUMNS || row.kind === 'grass' && row.obstacles.some(o => o.column === column)) continue;
-        let x = column;
-        if (row.kind === 'river') { logSlotAtLanding(row, column, time, slot); if (slot.log < 0 || slot.x < 0 || slot.x > 8) continue; x = slot.x; }
+        const x = column;
         if (this.occupied(x, z, p)) continue;
         p.lifeId++; p.move.reset(); p.move.x = p.move.fromX = p.move.toX = x; p.move.z = p.move.fromZ = p.move.toZ = z;
         p.move.time = time; p.move.distance = savedDistance; p.move.camZ = this.camZ;
-        p.move.invulnerableUntil = time + CONFIG.SPAWN_PROTECT_MS / 1000;
-        if (row.kind === 'river') { p.move.onLog = true; p.move.logIndex = slot.log; p.move.slotIndex = slot.slot; }
+        p.move.invulnerableUntil = time + (fallback ? ROOM.RESPAWN_FALLBACK_PROTECT_MS : CONFIG.SPAWN_PROTECT_MS) / 1000;
         p.respawnAt = 0; p.queued = null; return;
       }
     }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { RoomGame } from '../../shared/room';
 import { CONFIG, ROOM } from '../../shared/config';
 
@@ -83,6 +83,26 @@ describe('authoritative shove', () => {
   });
 });
 describe('hearts, respawn and rounds', () => {
+  it('respawns on the nearest grass row in cam+1..5 and the nearest free center column', () => {
+    const game = playing(), p = game.players[1]!;
+    game.camZ = 10.2;
+    vi.spyOn(game, 'rowAt').mockImplementation(z => z === 13 || z === 14
+      ? { kind: 'grass', z, biome: 'meadow', obstacles: [{ column: 4, kind: 'tree' }], crate: null }
+      : { kind: 'river', z, biome: 'meadow', direction: 1, speed: 1, phase: 0, logs: [] });
+    position(game, 0, 3, 13); game.players[0]!.move.advance = () => {};
+    p.move.dead = 'SPLASH!'; game.tick(3050); game.tick(4550);
+    expect(p.move.z).toBe(13); expect(p.move.x).toBe(5);
+    expect(p.move.invulnerableUntil - p.move.time).toBeCloseTo(2);
+  });
+  it('falls back to cam+2 with three seconds protection when the bounded scan has no grass', () => {
+    const game = playing(), p = game.players[1]!;
+    game.camZ = 10;
+    vi.spyOn(game, 'rowAt').mockImplementation(z => ({ kind: 'river', z, biome: 'meadow', direction: 1, speed: 1, phase: 0, logs: [] }));
+    game.players[0]!.move.advance = () => {};
+    p.move.dead = 'SPLASH!'; game.tick(3050); game.tick(4550);
+    expect(p.move.z).toBe(12); expect(p.move.x).toBe(4);
+    expect(p.move.invulnerableUntil - p.move.time).toBe(3);
+  });
   it('loses one heart, waits 1.5 seconds, respawns free with two-second protection', () => {
     const game = playing(); const p = game.players[1]!; p.move.dead = 'FLATTENED!'; game.tick(3050);
     expect(p.hearts).toBe(1); game.tick(4549); expect(p.move.dead).toBe('FLATTENED!');
