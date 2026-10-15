@@ -5,9 +5,9 @@ import {
 } from 'three';
 import type { Camera } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { ANIMAL_SIZES, COLORS, CONFIG, HOME, RAIL, SOLO, STREET, VIEW, WORLD } from '../../../shared/config';
+import { ANIMAL_SIZES, COLORS, CONFIG, FEEL, HOME, RAIL, SOLO, STREET, VIEW, WORLD } from '../../../shared/config';
 import type { DeathCause } from '../../../shared/movement';
-import { laneItemX, trainWarning, trainX } from '../../../shared/hazards';
+import { barrierClosure, laneItemX, trainWarning, trainX } from '../../../shared/hazards';
 import { hash32, mulberry32 } from '../../../shared/rng';
 import type { Row, RowKind } from '../../../shared/types';
 import { generateRow } from '../../../shared/worldgen';
@@ -53,6 +53,7 @@ export class WorldView {
   readonly boundaryPulse: InstancedMesh;
   readonly railPosts: InstancedMesh;
   readonly railLights: InstancedMesh;
+  readonly waterFoam: InstancedMesh; readonly barrierArms: InstancedMesh;
   readonly headlights: InstancedMesh;
   boundarySide = 0; boundaryUntil = 0; boundaryWarning = 0;
   readonly obstacles: InstancedMesh;
@@ -141,6 +142,7 @@ export class WorldView {
     }
     this.boundaryPulse = new InstancedMesh(this.cube, new MeshBasicMaterial({ color: COLORS.red, transparent: true, opacity: VIEW.BOUNDARY_PULSE_ALPHA, depthWrite: false }), 2);
     this.boundaryPulse.count = 0; this.boundaryPulse.frustumCulled = false; this.root.add(this.boundaryPulse);
+    this.waterFoam = this.batch(capacity * 4); this.barrierArms = this.batch(VIEW.POOL_ROWS * 8);
     this.railPosts = this.batch(VIEW.POOL_ROWS * 2);
     this.railLights = this.batch(VIEW.POOL_ROWS * 4); this.headlights = this.batch(VIEW.POOL_ROWS);
     for (const glow of [this.railLights, this.headlights]) {
@@ -283,7 +285,7 @@ export class WorldView {
     this.outlines.applyTier(tier);
     const material = tier === 'high' ? this.standard : this.lambert;
     for (const mesh of [...this.grounds, ...this.outsideGrounds]) mesh.material = material;
-    for (const mesh of [this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.railPosts, this.logs, this.crates, this.animals, this.podium, this.backdrop, this.markings]) mesh.material = material;
+    for (const mesh of [this.obstacles, this.vehicles, this.trucks, this.trees, this.trains, this.carriages, this.railPosts, this.waterFoam, this.barrierArms, this.logs, this.crates, this.animals, this.podium, this.backdrop, this.markings]) mesh.material = material;
     this.grounds[2]!.material = tier === 'low' ? this.lambert : this.waterMaterials[tier === 'high' ? 0 : 1]!;
     this.obstacles.castShadow = this.logs.castShadow = this.crates.castShadow = this.podium.castShadow = this.railPosts.castShadow = false;
     this.vehicles.castShadow = this.animals.castShadow = tier !== 'low';
@@ -335,7 +337,7 @@ export class WorldView {
     this.vehicles.count = this.logs.count = this.animals.count = this.blobs.count = 0;
     if (this.staticDirty) for (const mesh of this.staticMeshes) mesh.count = 0;
     this.trucks.count = this.trains.count = this.carriages.count = 0;
-    this.railLights.count = this.headlights.count = 0;
+    this.railLights.count = this.headlights.count = this.waterFoam.count = this.barrierArms.count = 0;
     this.markings.count = 0; this.boundaryPulse.count = 0;
     this.backdrop.count = 0;
     this.put(this.backdrop, 4, -VIEW.GROUND_DEPTH * 2, this.requestedBottom, VIEW.FAR, VIEW.GROUND_DEPTH, VIEW.FAR, COLORS.grass);
@@ -377,8 +379,10 @@ export class WorldView {
           this.blob(x, row.z, car.length / 2, 0.45);
         }
       } else if (row.kind === 'river') {
+        for (const side of [-1, 1]) this.put(this.waterFoam, 4, FEEL.FOAM_HEIGHT, row.z + side * (.46 + Math.sin(time + row.z) * FEEL.FOAM_AMPLITUDE), CONFIG.COLUMNS, FEEL.FOAM_HEIGHT, FEEL.FOAM_WIDTH, COLORS.cream);
         for (let j = 0; j < row.logs.length; j++) {
           const log = row.logs[j]!;
+          for (let side = -1; side <= 1; side += 2) this.put(this.waterFoam, laneItemX(row, log, time), SOLO.LOG_TOP - this.logDip(row.z, j, time), row.z + side * .3, log.length * .9, FEEL.FOAM_HEIGHT, FEEL.LOG_EDGE_WIDTH, COLORS.cream);
           this.put(this.logs, laneItemX(row, log, time), -0.1 - this.logDip(row.z, j, time), row.z, log.length, 5 / 12, 10 / 12, this.modelsReady ? '#FFFFFF' : COLORS.log);
         }
       } else {
@@ -395,6 +399,17 @@ export class WorldView {
               row.z + side * RAIL.RAIL_OFFSET, end - start, RAIL.RAIL_HEIGHT, RAIL.RAIL_WIDTH, COLORS.steel);
           }
           this.put(this.railPosts, RAIL.POST_X[side < 0 ? 0 : 1], 0, row.z, RAIL.POST_WIDTH, RAIL.POST_HEIGHT, RAIL.POST_DEPTH, '#FFFFFF', Math.PI);
+        }
+        const closure = barrierClosure(row, time);
+        for (let side = -1; side <= 1; side += 2) {
+          const angle = (1 - closure) * Math.PI / 2, px = RAIL.POST_X[side < 0 ? 0 : 1]!;
+          for (let section = 0; section < 4; section++) {
+            const length = FEEL.ARM_LENGTH / 4, along = (section + .5) * length;
+            this.transform.position.set(px - side * Math.cos(angle) * along, FEEL.ARM_HEIGHT + Math.sin(angle) * along, -row.z);
+            this.transform.rotation.set(0, 0, -side * angle); this.transform.scale.set(length, FEEL.ARM_WIDTH, FEEL.ARM_WIDTH);
+            this.transform.updateMatrix(); this.barrierArms.setMatrixAt(this.barrierArms.count, this.transform.matrix);
+            this.barrierArms.setColorAt(this.barrierArms.count++, this.palette.get(section % 2 ? COLORS.red : COLORS.cream)!);
+          }
         }
         const x = trainX(row, time);
         if (x !== null) {

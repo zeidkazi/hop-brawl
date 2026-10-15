@@ -1,4 +1,4 @@
-import { CONFIG, SEGMENTS, WORLD } from './config';
+import { CONFIG, FEEL, SEGMENTS, WORLD } from './config';
 import type { LaneItem, Position, RailRow, RiverRow, RoadRow, SlowMoWindow } from './types';
 
 const NO_SLOW_MO: readonly SlowMoWindow[] = Object.freeze([]);
@@ -141,4 +141,12 @@ export function hopHazardPosition(
   out.x = fromX + (toX - fromX) * progress;
   out.z = progress < WORLD.HOP_ROW_SWITCH ? fromZ : toZ;
   return out;
+}
+
+/** Shared warning clock: lower before arrival, stay down through the full train, then raise. */
+export function barrierClosure(row: RailRow, time: number): number {
+  const cycle = trainCycle(row, time), warningAt = row.period - (row.warning ?? WORLD.TRAIN_WARNING_S);
+  if (cycle >= warningAt) return Math.min(1, (cycle - warningAt) / FEEL.ARM_LOWER_S);
+  const clears = (WORLD.LOOP_MAX_X - WORLD.LOOP_MIN_X + WORLD.TRAIN_LENGTH) / WORLD.TRAIN_SPEED;
+  return cycle <= clears ? 1 : Math.max(0, 1 - (cycle - clears) / FEEL.ARM_LOWER_S);
 }

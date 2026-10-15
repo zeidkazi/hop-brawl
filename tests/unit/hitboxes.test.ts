@@ -1,6 +1,6 @@
 import { CONFIG } from '../../shared/config';
 import { describe, expect, it } from 'vitest';
-import { carriedOffEdge, hopHazardPosition, logAtLanding, trainHits, vehicleHits } from '../../shared/hazards';
+import { barrierClosure, carriedOffEdge, hopHazardPosition, logAtLanding, trainHits, vehicleHits } from '../../shared/hazards';
 import type { RailRow, RiverRow, RoadRow } from '../../shared/types';
 
 const road: RoadRow = {
@@ -69,4 +69,11 @@ describe('hop hazard row', () => {
     hopHazardPosition(3.2, 5, 4.2, 5, -1, out);
     expect(out).toEqual({ x: 3.2, z: 5 });
   });
+});
+
+it('lowers crossing arms before arrival, holds for the train and raises after clearance', () => {
+  const row = { ...rail, warning: 2 };
+  expect(barrierClosure(row, 6)).toBe(0); expect(barrierClosure(row, 6.325)).toBeCloseTo(.5);
+  expect(barrierClosure(row, 7)).toBe(1); expect(barrierClosure(row, 0)).toBe(1);
+  expect(barrierClosure(row, 5)).toBe(0);
 });

@@ -64,7 +64,7 @@ export const CONFIG = Object.freeze({
 export const FEEL = Object.freeze({
   SOLO_DRIFT: .15, SOLO_DRIFT_MAX: .6, IDLE_WARNING_S: 7, IDLE_DEATH_S: 9,
   HITSTOP_MS: 70, FLASH_MS: 80, ZOOM_MS: 220, ZOOM_SCALE: 1.035, LEAN: .2,
-  ARM_LENGTH: 2, ARM_HEIGHT: .9, ARM_WIDTH: .09, ARM_LOWER_S: .65,
+  ARM_LENGTH: 2, ARM_HEIGHT: .9, ARM_WIDTH: .09, ARM_LOWER_S: .65, IDLE_GAIN: .3,
   FOAM_HEIGHT: .018, FOAM_WIDTH: .045, FOAM_AMPLITUDE: .018, LOG_EDGE_WIDTH: .035,
 });
 
@@ -207,9 +207,9 @@ export const QUALITY = Object.freeze({
 
 export const COLORS = Object.freeze({
   yellow: '#FFD23F', red: '#EE4266', green: '#3BCEAC', blue: '#4EA8DE', ink: '#1B1B2F', cream: '#FFF6E5',
-  grass: '#6CCB5F', grassAlt: '#5DBB52', road: '#3A3540', water: '#2EC4D6',
-  sky: '#FFE9C7', skyTop: '#7FD3FF', sun: '#FFF0CB', tree: '#397D46', rock: '#909CA6',
-  log: '#99633E', rail: '#84796B', steel: '#BDC9D0', sleeper: '#72503A', crate: '#CC944C', groundSide: '#597D44',
+  grass: '#66D44D', grassAlt: '#53BD3D', road: '#292D38', water: '#22CFCA',
+  sky: '#FFE9C7', skyTop: '#7FD3FF', sun: '#FFF0CB', tree: '#397D46', rock: '#596776',
+  log: '#99633E', rail: '#8B7864', steel: '#BDC9D0', sleeper: '#72503A', crate: '#CC944C', groundSide: '#597D44',
   players: ['#FF6B6B', '#4D96FF', '#6BCB77', '#C77DFF'],
   animals: ['#FFF6E5', '#6BCB77', '#E98E3D', '#354050', '#F5A3B9', '#929CAB'],
 } as const);
