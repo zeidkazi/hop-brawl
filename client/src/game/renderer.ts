@@ -4,7 +4,7 @@ import {
   Scene, SRGBColorSpace, WebGLRenderer, WebGLRenderTarget, LinearToneMapping,
   Material,
 } from 'three';
-import { COLORS, CONFIG, QUALITY, SOLO, STREET, VIEW } from '../../../shared/config';
+import { COLORS, CONFIG, QUALITY, QUALITY_DEGRADE, SOLO, STREET, VIEW } from '../../../shared/config';
 import { CameraRig, gameplayDistance } from './camera';
 import type { Station } from './camera';
 import { Particles } from './particles';
@@ -34,6 +34,7 @@ export class GameRenderer {
   private readonly outputCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private readonly highShadow;
   private readonly mediumShadow;
+  private readonly reducedShadow;
   private width = 1;
   private height = 1;
   private previous = 0;
@@ -49,9 +50,9 @@ export class GameRenderer {
   worldTime: number | null = null;
 
   constructor(readonly canvas: HTMLCanvasElement) {
-    const context = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+    const context = canvas.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'high-performance' });
     if (!context) throw new Error('WEBGL_UNSUPPORTED');
-    this.renderer = new WebGLRenderer({ canvas, context, antialias: false });
+    this.renderer = new WebGLRenderer({ canvas, context, antialias: true });
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = LinearToneMapping;
     this.renderer.info.autoReset = false;
@@ -78,6 +79,8 @@ export class GameRenderer {
     this.highShadow.mapSize.setScalar(QUALITY.high.shadowSize);
     this.mediumShadow = this.highShadow.clone();
     this.mediumShadow.mapSize.setScalar(QUALITY.medium.shadowSize);
+    this.reducedShadow = this.highShadow.clone();
+    this.reducedShadow.mapSize.setScalar(QUALITY_DEGRADE.SHADOW_SIZE_REDUCED);
     this.resize();
     // Start the resolve shader while asset bytes are still arriving.
     this.renderer.compile(this.output, this.outputCamera);
@@ -123,6 +126,14 @@ export class GameRenderer {
       this.sun.shadow = tier === 'high' ? this.highShadow : this.mediumShadow;
       this.appliedTier = tier;
     }
+    this.particles.density = this.quality.particleScale;
+    for (const outlines of [this.world.outlines, this.home.outlines, this.home.arena?.outlines]) {
+      outlines?.applyTier(tier);
+      if (!this.quality.propOutlines) for (const entry of outlines?.entries ?? []) if (entry.kind === 'prop') entry.shell.visible = false;
+    }
+    this.renderer.shadowMap.enabled = this.renderer.shadowMap.autoUpdate = this.quality.shadowSize > 0;
+    this.sun.shadow = this.quality.shadowSize === QUALITY_DEGRADE.SHADOW_SIZE_REDUCED ? this.reducedShadow
+      : tier === 'high' ? this.highShadow : this.mediumShadow;
     const ratio = this.quality.pixelRatio(window.devicePixelRatio, this.playing);
     const width = Math.ceil(this.width * ratio), height = Math.ceil(this.height * ratio);
     this.renderer.setDrawingBufferSize(width / ratio, height / ratio, ratio);
@@ -177,7 +188,7 @@ export class GameRenderer {
       this.renderer.render(this.scene, this.rig.camera);
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.output, this.outputCamera);
-    } else this.renderer.render(this.scene, this.rig.camera);
+    } else { this.renderer.setRenderTarget(null); this.renderer.render(this.scene, this.rig.camera); }
     this.metrics.calls = this.renderer.info.render.calls;
     this.metrics.triangles = this.renderer.info.render.triangles;
     this.metrics.geometries = this.renderer.info.memory.geometries;

@@ -188,9 +188,11 @@ export const VIEW = Object.freeze({
   LOADING_LABEL: 'Loading…',
 } as const);
 
+export const QUALITY_DEGRADE = Object.freeze({ PARTICLES: 1, WEATHER: 2, PROP_OUTLINES: 3, SHADOW_SIZE: 4, BLOB_SHADOWS: 5,
+  PARTICLE_SCALE: .3, SHADOW_SIZE_REDUCED: 512 } as const);
 export const QUALITY = Object.freeze({
   high: { pixelRatio: 2, samples: 4, shadowSize: 2048, particles: 1, weather: 400, pointLights: 4 },
-  medium: { pixelRatio: 1.5, samples: 0, shadowSize: 1024, particles: 0.6, weather: 150, pointLights: 0 },
+  medium: { pixelRatio: 2, samples: 0, shadowSize: 1024, particles: 0.6, weather: 150, pointLights: 0 },
   low: { pixelRatio: 1, samples: 0, shadowSize: 0, particles: 0.3, weather: 0, pointLights: 0 },
 } as const);
 

@@ -16,7 +16,7 @@ export class Arena {
   readonly root = new Group();
   readonly foam: InstancedMesh;
   private readonly batches = new Map<string, InstancedMesh>();
-  private readonly outlines = new Outlines();
+  readonly outlines = new Outlines();
   private readonly clock = { value: 0 };
   private readonly cheer = { value: 0 };
   private readonly transform = new Object3D();

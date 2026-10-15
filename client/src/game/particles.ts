@@ -10,6 +10,7 @@ export class Particles {
   private readonly color = new Color();
   tier: Tier = 'high';
   reducedMotion = false;
+  density = 1;
 
   constructor() {
     this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
@@ -21,7 +22,7 @@ export class Particles {
 
   burst(x: number, z: number, tint: string = COLORS.cream): void {
     const color = this.color.set(tint).getHex();
-    const count = Math.floor(VIEW.PROPS_PER_ROW * QUALITY[this.tier].particles * (this.reducedMotion ? 0.5 : 1));
+    const count = Math.floor(VIEW.PROPS_PER_ROW * QUALITY[this.tier].particles * this.density * (this.reducedMotion ? 0.5 : 1));
     for (let i = 0; i < count; i++) {
       const index = this.pool.acquire();
       if (index < 0) break;
