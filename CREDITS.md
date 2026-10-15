@@ -154,6 +154,7 @@ The banks contain 44 named sound sprites and five music edits. All sources below
 |---|---|
 | Kenney Interface Sounds | [Pack + CC0 declaration](https://kenney.nl/assets/interface-sounds); [exact archive](https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip), containing `License.txt` |
 | Kenney Impact Sounds | [Pack + CC0 declaration](https://kenney.nl/assets/impact-sounds); [exact archive](https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip), containing `License.txt` |
+| extenz, Short kalimba loop | [Creator upload + CC0 declaration](https://opengameart.org/content/short-kalimba-loop); [exact Kalimba.wav](https://opengameart.org/sites/default/files/Kalimba.wav), SHA-256 `cc402dce63f6cb9235ac093e2f4d25dcf81f6d1f031a2fd3cc8e8738a5d9a568` |
 | Juhani Junkala / SubspaceAudio, 5 Chiptunes (Action) | [Creator upload + CC0 declaration](https://opengameart.org/content/5-chiptunes-action); [exact archive](https://opengameart.org/sites/default/files/5%20Action%20Chiptunes%20By%20Juhani%20Junkala.zip), containing the author's CC0 declaration in `INFO.txt` |
 | Original Hop Brawl procedural gap fills | [Editable synthesis source](https://github.com/zeidkazi/hop-brawl/blob/main/art/build-sfx.ts), dedicated to CC0 1.0. No sampled recordings or voice imitations. |
 
@@ -166,13 +167,13 @@ The banks contain 44 named sound sprites and five music edits. All sources below
 | Same MP3: `fall`, `impact`, `crowd`, `cheer`, `birds` | Original synthesis: falling whoop, derail impact, stylized crowd murmur/cheer, meadow birds. | CC0 1.0 |
 | Same MP3: `countdown`, `go`, `newBest`, `gameOver`, `roundWin`, `matchWin`, `respawn`, `heartLost` | Original synthesis: countdown beep, HOP slam/whoosh, 1.25 s new-best jingle, 2 s Solo sting, 2.5 s round sting, 5 s match fanfare, respawn and heart-loss cues. | CC0 1.0 |
 | Same MP3: `grunt0`–`grunt5` | Original stylized synthesis: chicken cluck, frog ribbit, fox yip, penguin squawk, pig oink, cat meow. | CC0 1.0 |
-| `client/public/music/brawl.ogg` and `.m4a`: `menu` | Juhani Junkala archive: `Juhani Junkala [Retro Game Music Pack] Title Screen.wav`; complete four-bar phrase repeated twice, 85 → 110 BPM. | CC0 1.0 |
+| `client/public/music/brawl.ogg` and `.m4a`: `menu` | extenz: `Kalimba.wav`; first eight-bar kalimba/celeste/string phrase, measured 82 → 100 BPM. Replaces the rejected harsh Title Screen track. | CC0 1.0 |
 | Same music banks: `meadow` | `Juhani Junkala [Retro Game Music Pack] Level 1.wav`; first eight bars, 90.5 → 130 BPM on the half-time beat grid. | CC0 1.0 |
 | Same music banks: `autumn` | `Juhani Junkala [Retro Game Music Pack] Level 2.wav`; first eight bars, 105.5 → 130 BPM. | CC0 1.0 |
 | Same music banks: `snow` | `Juhani Junkala [Retro Game Music Pack] Level 3.wav`; first eight bars, 105.5 → 130 BPM. | CC0 1.0 |
 | Same music banks: `nightCity` | Same Level 3 source; contrasting eight-bar phrase starting at beat 64 (bar 17), 105.5 → 130 BPM. | CC0 1.0 |
 
-Music edits preserve pitch, use exact whole-bar durations, mix gain 0.36, mono downmix, and 5 ms boundary ramps to suppress clicks. OGG and AAC/M4A encode the same edited PCM; neither has a silent padding gap inside a looping sprite. All five share the source pack's chiptune instrumentation; a common key is not claimed.
+Music edits preserve pitch, use exact whole-bar durations, mono downmix, and 5 ms boundary ramps to suppress clicks. Every music cue is two-pass BS.1770 normalized to about -20 LUFS; every effect to about -16 LUFS, with a -1.5 dBTP ceiling. Short effects repeat for at least three seconds during measurement, then retain their original runtime duration. Per-cue measurements are in `art/review/batch-b-stable/loudness.json`. OGG and AAC/M4A encode the same edited PCM; neither has a silent padding gap inside a looping sprite. The menu uses acoustic plucked instrumentation; the four gameplay tracks remain chiptunes. A common key is not claimed.
 
 Announcer search: [Kenney Voiceover Pack (Fighter)](https://kenney.nl/assets/voiceover-pack-fighter), CC0, and its [creator-posted file inventory](https://opengameart.org/content/voiceover-pack-fighter-40-taunts) cover Round 1, Round 2, Final round and Winner, but lack Hop, Showdown and K.O. Searches of OpenGameArt/Freesound did not establish one CC0 voice covering all seven. No voice files are shipped. Per section 33, use text slams + SFX throughout; owner recordings remain an option for a later complete voice set.
 
