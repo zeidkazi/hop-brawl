@@ -20,7 +20,7 @@ export class CameraRig {
   leaderZ = 1;
   shake = 0;
   private shakeOffset = 0;
-  private velocity = 0;
+  private followZ = 1;
   private aspect = 1;
   private readonly focus = new Vector3();
   private readonly fromFocus = new Vector3();
@@ -70,7 +70,7 @@ export class CameraRig {
 
   resetScroll(snap = false): void {
     this.camera.position.x -= this.shakeOffset; this.shakeOffset = 0; this.shake = 0;
-    this.camZ = this.targetCamZ = this.velocity = 0;
+    this.camZ = this.targetCamZ = 0; this.followZ = 1;
     this.leaderZ = 1;
     if (snap) {
       this.station = 'gameplay'; this.destination(); this.camera.position.copy(this.goal);
@@ -87,29 +87,25 @@ export class CameraRig {
     const distance = this.station === 'gameplay' ? baseDistance : baseDistance * Math.max(1, HOME.PORTRAIT_FIT / this.aspect);
     this.goalFocus.set(this.station === 'matchEnd' ? VIEW.PODIUM_X : 4,
       this.station === 'home' ? HOME.FOCUS_Y : 0,
-      this.station === 'gameplay' ? -gameplayAnchor(this.camZ, this.leaderZ) : -1);
+      this.station === 'gameplay' ? -this.followZ : -1);
     this.goal.copy(this.station === 'gameplay' ? gameplayBack : back).multiplyScalar(distance).add(this.goalFocus);
   }
 
   update(dt: number, time: number): void {
     this.camera.position.x -= this.shakeOffset; this.shakeOffset = 0;
-    // Analytic critically damped spring: no overshoot or frame-rate-dependent lerp.
-    const error = this.camZ - this.targetCamZ;
-    const omega = VIEW.RESIZE_SPRING;
-    const decay = Math.exp(-omega * dt);
-    const term = (this.velocity + omega * error) * dt;
-    const spring = this.targetCamZ + (error + term) * decay;
-    // Keep the authoritative screen-bottom death line within §30's 0.05-tile bound.
-    const next = this.station === 'gameplay' ? Math.max(this.targetCamZ - VIEW.FOLLOW_MAX_LAG, Math.min(this.targetCamZ, spring)) : spring;
-    this.velocity = (this.velocity - omega * term) * decay;
-    const shift = next - this.camZ;
-    this.camZ = next;
+    // The requested exponential response is frame-rate independent. Smooth the complete
+    // ground-plane anchor: neither hop height nor an unsmoothed leader can move the camera.
+    const alpha = -Math.expm1(-Math.max(0, dt) / VIEW.FOLLOW_TAU_S);
+    this.camZ += (this.targetCamZ - this.camZ) * alpha;
+    const next = this.followZ + (gameplayAnchor(this.targetCamZ, this.leaderZ) - this.followZ) * alpha;
+    const shift = next - this.followZ;
+    this.followZ = next;
+    // Both viewport shapes fit the complete playfield, so x stays fixed (no lateral chase).
     if (this.station === 'gameplay') {
       this.camera.position.z -= shift;
       this.focus.z -= shift;
-      for (let i = 0; i < this.points.length; i++) this.points[i]!.z -= shift;
-      this.fromFocus.z -= shift;
-      this.goalFocus.z -= shift;
+      for (const point of this.points) point.z -= shift;
+      this.fromFocus.z -= shift; this.goalFocus.z -= shift;
     }
     if (this.flight < 1) {
       this.flight = Math.min(1, this.flight + dt * 1000 / CONFIG.CAMERA_FLIGHT_MS);
@@ -132,7 +128,7 @@ export class CameraRig {
       this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
     }
     if ((this.station === 'gameplay' || this.station === 'soloEnd') && !this.reducedMotion && this.shake) {
-      this.shakeOffset = Math.sin(time * Math.PI * 2 * RAIL.SHAKE_HZ) * this.shake;
+      this.shakeOffset = Math.sin(time * Math.PI * 2 * RAIL.SHAKE_HZ) * Math.min(VIEW.SHAKE_MAX_TILES, Math.max(0, this.shake));
       this.camera.position.x += this.shakeOffset; this.camera.updateMatrixWorld();
     }
   }

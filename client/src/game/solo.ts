@@ -61,7 +61,7 @@ export class Solo {
     this.cause = element('solo-cause'); this.danger = element('solo-danger'); this.marker = element('solo-you');
     this.name = element('solo-name'); this.flag = element('solo-best-flag'); this.heart = element('solo-heart');
     this.movement = new Movement(game.world.rowAt);
-    this.movement.belowScreen = (x, z, camZ) => game.rig.screenY(x, z, camZ) >= 1;
+    this.movement.belowScreen = (x, z) => game.rig.screenY(x, z) >= 1;
     this.input = new HopInput(game.canvas, this.hop);
     this.movement.onHop = this.hopped; this.movement.onLand = this.landed; this.movement.onDeath = this.died;
     this.movement.onBonk = direction => {
