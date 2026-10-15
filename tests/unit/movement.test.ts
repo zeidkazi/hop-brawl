@@ -4,11 +4,11 @@ import type { Row } from '../../shared/types';
 
 const grass = (z: number): Row => ({ kind: 'grass', z, biome: 'meadow', obstacles: [], crate: null });
 describe('Solo/shared movement', () => {
-  it('accepts one buffered hop and drops further inputs, with 140 ms hops', () => {
+  it('accepts one buffered hop and drops further inputs, with 120 ms hops', () => {
     const player = new Movement(grass);
     player.input('up'); player.input('right'); player.input('left');
-    player.advance(.14); expect(player.z).toBe(2); expect(player.hopping).toBe(true);
-    player.advance(.28); expect(player.x).toBe(5); expect(player.z).toBe(2); expect(player.hopping).toBe(false);
+    player.advance(.12); expect(player.z).toBe(2); expect(player.hopping).toBe(true);
+    player.advance(.24); expect(player.x).toBe(5); expect(player.z).toBe(2); expect(player.hopping).toBe(false);
     expect(player.distance).toBe(2);
   });
   it('bonks on obstacles, sides and the top limit without damage', () => {
@@ -20,19 +20,19 @@ describe('Solo/shared movement', () => {
   it('switches hazard rows halfway through a hop', () => {
     const player = new Movement(z => z === 2 ? { kind: 'road', z, biome: 'meadow', direction: 1, speed: 0, phase: 0,
       vehicles: [{ offset: 10, length: 1, kind: 'car' }] } : grass(z));
-    player.input('up'); player.advance(.069); expect(player.dead).toBeNull();
-    player.advance(.071); expect(player.dead).toBe('FLATTENED!');
+    player.input('up'); player.advance(.059); expect(player.dead).toBeNull();
+    player.advance(.061); expect(player.dead).toBe('FLATTENED!');
   });
   it('checks water at landing, carries fractional log positions, and kills at the edge', () => {
     const player = new Movement(z => z === 2 ? { kind: 'river', z, biome: 'meadow', direction: 1, speed: 1, phase: 0,
       logs: [{ offset: 10, length: 4 }] } : grass(z));
-    player.input('up'); player.advance(.14); expect(player.onLog).toBe(true);
+    player.input('up'); player.advance(.12); expect(player.onLog).toBe(true);
     const landedX = player.x;
-    player.advance(.64); expect(player.x).toBeCloseTo(landedX + .5);
+    player.advance(.62); expect(player.x).toBeCloseTo(landedX + .5);
     player.advance(8); expect(player.dead).toBe('SWEPT AWAY!');
     const empty = new Movement(z => z === 2 ? { kind: 'river', z, biome: 'meadow', direction: 1, speed: 1, phase: 0, logs: [] } : grass(z));
-    empty.input('up'); empty.advance(.139); expect(empty.dead).toBeNull();
-    empty.advance(.14); expect(empty.dead).toBe('SPLASH!');
+    empty.input('up'); empty.advance(.119); expect(empty.dead).toBeNull();
+    empty.advance(.12); expect(empty.dead).toBe('SPLASH!');
   });
   it('uses the other neighbouring column when leaving a log beside an obstacle', () => {
     const player = new Movement(z => z === 2 ? { ...grass(z), kind: 'grass', obstacles: [{ column: 4, kind: 'tree' }], crate: null } : grass(z));

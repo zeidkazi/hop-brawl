@@ -3,18 +3,21 @@ import { createHopPose, hopTravel, sampleHop } from '../../shared/hop';
 import { Movement } from '../../shared/movement';
 import type { Row } from '../../shared/types';
 const grass = (z: number): Row => ({ kind: 'grass', z, biome: 'meadow', obstacles: [], crate: null });
-it('holds for 40ms, eases into an arc, lands with squash and settles at 140ms', () => {
+it('translates immediately during takeoff squash and lands at 120ms before recovery', () => {
   const move = new Movement(grass), pose = createHopPose(); move.input('up');
-  sampleHop(move.save(), .02, grass, pose); expect(pose.z).toBe(1); expect(pose.sy).toBe(.8); expect(pose.y).toBe(0);
-  sampleHop(move.save(), .0775, grass, pose); expect(pose.y).toBeCloseTo(.5); expect(pose.sy).toBeCloseTo(1.15);
-  sampleHop(move.save(), .1275, grass, pose); expect(pose.z).toBe(2); expect(pose.sy).toBeCloseTo(.8);
-  move.advance(.14); sampleHop(move.save(), .14, grass, pose); expect(pose.sy).toBe(1); expect(pose.y).toBe(0);
-  expect(hopTravel(41)).toBeLessThan(1 / 75); expect(hopTravel(114)).toBeGreaterThan(74 / 75);
+  sampleHop(move.save(), .001, grass, pose); expect(pose.z).toBeGreaterThan(1); expect(pose.y).toBeGreaterThan(0);
+  sampleHop(move.save(), .02, grass, pose); expect(pose.sy).toBe(.8); expect(pose.z).toBeGreaterThan(1);
+  sampleHop(move.save(), .06, grass, pose); expect(pose.y).toBeCloseTo(.45); expect(pose.z).toBeCloseTo(1.5);
+  move.advance(.12); sampleHop(move.save(), .12, grass, pose); expect(pose.z).toBe(2); expect(pose.y).toBe(0);
+  sampleHop(move.save(), .135, grass, pose); expect(pose.sy).toBeCloseTo(.8);
+  sampleHop(move.save(), .15, grass, pose); expect(pose.sy).toBe(1);
+  expect(move.input('up')).toBe(true); expect(move.hopStart).toBe(.12);
+  expect(hopTravel(1)).toBeGreaterThan(0); expect(hopTravel(120)).toBe(1);
 });
 it('reconstructs identical poses from an in-flight or completed remote snapshot', () => {
   const move = new Movement(grass), a = createHopPose(), b = createHopPose(); move.input('right');
   const start = move.save(); move.advance(.14);
-  for (let ms = 0; ms < 140; ms += 1000 / 60) {
+  for (let ms = 0; ms < 120; ms += 1000 / 60) {
     sampleHop(start, ms / 1000, grass, a); sampleHop(move.save(), ms / 1000, grass, b);
     expect(b).toEqual(a);
   }
@@ -26,7 +29,7 @@ it('curves toward the actual future log slot and meets the authoritative endpoin
     move.advance(time); sampleHop(move.save(), time, rowAt, pose);
     expect(pose.x).toBeCloseTo(move.x); expect(pose.z).toBeCloseTo(move.z);
   }
-  move.advance(.14); sampleHop(move.save(), .14, rowAt, pose); expect(pose.x).toBeCloseTo(move.x); expect(pose.y).toBeCloseTo(5 / 12 - .1);
+  move.advance(.12); sampleHop(move.save(), .12, rowAt, pose); expect(pose.x).toBeCloseTo(move.x); expect(pose.y).toBeCloseTo(5 / 12 - .1);
 });
 
 it('finishes a stale in-flight remote hop at its endpoint without mutating authority', () => {

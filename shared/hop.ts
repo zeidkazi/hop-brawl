@@ -5,7 +5,7 @@ import type { Row } from './types';
 
 export const ease = (t: number): number => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 export function hopTravel(elapsedMs: number): number {
-  return ease((elapsedMs - SOLO.ANTICIPATION_MS) / (CONFIG.HOP_MS - SOLO.ANTICIPATION_MS - SOLO.LANDING_MS));
+  return ease(elapsedMs / CONFIG.HOP_MS);
 }
 export function hopX(from: number, aim: number, to: number, travel: number): number {
   // Bend progressively toward the future slot, with zero velocity at both ends.
@@ -27,8 +27,7 @@ export function sampleHop(state: MovementState, time: number, rowAt: (z: number)
     const to = rowAt(state.toZ).kind === 'river' ? SOLO.LOG_TOP : 0;
     out.y = from + (to - from) * p + Math.sin(p * Math.PI) * SOLO.HOP_HEIGHT;
     if (ms < SOLO.ANTICIPATION_MS) out.sy = 1 - (1 - SOLO.SQUASH_Y) * Math.sin(Math.PI * ms / SOLO.ANTICIPATION_MS);
-    else if (ms < CONFIG.HOP_MS - SOLO.LANDING_MS) out.sy = 1 + (SOLO.STRETCH_Y - 1) * Math.sin(p * Math.PI);
-    else out.sy = 1 - (1 - SOLO.SQUASH_Y) * Math.sin(Math.PI * (ms - CONFIG.HOP_MS + SOLO.LANDING_MS) / SOLO.LANDING_MS);
+    else out.sy = 1 + (SOLO.STRETCH_Y - 1) * Math.sin(p * Math.PI);
     out.sx = 1 + (1 - out.sy) * (SOLO.SQUASH_XZ - 1) / (1 - SOLO.SQUASH_Y);
   } else if (state.hopping && !state.dead && ms >= CONFIG.HOP_MS) {
     // A delayed snapshot can still be mid-flight after its visual hop has ended.
@@ -39,5 +38,10 @@ export function sampleHop(state: MovementState, time: number, rowAt: (z: number)
     const row = rowAt(state.z);
     if (row.kind === 'river') out.x = logSlotX(row, state.logIndex, state.slotIndex, time);
     out.roll = Math.sin(time * SOLO.LOG_SWAY_HZ * Math.PI * 2) * SOLO.LOG_SWAY;
+  }
+  // Landing squash is presentation only: the movement buffer can launch immediately.
+  if (!state.dead && (state.hopping || state.hops > 0) && ms >= CONFIG.HOP_MS && ms < CONFIG.HOP_MS + SOLO.LANDING_MS) {
+    out.sy = 1 - (1 - SOLO.SQUASH_Y) * Math.sin(Math.PI * (ms - CONFIG.HOP_MS) / SOLO.LANDING_MS);
+    out.sx = 1 + (1 - out.sy) * (SOLO.SQUASH_XZ - 1) / (1 - SOLO.SQUASH_Y);
   }
 }
