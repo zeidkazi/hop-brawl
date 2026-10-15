@@ -61,6 +61,13 @@ export const CONFIG = Object.freeze({
   HOME_DIORAMA_SEED: 20261030,
 } as const);
 
+export const FEEL = Object.freeze({
+  SOLO_DRIFT: .15, SOLO_DRIFT_MAX: .6, IDLE_WARNING_S: 7, IDLE_DEATH_S: 9,
+  HITSTOP_MS: 70, FLASH_MS: 80, ZOOM_MS: 220, ZOOM_SCALE: 1.035, LEAN: .2,
+  ARM_LENGTH: 2, ARM_HEIGHT: .9, ARM_WIDTH: .09, ARM_LOWER_S: .65,
+  FOAM_HEIGHT: .018, FOAM_WIDTH: .045, FOAM_AMPLITUDE: .018, LOG_EDGE_WIDTH: .035,
+});
+
 export const NETWORK = Object.freeze({ MIN_MS: 90, MAX_MS: 220, BASE_MS: 60, JITTER_ALPHA: .1 });
 
 export const ROOM = Object.freeze({
