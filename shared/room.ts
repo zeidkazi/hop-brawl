@@ -46,8 +46,10 @@ export class RoomGame {
     if (!name.trim() || name.length > VIEW.NAME_MAX_LENGTH || !Number.isInteger(animal) || animal < 0 || animal >= ANIMALS.length) return 'BAD_PLAYER';
     const used = this.players.filter(p => p.connected);
     if (used.some(p => p.animal === animal)) animal = ANIMALS.findIndex((_, i) => !used.some(p => p.animal === i));
+    const baseName = name.trim(); let uniqueName = baseName, suffix = 2;
+    while (used.some(p => p.name.toLocaleLowerCase() === uniqueName.toLocaleLowerCase())) uniqueName = `${baseName} ${suffix++}`;
     const slot = [0, 1, 2, 3].find(i => !used.some(p => p.slot === i))!;
-    this.players.push({ id, name: name.trim(), animal, aspect: Math.max(ROOM.MIN_ASPECT, Math.min(ROOM.MAX_ASPECT, aspect || ROOM.DEFAULT_ASPECT)),
+    this.players.push({ id, name: uniqueName, animal, aspect: Math.max(ROOM.MIN_ASPECT, Math.min(ROOM.MAX_ASPECT, aspect || ROOM.DEFAULT_ASPECT)),
       slot, joined: ++this.joinedSequence, connected: true, waiting: this.phase !== 'lobby', hearts: CONFIG.HEARTS_VERSUS,
       lifeId: 0, deadLifeId: -1, wins: 0, totalDistance: 0, reachedAt: now, eliminatedAt: 0, respawnAt: 0, stunUntil: 0, proofUntil: 0,
       cooldownUntil: 0, shoverId: '', shovedAt: -CONFIG.SHOVE_KO_WINDOW_MS, sequence: 0, queued: null, move: this.movement() });

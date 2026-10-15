@@ -152,3 +152,9 @@ describe('per-life hazard authority', () => {
     expect(restored.players[0]!.lifeId).toBe(p.lifeId);
   });
 });
+
+it('suffixes duplicate names without colliding with an existing numbered name', () => {
+  const game = new RoomGame('ABCD');
+  for (const [id, name] of ['Brawler', 'Brawler 2', 'Brawler', 'brawler'].entries()) game.join(String(id), name, id, 1, 0);
+  expect(game.players.map(p => p.name)).toEqual(['Brawler', 'Brawler 2', 'Brawler 3', 'brawler 4']);
+});
