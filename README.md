@@ -4,7 +4,7 @@ Cross the road. Shove your friends.
 
 A real-time multiplayer voxel road-crossing brawler, built to [SPEC.md](SPEC.md).
 
-**Status:** Solo, Private Rooms for 2–4 players, and 1v1 Quick Match are deployed at https://hop-brawl.hop-brawl.workers.dev from `batch-b2-stable`. Live verification is recorded in [PROGRESS.md](PROGRESS.md). Batch C remains gated on owner approval.
+**Status:** Solo, Private Rooms for 2–4 players, and 1v1 Quick Match are deployed at https://hop-brawl.hop-brawl.workers.dev as `v0.9-submission` (the `batch-b2-stable` build plus a verified delayed-hop rendering fix). Live verification is recorded in [PROGRESS.md](PROGRESS.md). Batch C remains gated on owner approval.
 
 ## Local development
 
@@ -50,7 +50,7 @@ Solo, two-to-four-player Private Rooms and 1v1 Quick Match. TypeScript, Vite, Th
 
 ## Deployment
 
-The single Worker serves client/dist through Workers static assets, with SPA fallback and /api/* and /ws/* routed to the Worker. The tested `batch-b2-stable` release is deployed at https://hop-brawl.hop-brawl.workers.dev. The SQLite Room and Matchmaker bindings use Workers Free; no Vercel or credit card is required.
+The single Worker serves client/dist through Workers static assets, with SPA fallback and /api/* and /ws/* routed to the Worker. The tested `v0.9-submission` release (f15d944) is deployed at https://hop-brawl.hop-brawl.workers.dev. Live Quick Match, private best-of-three/rematch and Solo are verified with normal/incognito browser contexts. The SQLite Room and Matchmaker bindings use Workers Free; no Vercel or credit card is required.
 
 **Custom domain prepared, not deployed:** https://hopbrawl.zeidkazi.in. The `custom_domain = true` route and exact allowed origin are in wrangler.toml. Do not run a live deployment from the current configuration until the owner explicitly confirms that zeidkazi.in is Active. The Worker name stays `hop-brawl`; workers.dev remains enabled. No custom-domain DNS or certificate changes have been made by this preparation.
 

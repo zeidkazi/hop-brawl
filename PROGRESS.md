@@ -1,14 +1,16 @@
 # Hop Brawl progress
 
-Last updated: 2026-10-15 (Asia/Calcutta).
+Last updated: 2026-10-16 (Asia/Calcutta).
 
-## Live deployment verification (in progress)
+## Live deployment verification (complete; STOP before Batch C)
 
-- Owner completed OAuth login; whoami confirmed access. Deployed batch-b2-stable (6feb23f) to https://hop-brawl.hop-brawl.workers.dev, version e9f88025-d858-4ae2-96cf-7767b9471ee9. Initial HTTPS certificate readiness delayed access, then HTTPS returned 200.
-- Live Quick Match passed a full three-round match, mutual rematch, New opponent and Menu using a persistent normal profile plus incognito context. Solo passed movement, pause, death/retry and persistent-canvas checks. The private-room match/rematch/host-handoff assertions completed, but its final error check caught a stale remote-hop rendering error.
-- Fixed stale in-flight snapshots sampled after their hop duration: render the destination rather than a fractional old row, preventing landing-particle row lookup errors. Unit regressions cover stale land/log arrivals, unchanged authority and preserved dead poses. 183 tests, typechecks, production build and workers.dev-only packaging pass. Browser errors now log stack traces as well as failing assertions.
-- Prepared hopbrawl.zeidkazi.in (no hyphen) route and allowed origin in wrangler.toml/README. The route is NOT deployed. The owner must explicitly confirm zone Active before deploying that configuration. For this rendering hotfix only, tmp/workers-dev-only.toml is an ignored derived configuration with routes=[] and adjusted relative source/asset paths; it preserves the same Worker and Durable Object bindings.
-- Next exact step: finish the local private match regression, commit the narrow fix, deploy with the workers.dev-only configuration, and rerun live Quick Match/private/Solo. Do not start Batch C or activate the custom domain.
+- Live URL: https://hop-brawl.hop-brawl.workers.dev. OAuth login and whoami succeeded. Initial deployment used batch-b2-stable (6feb23f); live verification exposed a narrow rendering issue, fixed and deployed as f15d94417c53c5cf601fc1dffc9a1a2ea129ae52. Final Cloudflare version: c4042c33-b994-493e-b9f1-7449bc5f2d4f. Tag v0.9-submission points to that deployed fix; batch-b2-stable remains the original local checkpoint.
+- Live HTTPS Quick Match: persistent normal profile plus incognito context queued, paired, auto-started, completed three rounds, both requested rematch, played again, chose New opponent, paired into a different room and returned to Menu. No browser errors. Private room: created/joined by code link, played three rounds with keyboard/touch-style input, shoves and respawns, rematched, handed off host after leaving, and returned to Lobby. Solo: movement, pause/resume, death/retry and persistent canvas passed. Guest viewport was 390x844; no physical phone was tested.
+- Final live evidence: tmp/batch-b2-live-final.log (Quick Match and Solo pass; private initial navigation stalled), then tmp/batch-b2-live-private-final.log (complete private match/rematch passed in 1.1 minutes with no browser errors). All three required flows have passing results on the final deployment; this was not a single clean three-test run. The initial-load stall did not recur on retry; both production bundles subsequently returned HTTP 200. Initial workers.dev TLS provisioning also briefly prevented access before HTTPS became ready.
+- Fixed stale in-flight snapshots sampled after their hop duration: render the destination rather than a fractional old row, preventing landing-particle row lookup errors. Unit regressions cover stale land/log arrivals, unchanged authority and preserved dead poses. 183 tests, both typechecks, production build, local full private match and workers.dev-only packaging pass. Logs: tmp/live-hop-fix-check.log, tmp/live-hop-fix-local.log and tmp/live-hop-fix-deploy.log.
+- Prepared hopbrawl.zeidkazi.in (no hyphen) custom_domain route in wrangler.toml/README, NOT deployed. Its allowed origin is configured and verified live (OPTIONS returns 200 with that exact origin; unrelated origins return 403). Share links already use the page's own origin. The final workers.dev-only deployment used the ignored tmp/workers-dev-only.toml derived configuration with routes=[] and adjusted source/asset paths, preserving Worker name and Durable Object bindings. No custom-domain route/DNS/certificate was activated.
+- Known limits: physical-phone performance remains owner-assisted; existing bundle-size warning remains; one initial browser navigation stalled and passed on retry. No remaining gameplay defect from the requested live checks.
+- Next exact step: STOP. Do not start Batch C. Do not run a live deployment from the current wrangler.toml until the owner explicitly confirms zeidkazi.in is Active. The workers.dev URL is ready for owner playtesting.
 
 ## Batch B2 Quick Match (historical local checkpoint)
 
@@ -233,14 +235,14 @@ M2.5 update: portable Blender 5.2.2 LTS verified with `--version`. Its machine-s
 
 ## Known bugs / unresolved checks
 
-- No known new Quick Match gameplay defect from local verification. Physical-phone checks on the owner's Wi-Fi are still pending; automated mobile viewports do not certify actual device performance.
+- No remaining gameplay defect from the requested live Quick Match/private/Solo checks. Physical-phone checks remain pending; automated mobile viewports do not certify actual device performance. One initial browser navigation stalled and passed on retry.
 - Existing production bundle-size warning remains. Real-device performance, 4x CPU-throttled gameplay and GC-pause analysis remain unverified.
 - On Windows, a production rebuild can invalidate Wrangler's asset-directory watcher. Restart the local Worker after rebuilding client/dist if assets stop responding.
-- Deployment is authorized but explicitly gated on the owner's login confirmation. No live URL or v0.9-submission tag yet; Vercel/DNS are outside the current single-Worker scope.
+- workers.dev is deployed and verified; v0.9-submission marks the deployed rendering fix. Custom-domain activation remains gated on the owner explicitly confirming that zeidkazi.in is Active. The pending route is already in wrangler.toml; do not deploy that configuration before confirmation.
 
 ## Next exact step
 
-Wait for the owner's explicit Wrangler login confirmation, then deploy and perform the live normal/incognito Quick Match, private-room and Solo checks described in the Batch B2 section above. Do not start Batch C. The local build is ready at http://localhost:5173/; the isolated production verification server is on port 8788.
+STOP for owner live playtesting at https://hop-brawl.hop-brawl.workers.dev. Do not start Batch C. Wait for explicit confirmation that zeidkazi.in is Active before deploying the prepared hopbrawl.zeidkazi.in route. Local development remains npm run dev plus npm run dev:server at http://localhost:5173/.
 
 ## Milestone plan / gates
 
