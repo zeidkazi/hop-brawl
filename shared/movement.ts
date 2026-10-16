@@ -1,4 +1,4 @@
-import { CONFIG, SOLO, scrollSpeed } from './config';
+import { CAMERA, CONFIG, SOLO, scrollSpeed } from './config';
 import { carriedOffEdge, hopHazardPosition, logSlotAtLanding, logSlotX, trainHits, vehicleHits } from './hazards';
 import type { Row } from './types';
 import { hopTravel, hopX } from './hop';
@@ -16,6 +16,8 @@ export class Movement {
   firstHopAt: number | null = null;
   externalCamera = false;
   invulnerableUntil = 0;
+  dangerSeconds = 0;
+  bottomDistance: ((x: number, z: number) => number) | null = null;
   logIndex = -1; slotIndex = -1;
   aimX = 0;
   private readonly landing = { log: -1, slot: -1, x: 0 };
@@ -34,15 +36,15 @@ export class Movement {
       time: this.time, hopStart: this.hopStart, camZ: this.camZ, distance: this.distance, hops: this.hops,
       firstHopAt: this.firstHopAt, logIndex: this.logIndex, slotIndex: this.slotIndex, aimX: this.aimX,
       hopping: this.hopping, onLog: this.onLog, dead: this.dead, direction: this.direction, buffered: this.buffered,
-      externalCamera: this.externalCamera, invulnerableUntil: this.invulnerableUntil };
+      dangerSeconds: this.dangerSeconds, externalCamera: this.externalCamera, invulnerableUntil: this.invulnerableUntil };
   }
-  restore(state: ReturnType<Movement['save']>): void { Object.assign(this, state); }
+  restore(state: ReturnType<Movement['save']>): void { Object.assign(this, state); this.dangerSeconds = state.dangerSeconds ?? 0; }
   reset(): void {
     this.x = this.fromX = this.toX = SOLO.SPAWN_X;
     this.z = this.fromZ = this.toZ = SOLO.SPAWN_Z;
     this.time = this.hopStart = this.camZ = this.distance = this.hops = 0;
     this.firstHopAt = null;
-    this.invulnerableUntil = 0;
+    this.invulnerableUntil = 0; this.dangerSeconds = 0;
     this.logIndex = this.slotIndex = -1;
     this.hopping = this.onLog = false; this.dead = null; this.buffered = null; this.direction = 'up';
   }
@@ -115,7 +117,9 @@ export class Movement {
       const auto = this.camZ + (this.firstHopAt === null ? 0 : scrollSpeed(this.time - this.firstHopAt)) * dt;
       const follow = Math.min(this.z - CONFIG.LEADER_MAX_AHEAD_ROWS, this.camZ + CONFIG.CAMERA_MAX_SPEED * dt);
       if (!this.externalCamera) this.camZ = Math.max(auto, follow);
-      if (this.belowScreen ? this.belowScreen(this.x, this.z, this.camZ) : this.hazard.z < this.camZ) this.kill('LEFT BEHIND!');
+      const bottomDistance = this.bottomDistance?.(this.x, this.z) ?? this.z - this.camZ;
+      this.dangerSeconds = bottomDistance <= CAMERA.DANGER_ROWS ? this.dangerSeconds + dt : 0;
+      if (this.dangerSeconds >= CAMERA.WARNING_MIN_S && (this.belowScreen ? this.belowScreen(this.x, this.z, this.camZ) : bottomDistance < 0)) this.kill('LEFT BEHIND!');
       if (!this.hopping && !this.dead && this.buffered) {
         const queued = this.buffered; this.buffered = null; this.input(queued);
       }

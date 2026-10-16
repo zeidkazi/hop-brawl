@@ -22,3 +22,13 @@ it('slows only the impact animation clock for 70ms, retaining all subsequent tim
   expect(impactElapsed(.07)).toBeCloseTo(.007); expect(impactElapsed(.1)).toBeCloseTo(.037);
   expect(impactElapsed(.1, true)).toBe(.1);
 });
+
+it('never consumes a Left Behind life before 0.8 seconds of danger, including retreat across the edge', async () => {
+  const { Movement } = await import('../../shared/movement');
+  const move = new Movement(z => ({ kind: 'grass', z, biome: 'meadow', obstacles: [], crate: null }));
+  move.externalCamera = true; move.camZ = 2;
+  move.advance(.799); expect(move.dead).toBeNull();
+  const restore = new Movement(move.rowAt); restore.restore(move.save());
+  restore.advance(.81); expect(restore.dead).toBe('LEFT BEHIND!'); expect(restore.dangerSeconds).toBeGreaterThanOrEqual(.8);
+  restore.reset(); expect(restore.dangerSeconds).toBe(0);
+});
