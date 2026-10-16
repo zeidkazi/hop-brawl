@@ -1,3 +1,4 @@
+import { impactElapsed } from '../../../shared/camera';
 import { BackSide, Group, Material, Mesh, MeshLambertMaterial, MeshStandardMaterial, Vector3 } from 'three';
 import { ANIMALS, BIOME_PALETTES, BOXER, COLORS, CAMERA, CONFIG, HOME, RAIL, ROOM, SOLO, SOUND, WORLD } from '../../../shared/config';
 import type { PlayerState, RoomSnapshot } from '../../../shared/room';
@@ -160,7 +161,7 @@ export class Versus {
     for (const event of state.events) if (event.seq > this.eventSequence) {
       const actor = this.actors.get(event.id);
       if (event.kind === 'hop') actor?.boxer.play('hop');
-      if (event.kind === 'shove') { this.game.impact(); actor?.boxer.play('stunned'); this.actors.get(event.by)?.boxer.play('punch'); }
+      if (event.kind === 'shove') { actor?.boxer.play('stunned'); this.actors.get(event.by)?.boxer.play('punch'); }
       if (event.kind === 'death') {
         this.animateDeath(event.id, event.lifeId, event.cause as DeathCause);
         if (!this.deaths.confirmation(event.id, event.lifeId)) { this.eventSequence = event.seq; continue; }
@@ -198,11 +199,11 @@ export class Versus {
   private animateDeath(id: string, lifeId: number, cause: DeathCause): void {
     const actor = this.actors.get(id);
     if (actor && this.deaths.animation(id, lifeId)) {
-      this.game.impact(true);
+      if (id === this.client.id) this.game.impact(true);
       const move = id === this.client.id ? this.client.prediction : this.client.state!.players.find(p => p.id === id)!.movement;
       actor.deathAt = this.poseTime; actor.deathCause = cause; actor.deathX = move.x; actor.deathZ = move.z;
       actor.boxer.play('stunned');
-      if (cause === 'SPLASH!' || cause === 'LEFT BEHIND!') this.game.particles.burst(move.x, move.z, cause === 'SPLASH!' ? COLORS.water : COLORS.cream);
+      if (cause === 'SPLASH!' || cause === 'LEFT BEHIND!') this.game.particles.burst(move.x, move.z, cause === 'SPLASH!' ? COLORS.water : COLORS.cream, id === this.client.id);
     }
   }
   private updateUI(state: RoomSnapshot): void {
@@ -317,7 +318,7 @@ export class Versus {
       actor.root.rotation.set(0, lobby ? HOME.ANIMAL_YAW : actor.heading, this.preferences.reducedMotion ? 0 : pose.roll);
       actor.root.scale.set(pose.sx, pose.sy, pose.sx);
       const dying = !!p.movement.dead || (p.id === this.client.id && !!this.client.prediction.dead);
-      const elapsed = this.poseTime - actor.deathAt;
+      const elapsed = impactElapsed(this.poseTime - actor.deathAt, this.preferences.reducedMotion || p.id !== this.client.id);
       if (dying && actor.deathCause) {
         deathPose(actor.deathCause, elapsed, actor.deathX < 0 ? -1 : 1, this.preferences.reducedMotion, this.deathPose);
         const death = this.deathPose;

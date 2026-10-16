@@ -40,11 +40,9 @@ export class GameRenderer {
   private height = 1;
   private previous = 0;
   private clockStart = 0;
-  private nextFrame = 0;
   private resizeTimer = 0;
   private frameId = 0; private started = false; private background = false;
   private appliedTier: Tier | null = null;
-  private hitstopUntil = 0;
   private readonly flash = document.createElement('div');
   private readonly speedLines = document.createElement('div');
   private speedAnimation: Animation | null = null; private superHop = false;
@@ -119,7 +117,7 @@ export class GameRenderer {
     this.background = false;
     this.home.finishIntro(); this.onDiscontinuity?.();
     if (this.started && !this.frameId) this.frameId = requestAnimationFrame(this.frame);
-    this.previous = 0; this.nextFrame = 0;
+    this.previous = 0;
     this.quality.reset();
   };
 
@@ -159,7 +157,6 @@ export class GameRenderer {
   }
   impact(death = false): void {
     if (this.rig.reducedMotion) return;
-    this.hitstopUntil = performance.now() + FEEL.HITSTOP_MS;
     if (death) { this.flash.animate([{ opacity: .65 }, { opacity: 0 }], { duration: FEEL.FLASH_MS }); this.rig.deathZoom(); }
   }
 
@@ -231,18 +228,14 @@ export class GameRenderer {
     this.frameId = 0;
     if (this.background || document.hidden) return;
     this.frameId = requestAnimationFrame(this.frame);
-    if (now + VIEW.FRAME_TOLERANCE_MS < this.nextFrame) return;
-    const step = 1000 / VIEW.FPS_CAP;
-    this.nextFrame = now + step - (this.nextFrame ? Math.max(0, now - this.nextFrame) % step : 0);
-    const delta = this.previous ? now - this.previous : step;
+    const delta = this.previous ? now - this.previous : 0;
     if (delta > VIEW.PAUSE_GAP_MS) { this.home.finishIntro(); this.onDiscontinuity?.(); }
     this.previous = now;
     this.metrics.delta = delta;
-    const dt = Math.min(VIEW.MAX_DELTA_MS, delta) / 1000;
+    const dt = Math.max(0, delta) / 1000;
     const time = (now - this.clockStart) / 1000;
     this.beforeFrame?.(now, dt);
     if (time * 1000 > VIEW.FRAME_WINDOW_MS && this.quality.sample(now, delta, this.playing)) this.applyQuality();
-    if (!this.rig.reducedMotion && performance.now() < this.hitstopUntil) return;
     this.rig.update(dt, time);
     this.world.requestWindow(this.rig.camZ);
     this.world.setView(this.rig.camera);

@@ -1,3 +1,4 @@
+import { impactElapsed } from '../../../shared/camera';
 import { SoloPacing } from './solo-pacing';
 import { Vector3 } from 'three';
 import { BIOME_PALETTES, BOXER, COLORS, CAMERA, CONFIG, FEEL, HOME, RAIL, SOLO, SOUND, VIEW, WORLD } from '../../../shared/config';
@@ -204,7 +205,7 @@ export class Solo {
     this.best = Math.max(this.best ?? 0, this.movement.distance);
     try { localStorage.setItem(SOLO_BEST_KEY, String(this.best)); } catch { /* Session best remains usable. */ }
     this.game.world.deathCause = null;
-    if (cause === 'SPLASH!' || cause === 'LEFT BEHIND!') this.game.particles.burst(this.movement.x, this.movement.z, cause === 'SPLASH!' ? COLORS.water : COLORS.cream);
+    if (cause === 'SPLASH!' || cause === 'LEFT BEHIND!') this.game.particles.burst(this.movement.x, this.movement.z, cause === 'SPLASH!' ? COLORS.water : COLORS.cream, true);
     this.heart.style.opacity = '0'; this.heart.style.transform = `translateY(${SOLO.HEART_FALL_PX}px) rotate(${SOLO.HEART_SPIN_DEG}deg)`;
   };
   private readonly frame = (now: number, dt: number): void => {
@@ -234,7 +235,7 @@ export class Solo {
       }
       if (now - this.countdownEnd > SOLO.HOP_BANNER_MS) this.countdown.hidden = true;
     } else if (this.phase === 'dying' || this.phase === 'over') {
-      const deathMs = (this.poseTime - this.deathAt) * 1000;
+      const deathMs = impactElapsed(this.poseTime - this.deathAt, this.preferences.reducedMotion) * 1000;
       this.game.desaturation.value = Math.min(1, deathMs / SOLO.DESATURATE_MS) * SOLO.DESATURATE;
       if (this.phase === 'dying' && deathMs >= SOLO.DEATH_MS) {
         this.phase = 'over';
@@ -279,15 +280,15 @@ export class Solo {
     if (bonk < 1) { const offset = Math.sin(bonk * Math.PI) * SOLO.BONK_DISTANCE;
       actor.position.x += X[this.bonkDirection] * offset; actor.position.z -= Z[this.bonkDirection] * offset; }
     if (player.dead) {
-      const t = Math.min(1, (this.poseTime - this.deathAt) * 1000 / SOLO.DEATH_MS);
+      const t = Math.min(1, impactElapsed(this.poseTime - this.deathAt, this.preferences.reducedMotion) * 1000 / SOLO.DEATH_MS);
       this.game.world.deathProgress = t;
-      this.deathEffects.update(player.dead, this.poseTime - this.deathAt, player.x, player.z);
-      deathPose(player.dead, this.poseTime - this.deathAt, player.x < 0 ? -1 : 1, this.preferences.reducedMotion, this.deathPose);
+      this.deathEffects.update(player.dead, impactElapsed(this.poseTime - this.deathAt, this.preferences.reducedMotion), player.x, player.z);
+      deathPose(player.dead, impactElapsed(this.poseTime - this.deathAt, this.preferences.reducedMotion), player.x < 0 ? -1 : 1, this.preferences.reducedMotion, this.deathPose);
       const death = this.deathPose;
       actor.position.x += death.x; actor.position.y += death.y; actor.rotation.z = death.roll;
       actor.scale.set(death.sx, death.sy, death.sx); this.game.home.setActorOpacity(death.opacity, player.dead === 'FLATTENED!');
       actor.visible = player.dead === 'FLATTENED!' ? death.opacity > 0 : t < 1;
-      if (this.poseTime - this.deathAt < SOLO.DEATH_SHAKE_S) this.game.rig.shake = SOLO.DEATH_SHAKE * (1 - (this.poseTime - this.deathAt) / SOLO.DEATH_SHAKE_S);
+      if (this.poseTime - this.deathAt < SOLO.DEATH_SHAKE_S) this.game.rig.shake = SOLO.DEATH_SHAKE * (1 - impactElapsed(this.poseTime - this.deathAt, this.preferences.reducedMotion) / SOLO.DEATH_SHAKE_S);
     }
     if (this.boxer) {
       this.boxer.comboYaw = Math.atan2(this.game.rig.camera.position.x - actor.position.x, -(this.game.rig.camera.position.z - actor.position.z)) + this.heading;
