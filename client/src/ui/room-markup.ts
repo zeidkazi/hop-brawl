@@ -8,6 +8,7 @@ export const ROOM_MARKUP = `
   <p id="lobby-status" role="status"></p><button class="yellow" data-room="start">START</button></div>
 </section>
 <section id="versus" class="screen room-game" aria-label="Multiplayer match" hidden>
+  <div id="match-danger" aria-hidden="true"></div>
   <div class="room-top"><strong id="round-label">ROUND 1</strong><button class="text-button" data-room="leave">Leave</button></div>
   <div class="match-scores">${COLORS.players.map((color, i) => `<div id="match-player-${i}" style="--player:${color}" hidden><div class="card-animal"></div><div class="card-details"><strong></strong><div class="card-symbols"></div></div></div>`).join('')}</div>
   <div id="match-countdown" class="match-countdown" aria-live="polite"></div>

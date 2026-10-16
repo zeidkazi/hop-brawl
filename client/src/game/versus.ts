@@ -1,6 +1,6 @@
-import { impactElapsed } from '../../../shared/camera';
+import { impactElapsed, warningLevel } from '../../../shared/camera';
 import { BackSide, Group, Material, Mesh, MeshLambertMaterial, MeshStandardMaterial, Vector3 } from 'three';
-import { ANIMALS, BIOME_PALETTES, BOXER, COLORS, CAMERA, CONFIG, HOME, RAIL, ROOM, SOLO, SOUND, WORLD } from '../../../shared/config';
+import { ANIMALS, BIOME_PALETTES, BOXER, COLORS, CAMERA, CONFIG, FEEL, HOME, RAIL, ROOM, SOLO, SOUND, WORLD } from '../../../shared/config';
 import type { PlayerState, RoomSnapshot } from '../../../shared/room';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
 import type { GameRenderer } from './renderer';
@@ -30,6 +30,7 @@ export class Versus {
   onQuickConnectionError: (() => boolean) | null = null;
   private lastCountdown = '';
   private connecting = false; private phase = ''; private startAt = -1; private eventSequence = 0;
+  private dangerTicked = false;
   private poseTime = 0; private arenaRow = NaN;
   private readonly deaths = new LifeEvents();
   private readonly railSound = new WorldSound();
@@ -96,7 +97,7 @@ export class Versus {
     this.deaths.clear(); this.motion.clearToasts(); this.active = false; this.phase = ''; this.startAt = -1; this.eventSequence = 0;
     for (const actor of this.actors.values()) this.dispose(actor); this.actors.clear();
     this.game.playing = false; this.game.worldTime = null; this.game.world.actorVisible = true;
-    this.game.world.showCrates = true; this.game.rig.resetScroll();
+    this.game.world.showCrates = true; this.game.rig.authoritative = false; this.game.rig.resetScroll();
     const arena = this.game.home.arena;
     if (arena) { this.game.home.root.add(arena.root); arena.root.position.set(0, 0, 0); arena.root.rotation.y = 0; arena.restoreHome(); }
     this.game.go('home'); this.element('room-error').textContent = ''; this.show(screen);
@@ -140,19 +141,20 @@ export class Versus {
     this.active = true; this.element('room-error').textContent = '';
     if (first) {
       this.game.world.actorVisible = false; this.game.world.showCrates = false;
-      this.game.rig.resetScroll(); this.game.go('gameplay'); this.poseTime = 0;
+      this.game.rig.authoritative = true; this.game.rig.resetScroll(); this.game.go('gameplay'); this.poseTime = 0;
       const arena = this.game.home.arena;
       if (arena) { this.game.scene.add(arena.root); arena.root.rotation.y = Math.PI; arena.root.position.set(CONFIG.COLUMNS - 1, 0, 0); }
     }
     for (const [id, actor] of this.actors) if (!state.players.some(p => p.id === id && p.connected)) { this.dispose(actor); this.actors.delete(id); }
     for (const p of state.players) if (p.connected) this.actor(p);
     if (this.startAt !== state.startAt) {
-      this.motion.clearToasts(); this.eventSequence = state.eventSequence;
+      this.dangerTicked = false; this.motion.clearToasts(); this.eventSequence = state.eventSequence;
       this.startAt = state.startAt; this.game.world.reset(state.seed); this.game.rig.resetScroll(!first);
       this.arenaRow = NaN; this.railSound.reset(); this.lastCountdown = ''; this.game.home.sound.resetRound(); for (const actor of this.actors.values()) actor.boxer.countdown();
     }
     for (const p of state.players) {
       const actor = this.actors.get(p.id); if (!actor || actor.lifeId === p.lifeId) continue;
+      if (p.id === this.client.id) this.dangerTicked = false;
       actor.lifeId = p.lifeId; actor.deathCause = null; actor.deathAt = -Infinity; actor.landedHop = -1;
       actor.respawnAt = state.phase === 'playing' ? this.poseTime : -Infinity;
       if (state.phase === 'playing') this.game.home.sound.play('respawn', (p.movement.x - this.client.prediction.x) / SOUND.PAN_TILES); actor.facing.reset();
@@ -277,6 +279,14 @@ export class Versus {
     this.game.worldTime = time;
     this.game.rig.targetCamZ = pair && state.phase === 'playing' ? pair.a.camZ + (pair.b.camZ - pair.a.camZ) * pair.mix : state.camZ;
     this.game.rig.leaderZ = pair && state.phase === 'playing' ? pair.a.leaderZ + (pair.b.leaderZ - pair.a.leaderZ) * pair.mix : state.leaderZ;
+    const distance = this.client.prediction.z - this.game.rig.bottomZ(this.client.prediction.x);
+    const warning = state.phase === 'playing' && !me?.waiting && !this.client.prediction.dead ? warningLevel(distance) : 0;
+    const urgent = warning > 0 && distance <= CAMERA.DANGER_MARKER_ROWS;
+    if (urgent && !this.dangerTicked) { this.dangerTicked = true; if (this.preferences.haptics) navigator.vibrate?.(CAMERA.HAPTIC_MS); }
+    const closeness = (warning - CAMERA.DANGER_MIN_ALPHA) / (CAMERA.DANGER_MAX_ALPHA - CAMERA.DANGER_MIN_ALPHA);
+    const pulse = this.preferences.reducedMotion ? 1 : 1 - CAMERA.DANGER_PULSE * (1 - Math.cos(this.poseTime * Math.PI * 2 * (CAMERA.DANGER_MIN_HZ + Math.max(0, closeness) * (CAMERA.DANGER_MAX_HZ - CAMERA.DANGER_MIN_HZ))));
+    this.element('match-danger').style.opacity = String(warning * pulse);
+    this.railSound.idleWarning = warning * FEEL.IDLE_GAIN;
     if (state.phase === 'playing') {
       this.railSound.update(this.game.world.rows, state.camZ, time, this.game.home.sound, this.client.prediction.x, this.client.prediction.z, !this.client.prediction.dead, this.game.home.arena);
 
@@ -344,7 +354,7 @@ export class Versus {
       actor.boxer.review = dying ? { move: 'guard', elapsed: 0 } : pose.hopping ? actor.hopReview : null;
       actor.boxer.update(this.poseTime);
       const label = this.element(`match-name-${p.slot}`); label.hidden = !actor.root.visible || lobby;
-      label.textContent = `${p.name}${p.id === this.client.id ? ' ▼' : ''}${movement.invulnerableUntil > time ? ' ✦' : ''}`;
+      label.textContent = `${p.name}${p.id === this.client.id ? urgent ? ' !' : ' ▼' : ''}${movement.invulnerableUntil > time ? ' ✦' : ''}`;
       this.point.set(x, SOLO.NAME_HEIGHT, -z).project(this.game.rig.camera);
       label.style.transform = `translate(${(this.point.x + 1) * innerWidth / 2}px,${(1 - this.point.y) * innerHeight / 2}px) translate(-50%,-50%)`;
     }

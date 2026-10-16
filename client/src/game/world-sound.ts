@@ -39,7 +39,7 @@ export class WorldSound {
         const position = spatial(at, slot.z, x, z);
         sound.loop(`car-${key}`, car.kind === 'truck' ? 'truck' : 'car', position.pan, position.level * SOUND.CAR_GAIN);
         const gap = Math.hypot(Math.max(0, Math.abs(at - x) - car.length / 2 - CONFIG.PLAYER_HITBOX / 2), Math.max(0, Math.abs(slot.z - z) - .5 - CONFIG.PLAYER_HITBOX / 2));
-        if (alive && gap > 0 && gap <= SOUND.NEAR_MISS_TILES && !this.honks.has(key)) { sound.play('honk', position.pan, SOUND.HAZARD_GAIN); this.onNearMiss?.(); this.honks.add(key); }
+        if (alive && gap > 0 && gap <= SOUND.NEAR_MISS_TILES && !this.honks.has(key)) { this.onNearMiss?.(); this.honks.add(key); }
         if (Math.abs(at - x) > car.length + 1) this.honks.delete(key);
       }
     }
