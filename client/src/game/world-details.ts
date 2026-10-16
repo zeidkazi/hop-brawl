@@ -1,5 +1,5 @@
-import { Box3, CircleGeometry, Color, Float32BufferAttribute, Group, InstancedMesh, Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial, Object3D, Sphere, Vector3 } from 'three';
-import { COLORS, DETAIL, VIEW, WORLD } from '../../../shared/config';
+import { Box3, Color, Float32BufferAttribute, Group, InstancedMesh, Mesh, MeshLambertMaterial, MeshStandardMaterial, Object3D, Sphere, Vector3 } from 'three';
+import { DETAIL, VIEW, WORLD } from '../../../shared/config';
 import { grassDecor, GRASS_PROPS } from '../../../shared/world-detail';
 import { hash32 } from '../../../shared/rng';
 import type { Row } from '../../../shared/types';
@@ -20,7 +20,6 @@ export class WorldDetails {
   private readonly seen: (Row | null)[] = Array(VIEW.POOL_ROWS).fill(null);
   private readonly flutter: { x: number; z: number }[] = []; private readonly ducks: number[] = [];
   private seed = NaN; private bottom = 0;
-  readonly clouds: InstancedMesh;
   constructor(models: ReadonlyMap<string, Group>) {
     // Preserve glass, rubber and lights while tinting only the painted body panels.
     for (const material of [this.standard,this.lambert]) {
@@ -52,13 +51,6 @@ export class WorldDetails {
       for (let i=0;i<mesh.instanceMatrix.count;i++) mesh.setColorAt(i,this.white);
       this.root.add(mesh); this.batches.set(name,mesh); this.outlines.add(mesh, VEHICLES.includes(name) ? 'vehicle' : 'prop');
     }
-    const circle = new CircleGeometry(1, VIEW.BLOB_SEGMENTS); circle.rotateX(-Math.PI/2);
-    const material = new MeshBasicMaterial({ color: COLORS.ink, transparent: true, opacity: DETAIL.CLOUD_OPACITY, depthWrite: false });
-    material.onBeforeCompile = shader => {
-      shader.vertexShader = 'varying vec2 cloudUv;\n'+shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\ncloudUv = uv;');
-      shader.fragmentShader = 'varying vec2 cloudUv;\n'+shader.fragmentShader.replace('#include <opaque_fragment>', '#include <opaque_fragment>\ngl_FragColor.a *= 1.0-smoothstep(0.05,0.5,length(cloudUv-0.5));');
-    };
-    this.clouds = new InstancedMesh(circle,material,DETAIL.CLOUD_COUNT); this.clouds.frustumCulled=false; this.clouds.matrixAutoUpdate=false; this.root.add(this.clouds);
     this.applyTier('high');
   }
   applyTier(tier: Tier): void {
@@ -105,12 +97,7 @@ export class WorldDetails {
       for(let i=0;i<DETAIL.BIRD_COUNT;i++) this.prop('bird',WORLD.LOOP_MIN_X+((time*DETAIL.BIRD_SPEED+i*5)%(WORLD.LOOP_MAX_X-WORLD.LOOP_MIN_X)),this.bottom+VIEW.POOL_ROWS/3+i*2,Math.PI/2,DETAIL.BIRD_HEIGHT);
       for(let i=0;i<this.flutter.length;i++) { const p=this.flutter[i]!; this.prop('butterfly',p.x+Math.sin(time+i)*DETAIL.BUTTERFLY_WAVE,p.z,Math.sin(time*DETAIL.BUTTERFLY_HZ+i),DETAIL.BUTTERFLY_HEIGHT+Math.sin(time*DETAIL.BUTTERFLY_HZ)*DETAIL.BUTTERFLY_WAVE); }
     }
-    this.upload(bird);this.upload(butterfly); this.clouds.visible=weather&&!reduced;
-    if(this.clouds.visible)for(let i=0;i<DETAIL.CLOUD_COUNT;i++) {
-      this.transform.position.set(-4+((time*DETAIL.CLOUD_SPEED+i*7)%20),.025,-this.bottom-i*VIEW.POOL_ROWS/DETAIL.CLOUD_COUNT);
-      this.transform.rotation.set(0,0,0); this.transform.scale.set(DETAIL.CLOUD_SCALE,1,DETAIL.CLOUD_SCALE*1.4);this.transform.updateMatrix();this.clouds.setMatrixAt(i,this.transform.matrix);
-    }
-    this.clouds.instanceMatrix.needsUpdate=this.clouds.visible;
+    this.upload(bird);this.upload(butterfly);
   }
   vehicle(name: string,x: number,z: number,length: number,direction: number,index: number): void {
     const size=this.sizes.get(name)!, fast=name==='sports_car'||name==='bus';
