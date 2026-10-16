@@ -48,13 +48,13 @@ export class BoxingSound {
     }
     this.audioTransition = this.audioTransition.then(async () => {
       if (this.background) { await ctx.suspend(); return; }
+      const gain = Howler.masterGain.gain;
+      gain.cancelScheduledValues(ctx.currentTime); gain.setValueAtTime(0, ctx.currentTime);
+      gain.linearRampToValueAtTime(Howler.volume(), ctx.currentTime + SOUND.BACKGROUND_FADE_MS / 1000);
       if (!this.unlocked) return;
       await ctx.resume();
       if (this.background) { await ctx.suspend(); return; }
       if (this.musicId < 0 || this.playingTrack !== this.track) this.startMusic(0);
-      const gain = Howler.masterGain.gain;
-      gain.cancelScheduledValues(ctx.currentTime); gain.setValueAtTime(0, ctx.currentTime);
-      gain.linearRampToValueAtTime(Howler.volume(), ctx.currentTime + SOUND.BACKGROUND_FADE_MS / 1000);
     }).catch(() => { /* A browser may require the next user gesture to resume. */ });
   }
   get volume(): number { return this.sfxVolume; }
@@ -84,7 +84,15 @@ export class BoxingSound {
   }
   unlock(): void {
     if (this.background || document.hidden || !this.loaded || this.unlocked && Howler.ctx?.state === 'running') return;
-    const start = () => { this.unlocked = true; if (this.musicId < 0) this.startMusic(SOUND.MUSIC_INTRO_MS); };
+    const start = () => {
+      this.unlocked = true;
+      if (!this.background && !document.hidden && Howler.ctx) {
+        const gain = Howler.masterGain.gain;
+        gain.cancelScheduledValues(Howler.ctx.currentTime);
+        gain.setValueAtTime(Howler.volume(), Howler.ctx.currentTime);
+      }
+      if (this.musicId < 0) this.startMusic(SOUND.MUSIC_INTRO_MS);
+    };
     if (Howler.ctx?.state !== 'running') void Howler.ctx?.resume().then(start).catch(() => {}); else start();
   }
   play(cue: Cue | 'hop' | 'win', pan = 0, level = SOUND.PLAYER_GAIN as number, animal = 2): number {
