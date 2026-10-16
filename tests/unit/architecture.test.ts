@@ -123,3 +123,10 @@ it('rail rows render two posts, alternate warning lamps, pulse the bed and show 
     expect(view.markings.count).toBeLessThan(VIEW.POOL_ROWS * (VIEW.DECOR_MAX_X - VIEW.DECOR_MIN_X + 1) * 4);
   }
 });
+
+it('retains the gameplay projection offset through the death zoom', () => {
+  const rig = new CameraRig(1.6); rig.resetScroll(true); rig.update(0, 0);
+  const bottom = rig.bottomZ(4); expect(rig.screenY(4, bottom)).toBeCloseTo(1);
+  rig.go('soloEnd'); rig.deathZoom(); rig.update(1 / 60, 1);
+  expect(rig.screenY(4, bottom)).toBeGreaterThanOrEqual(.999999);
+});

@@ -130,7 +130,7 @@ export class CameraRig {
     if (this.camera.zoom !== zoom) { this.camera.zoom = zoom; this.camera.updateProjectionMatrix(); }
     this.camera.lookAt(this.focus);
     this.camera.updateMatrixWorld();
-    if (this.station === 'gameplay' && this.flight === 1) {
+    if ((this.station === 'gameplay' || this.station === 'soloEnd') && this.flight === 1) {
       this.camera.projectionMatrix.elements[9] = VIEW.GAME_PLAYER_Y * 2 - 1;
       this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
     }
