@@ -203,3 +203,12 @@ it('warns idle versus players for at least .8 seconds before an authoritative bo
   }
   expect(player.hearts).toBe(1);
 });
+
+it('reserves the full visible warning interval at the maximum interpolation delay', () => {
+  const game = playing(), player = game.players[0]!;
+  position(game, 0, 3, -10);
+  game.tick(3799); expect(player.hearts).toBe(2);
+  game.tick(4000); expect(player.hearts).toBe(2);
+  game.tick(4150); expect(player.hearts).toBe(1);
+  expect(player.move.dangerSeconds).toBeGreaterThanOrEqual(1.07);
+});

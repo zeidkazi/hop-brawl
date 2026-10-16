@@ -1,4 +1,4 @@
-import { ANIMALS, CONFIG, ROOM, VIEW, scrollSpeed } from './config';
+import { ANIMALS, CAMERA, CONFIG, NETWORK, ROOM, VIEW, scrollSpeed } from './config';
 import { advanceCamera, bottomAt, CameraSpring, initialCamZ } from './camera';
 import { Movement } from './movement';
 import type { HopDirection, MovementState } from './movement';
@@ -38,6 +38,8 @@ export class RoomGame {
   };
   private movement(): Movement {
     const move = new Movement(this.rowAt); move.externalCamera = true;
+    // Preserve the visible grace period even at the largest supported interpolation delay.
+    move.minimumWarningSeconds = CAMERA.WARNING_MIN_S + (NETWORK.MAX_MS + ROOM.SNAPSHOT_MS) / 1000;
     move.bottomDistance = (x, z) => z - bottomAt(this.camZ, x, ROOM.DEFAULT_ASPECT);
     move.belowScreen = (x, z) => move.bottomDistance!(x, z) < 0;
     return move;

@@ -30,7 +30,7 @@ export class Versus {
   onQuickConnectionError: (() => boolean) | null = null;
   private lastCountdown = '';
   private connecting = false; private phase = ''; private startAt = -1; private eventSequence = 0;
-  private dangerTicked = false;
+  private dangerTicked = false; private warningVisibleSeconds = 0;
   private poseTime = 0; private arenaRow = NaN;
   private readonly deaths = new LifeEvents();
   private readonly railSound = new WorldSound();
@@ -41,6 +41,8 @@ export class Versus {
   constructor(private readonly root: HTMLElement, readonly game: GameRenderer, private readonly preferences: Preferences,
     private readonly motion: Motion, private readonly show: (screen: RoomScreen) => void) {
     this.railSound.onNearMiss = () => { this.game.home.sound.play('whoosh', 0, SOUND.PLAYER_GAIN * CAMERA.NEAR_MISS_GAIN); };
+    this.client.prediction.bottomDistance = (x, z) => z - this.game.rig.bottomZ(x);
+    this.client.prediction.belowScreen = (x, z) => z < this.game.rig.bottomZ(x) && this.warningVisibleSeconds >= CAMERA.WARNING_MIN_S;
     this.input = new HopInput(game.canvas, direction => this.client.hop(direction));
     this.client.onPredictedHop = () => {
       const move = this.client.prediction;
@@ -148,13 +150,13 @@ export class Versus {
     for (const [id, actor] of this.actors) if (!state.players.some(p => p.id === id && p.connected)) { this.dispose(actor); this.actors.delete(id); }
     for (const p of state.players) if (p.connected) this.actor(p);
     if (this.startAt !== state.startAt) {
-      this.dangerTicked = false; this.motion.clearToasts(); this.eventSequence = state.eventSequence;
+      this.dangerTicked = false; this.warningVisibleSeconds = 0; this.motion.clearToasts(); this.eventSequence = state.eventSequence;
       this.startAt = state.startAt; this.game.world.reset(state.seed); this.game.rig.resetScroll(!first);
       this.arenaRow = NaN; this.railSound.reset(); this.lastCountdown = ''; this.game.home.sound.resetRound(); for (const actor of this.actors.values()) actor.boxer.countdown();
     }
     for (const p of state.players) {
       const actor = this.actors.get(p.id); if (!actor || actor.lifeId === p.lifeId) continue;
-      if (p.id === this.client.id) this.dangerTicked = false;
+      if (p.id === this.client.id) { this.dangerTicked = false; this.warningVisibleSeconds = 0; }
       actor.lifeId = p.lifeId; actor.deathCause = null; actor.deathAt = -Infinity; actor.landedHop = -1;
       actor.respawnAt = state.phase === 'playing' ? this.poseTime : -Infinity;
       if (state.phase === 'playing') this.game.home.sound.play('respawn', (p.movement.x - this.client.prediction.x) / SOUND.PAN_TILES); actor.facing.reset();
@@ -281,6 +283,7 @@ export class Versus {
     this.game.rig.leaderZ = pair && state.phase === 'playing' ? pair.a.leaderZ + (pair.b.leaderZ - pair.a.leaderZ) * pair.mix : state.leaderZ;
     const distance = this.client.prediction.z - this.game.rig.bottomZ(this.client.prediction.x);
     const warning = state.phase === 'playing' && !me?.waiting && !this.client.prediction.dead ? warningLevel(distance) : 0;
+    this.warningVisibleSeconds = warning > 0 ? this.warningVisibleSeconds + dt : 0;
     const urgent = warning > 0 && distance <= CAMERA.DANGER_MARKER_ROWS;
     if (urgent && !this.dangerTicked) { this.dangerTicked = true; if (this.preferences.haptics) navigator.vibrate?.(CAMERA.HAPTIC_MS); }
     const closeness = (warning - CAMERA.DANGER_MIN_ALPHA) / (CAMERA.DANGER_MAX_ALPHA - CAMERA.DANGER_MIN_ALPHA);

@@ -17,6 +17,7 @@ export class Movement {
   externalCamera = false;
   invulnerableUntil = 0;
   dangerSeconds = 0;
+  minimumWarningSeconds: number = CAMERA.WARNING_MIN_S;
   bottomDistance: ((x: number, z: number) => number) | null = null;
   logIndex = -1; slotIndex = -1;
   aimX = 0;
@@ -119,7 +120,7 @@ export class Movement {
       if (!this.externalCamera) this.camZ = Math.max(auto, follow);
       const bottomDistance = this.bottomDistance?.(this.x, this.z) ?? this.z - this.camZ;
       this.dangerSeconds = bottomDistance <= CAMERA.DANGER_ROWS ? this.dangerSeconds + dt : 0;
-      if (this.dangerSeconds >= CAMERA.WARNING_MIN_S && (this.belowScreen ? this.belowScreen(this.x, this.z, this.camZ) : bottomDistance < 0)) this.kill('LEFT BEHIND!');
+      if (this.dangerSeconds >= this.minimumWarningSeconds && (this.belowScreen ? this.belowScreen(this.x, this.z, this.camZ) : bottomDistance < 0)) this.kill('LEFT BEHIND!');
       if (!this.hopping && !this.dead && this.buffered) {
         const queued = this.buffered; this.buffered = null; this.input(queued);
       }
