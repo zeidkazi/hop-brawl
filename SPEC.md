@@ -1186,3 +1186,42 @@ Lessons from Crossy Road applied: instant, readable, deliberate-paced hopping in
 - **Background:** on `visibilitychange` hidden / `pagehide`: suspend the AudioContext (Howler) and stop the render loop; on return: resume with a 300 ms audio fade, `requestSync` in versus, Solo stays paused.
 - **Network smoothness:** adaptive interpolation delay = clamp(2 × measured jitter + 60 ms, 90, 220); camera target interpolated, never stepped; HUD shows ping + FPS when `?debug=1`.
 - Targets: stable 60 fps on a mid-range phone, p95 frame ≤ 18 ms at 4× throttle, zero frames > 50 ms during play.
+
+## 35. Camera & pacing fixes (owner review 2026-10-16 — overrides §34.3, §34.6 lean, §30.4 where they conflict)
+
+### 35.1 Root causes found (do not reintroduce)
+- `client/src/game/solo-pacing.ts`: `camZ = max(0, z − 1) + idle × drift` ties the camera/kill line to the player's current row → the target jumps ±1 row every hop, and the kill line is an invisible line 1 row behind the player.
+- `camera.ts` follows targets with a first-order exponential filter → a stepped target produces an instant velocity spike every hop (surge-and-settle jerk).
+- Per-hop lean (`solo.ts:180`, `versus.ts:45`, `camera.ts:129–134`) offsets the camera 0.2 tiles instantly at hop start.
+- `leaderZ` is an integer (best row) → stepped.
+- Idle pressure kills at ~6.7 s (drift reaches the player) but the warning starts at 7 s → death with no warning.
+
+### 35.2 One camera rule for both modes
+- **Kill line = the visible bottom edge of the screen** (`camZ`), in Solo and Versus. Delete the Solo idle timer (`SoloPacing` idle/warning/expired) entirely.
+- `camZ` only moves forward and continuously: `camZ = max(camZ, camZ + drift(t)·dt, leaderContinuous − LEADER_MAX_AHEAD_ROWS)` with max camera speed `CAMERA_MAX_SPEED`.
+  - Solo drift: starts after the first hop, `min(0.12 + 0.004·t, 0.6)` rows/s.
+  - Versus: unchanged server auto-scroll (§4.3).
+- **Continuous targets only:** `leaderContinuous` / follow target use the player's **ground z including hop interpolation** (never integer rows, never hop height). In Versus use the interpolated server `camZ`/leader.
+- **Second-order smoothing:** replace the first-order follow with a critically damped spring (SmoothDamp, smoothTime 0.25 s, max speed 8 rows/s) on the camera anchor. Starting/stopping must ease in and out — never an instant velocity change.
+- **Remove the per-hop lean completely.** Keep shake only for death within 3 tiles and train passing (≤ 0.08 tile, eased in/out); hit-stop and death zoom stay.
+
+### 35.3 Danger warning (restore and strengthen §30.4)
+- When the local player is within **2.5 rows of `camZ`**: a red gradient rises from the bottom edge, opacity `= 0.15 → 0.55` as the distance shrinks from 2.5 → 0.3 rows, pulsing faster as it gets closer; a low rumble fades in with the same curve; at ≤ 1 row the "YOU" marker shows "!" and a short haptic tick (8 ms, once).
+- Works in Solo and Versus. Never possible to die by LEFT BEHIND without at least 0.8 s of visible warning (test it).
+
+### 35.4 Remove "CLOSE!" toast
+- Delete the near-miss toast in Solo and Versus. Keep the whoosh sound only (quieter, −6 dB).
+
+### 35.5 Required tests
+- **Camera motion test:** record the camera anchor z every frame during 30 rapid hops, 30 slow hops, and 10 back-and-forth hops at 60 fps: no frame-to-frame change in velocity larger than 0.02 rows/frame (no spikes), no direction reversal, max step ≤ 1.3× median. Also at 30 fps.
+- **Warning test:** idle in Solo until LEFT BEHIND — the danger overlay is visible for ≥ 0.8 s before death; same in Versus.
+- **Lean removed:** camera x is constant during sideways hops.
+
+### 35.6 Hit-stop must not freeze the world
+- `renderer.ts:245` returns early for 70 ms (no camera/world update, no draw) while world time keeps running → vehicles/logs teleport 70 ms forward and the camera lags afterwards.
+- Replace with: **never skip** `rig.update`, `world.update` or `draw`. Hit-stop = only the involved characters' animations and impact particles slow to 10 % speed for 70 ms. **Versus: no hit-stop at all for shoves** (shared world must stay continuous); keep it for the local player's own death only.
+
+### 35.7 Frame pacing: no uneven frame skipping
+- `renderer.ts:234` caps at 60 fps by skipping rAF ticks → uneven cadence (judder) on 90 Hz phones and 144 Hz monitors.
+- Remove the cap: render on **every** `requestAnimationFrame`, all motion is delta-time based already. Only if the Low tier is active on a > 100 Hz display, render every 2nd frame (an even divisor), never an uneven pattern.
+- Test: simulated 90 Hz and 144 Hz rAF timing → every rendered frame advances the camera/world by the actual elapsed time, no 2:1 / 1:2 alternation.
