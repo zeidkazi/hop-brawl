@@ -1,5 +1,5 @@
 import { BackSide, Group, Material, Mesh, MeshLambertMaterial, MeshStandardMaterial, Vector3 } from 'three';
-import { ANIMALS, BIOME_PALETTES, BOXER, COLORS, CONFIG, FEEL, HOME, RAIL, ROOM, SOLO, SOUND, WORLD } from '../../../shared/config';
+import { ANIMALS, BIOME_PALETTES, BOXER, COLORS, CAMERA, CONFIG, HOME, RAIL, ROOM, SOLO, SOUND, WORLD } from '../../../shared/config';
 import type { PlayerState, RoomSnapshot } from '../../../shared/room';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
 import type { GameRenderer } from './renderer';
@@ -38,11 +38,10 @@ export class Versus {
   private readonly scenery = (z: number) => this.game.world.rows.find(slot => slot.z === z)?.row ?? undefined;
   constructor(private readonly root: HTMLElement, readonly game: GameRenderer, private readonly preferences: Preferences,
     private readonly motion: Motion, private readonly show: (screen: RoomScreen) => void) {
-    this.railSound.onNearMiss = () => { this.motion.toast('CLOSE!'); this.game.home.sound.play('whoosh'); };
+    this.railSound.onNearMiss = () => { this.game.home.sound.play('whoosh', 0, SOUND.PLAYER_GAIN * CAMERA.NEAR_MISS_GAIN); };
     this.input = new HopInput(game.canvas, direction => this.client.hop(direction));
     this.client.onPredictedHop = () => {
       const move = this.client.prediction;
-      this.game.rig.leanX = (move.toX - move.fromX) * FEEL.LEAN; this.game.rig.leanZ = (move.toZ - move.fromZ) * FEEL.LEAN;
       this.actors.get(this.client.id)?.boxer.play('hop');
       this.game.home.sound.play('hop', 0, undefined, this.preferences.animal);
       this.game.particles.burst(move.fromX, move.fromZ, BIOME_PALETTES[this.game.world.rowAt(move.fromZ).biome].grass[0]);

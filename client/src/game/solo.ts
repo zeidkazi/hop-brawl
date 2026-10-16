@@ -1,6 +1,6 @@
 import { SoloPacing } from './solo-pacing';
 import { Vector3 } from 'three';
-import { BIOME_PALETTES, BOXER, COLORS, CONFIG, FEEL, HOME, RAIL, SOLO, VIEW, WORLD } from '../../../shared/config';
+import { BIOME_PALETTES, BOXER, COLORS, CAMERA, CONFIG, FEEL, HOME, RAIL, SOLO, SOUND, VIEW, WORLD } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
 import { trainX } from '../../../shared/hazards';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
@@ -68,7 +68,7 @@ export class Solo {
     this.movement.externalCamera = true;
     this.movement.belowScreen = () => this.pacing.expired;
     this.input = new HopInput(game.canvas, this.hop);
-    this.railSound.onNearMiss = () => { this.motion.toast('CLOSE!'); this.game.home.sound.play('whoosh'); };
+    this.railSound.onNearMiss = () => { this.game.home.sound.play('whoosh', 0, SOUND.PLAYER_GAIN * CAMERA.NEAR_MISS_GAIN); };
     this.movement.onHop = this.hopped; this.movement.onLand = this.landed; this.movement.onDeath = this.died;
     this.movement.onBonk = direction => {
       this.bonkAt = this.poseTime; this.bonkDirection = direction; game.home.sound.play('bonk');
@@ -177,7 +177,6 @@ export class Solo {
   private readonly hop = (direction: HopDirection): void => { if (this.phase === 'playing') this.movement.input(direction); };
   private readonly hopped = (): void => {
     const player = this.movement;
-    this.game.rig.leanX = X[player.direction] * FEEL.LEAN; this.game.rig.leanZ = Z[player.direction] * FEEL.LEAN;
     this.game.particles.burst(player.x, player.z, BIOME_PALETTES[this.game.world.rowAt(Math.round(player.z)).biome].grass[0]);
     this.boxer?.play('hop'); this.game.home.sound.unlock(); this.game.home.sound.play('hop', 0, undefined, this.preferences.animal);
     if (this.preferences.haptics) navigator.vibrate?.(SOLO.HAPTIC_HOP_MS);
