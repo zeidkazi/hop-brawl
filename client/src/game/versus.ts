@@ -289,7 +289,7 @@ export class Versus {
     const closeness = (warning - CAMERA.DANGER_MIN_ALPHA) / (CAMERA.DANGER_MAX_ALPHA - CAMERA.DANGER_MIN_ALPHA);
     const pulse = this.preferences.reducedMotion ? 1 : 1 - CAMERA.DANGER_PULSE * (1 - Math.cos(this.poseTime * Math.PI * 2 * (CAMERA.DANGER_MIN_HZ + Math.max(0, closeness) * (CAMERA.DANGER_MAX_HZ - CAMERA.DANGER_MIN_HZ))));
     this.element('match-danger').style.opacity = String(warning * pulse);
-    this.railSound.idleWarning = warning * FEEL.IDLE_GAIN;
+    this.railSound.dangerGain = warning * FEEL.DANGER_GAIN;
     if (state.phase === 'playing') {
       this.railSound.update(this.game.world.rows, state.camZ, time, this.game.home.sound, this.client.prediction.x, this.client.prediction.z, !this.client.prediction.dead, this.game.home.arena);
 

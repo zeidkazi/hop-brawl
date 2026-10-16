@@ -227,8 +227,8 @@ export class Solo {
       this.movement.camZ = this.game.rig.camZ;
       this.movement.advance(this.roundTime);
       const drift = this.movement.firstHopAt === null ? 0 : soloDrift(this.roundTime - this.movement.firstHopAt);
-      this.cameraTarget = advanceCamera(this.cameraTarget, this.movement.z, drift, elapsed);
-      this.railSound.idleWarning = warningLevel(this.movement.z - this.game.rig.bottomZ(this.movement.x)) * FEEL.IDLE_GAIN;
+      if (this.movement.firstHopAt !== null) this.cameraTarget = advanceCamera(this.cameraTarget, this.movement.z, drift, elapsed);
+      this.railSound.dangerGain = warningLevel(this.movement.z - this.game.rig.bottomZ(this.movement.x)) * FEEL.DANGER_GAIN;
       if (!this.movement.dead) this.railSound.update(this.game.world.rows, this.movement.camZ, this.movement.time, this.game.home.sound, this.movement.x, this.movement.z, !this.movement.dead, this.game.home.arena);
       for (const slot of this.game.world.rows) if (slot.row?.kind === 'rail' && slot.z >= this.movement.camZ && slot.z <= this.movement.camZ + CONFIG.VIEW_ROWS) {
         const train = trainX(slot.row, this.movement.time);
@@ -237,6 +237,7 @@ export class Solo {
       }
       if (now - this.countdownEnd > SOLO.HOP_BANNER_MS) this.countdown.hidden = true;
     } else if (this.phase === 'dying' || this.phase === 'over') {
+      this.roundTime += elapsed;
       const deathMs = impactElapsed(this.poseTime - this.deathAt, this.preferences.reducedMotion) * 1000;
       this.game.desaturation.value = Math.min(1, deathMs / SOLO.DESATURATE_MS) * SOLO.DESATURATE;
       if (this.phase === 'dying' && deathMs >= SOLO.DEATH_MS) {
@@ -248,7 +249,7 @@ export class Solo {
         this.show('soloEnd');
       }
     }
-    this.game.worldTime = this.movement.time;
+    this.game.worldTime = this.phase === 'dying' || this.phase === 'over' ? this.roundTime : this.movement.time;
     this.game.rig.targetCamZ = this.cameraTarget;
     this.game.rig.leaderZ = this.movement.z;
     this.game.world.animalX = this.movement.x; this.game.world.animalZ = this.movement.z;

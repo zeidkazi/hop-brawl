@@ -105,7 +105,7 @@ export class CameraRig {
     const shift = next - this.followZ;
     this.followZ = next;
     // Both viewport shapes fit the complete playfield, so x stays fixed (no lateral chase).
-    if (this.station === 'gameplay') {
+    if (this.station === 'gameplay' || this.station === 'soloEnd') {
       this.camera.position.z -= shift;
       this.focus.z -= shift;
       for (const point of this.points) point.z -= shift;
