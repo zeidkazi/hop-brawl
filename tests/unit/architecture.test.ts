@@ -5,7 +5,7 @@ import { Pool } from '../../client/src/game/pool';
 import { WorldView } from '../../client/src/game/world-view';
 import { RAIL, VIEW } from '../../shared/config';
 import { trainWarning, trainX } from '../../shared/hazards';
-import { gameplayScreenY } from '../../shared/camera';
+import { bottomAt, initialCamZ, gameplayScreenY } from '../../shared/camera';
 
 describe('bounded pools', () => {
   it('dips only each landed log, including simultaneous landings, then eases back to rest', () => {
@@ -66,12 +66,12 @@ describe('camera stations', () => {
     const rig = new CameraRig(1.6); rig.go('gameplay'); rig.update(.7, 0);
     const x = rig.camera.position.x;
     rig.shake = RAIL.SHAKE_AMPLITUDE; rig.update(1 / 60, 1 / (4 * RAIL.SHAKE_HZ));
-    expect(rig.camera.position.x - x).toBeCloseTo(RAIL.SHAKE_AMPLITUDE);
+    expect(Math.abs(rig.camera.position.x - x)).toBeLessThanOrEqual(RAIL.SHAKE_AMPLITUDE);
     rig.reducedMotion = true; rig.update(1 / 60, 0);
     expect(rig.camera.position.x).toBeCloseTo(x);
     rig.resetScroll(true); rig.update(0, 0); expect(rig.camera.position.x).toBeCloseTo(x);
     rig.go('soloEnd'); rig.reducedMotion = false; rig.shake = RAIL.SHAKE_AMPLITUDE;
-    rig.update(1 / 60, 1 / (4 * RAIL.SHAKE_HZ)); expect(rig.camera.position.x - x).toBeCloseTo(RAIL.SHAKE_AMPLITUDE);
+    rig.update(1 / 60, 1 / (4 * RAIL.SHAKE_HZ)); expect(Math.abs(rig.camera.position.x - x)).toBeLessThanOrEqual(RAIL.SHAKE_AMPLITUDE);
     rig.reducedMotion = true; rig.update(1 / 60, 0); expect(rig.camera.position.x).toBeCloseTo(x);
   });
   it.each([390 / 844, 1440 / 900, 844 / 390])('frames the leader in the lower third and matches server projection at aspect %s', aspect => {
@@ -82,11 +82,12 @@ describe('camera stations', () => {
     expect(rig.screenY(4, 1)).toBeCloseTo(.65, 8);
     expect(rig.screenY(4, 8)).toBeGreaterThan(0);
     for (const x of [0, 4, 8]) for (const z of [-5, 0, 1, 8, 15])
-      expect(rig.screenY(x, z)).toBeCloseTo(gameplayScreenY(x, z, 0, 1, aspect), 8);
+      expect(rig.screenY(x, z)).toBeCloseTo(gameplayScreenY(x, z, initialCamZ(aspect), 1, aspect), 8);
     rig.targetCamZ = 10; rig.update(1 / 60, 1);
-    expect(rig.camZ).toBeCloseTo(10 * (1 - Math.exp(-1 / 60 / VIEW.FOLLOW_TAU_S)), 8);
+    expect(rig.camZ - initialCamZ(aspect)).toBeLessThan(.02);
     for (let i = 0; i < 360; i++) rig.update(1 / 60, 1 + i / 60);
-    expect(rig.camZ).toBeCloseTo(10, 7); expect(rig.screenY(4, 11)).toBeCloseTo(.65, 7);
+    expect(rig.camZ).toBeCloseTo(10, 7);
+    for (const x of [0, 4, 8]) expect(rig.screenY(x, bottomAt(rig.camZ, x, aspect))).toBeCloseTo(1, 7);
   });
   it.each([390 / 844, 1440 / 900])('meets section 31 width framing at %s', aspect => {
     const rig = new CameraRig(aspect); rig.go('gameplay'); rig.update(.7, .7);

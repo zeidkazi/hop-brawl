@@ -1,6 +1,6 @@
 import { CatmullRomCurve3, MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import { CONFIG, FEEL, HOME, RAIL, VIEW } from '../../../shared/config';
-import { gameplayAnchor, gameplayDistance } from '../../../shared/camera';
+import { bottomAt, bottomOffset, CameraSpring, initialCamZ, gameplayDistance } from '../../../shared/camera';
 export { gameplayDistance } from '../../../shared/camera';
 
 export type Station = 'home' | 'lobby' | 'search' | 'vs' | 'gameplay' | 'roundEnd' | 'matchEnd' | 'soloEnd';
@@ -17,9 +17,12 @@ export class CameraRig {
   reducedMotion = false;
   camZ = 0;
   targetCamZ = 0;
+  authoritative = false;
+  readonly spring = new CameraSpring();
   leaderZ = 1;
   shake = 0;
-  leanX = 0; leanZ = 0; private appliedLeanX = 0; private appliedLeanZ = 0; private zoomAt = -Infinity;
+  private zoomAt = -Infinity;
+  private shakeEnvelope = 0;
   deathZoom(): void { this.zoomAt = performance.now(); }
   private shakeOffset = 0;
   private followZ = 1;
@@ -37,6 +40,7 @@ export class CameraRig {
   constructor(aspect: number) {
     this.aspect = aspect;
     this.camera.aspect = aspect;
+    this.camZ = this.targetCamZ = initialCamZ(aspect); this.spring.reset(this.camZ);
     this.destination();
     this.camera.position.copy(this.goal);
     this.focus.copy(this.goalFocus);
@@ -72,7 +76,7 @@ export class CameraRig {
 
   resetScroll(snap = false): void {
     this.camera.position.x -= this.shakeOffset; this.shakeOffset = 0; this.shake = 0;
-    this.camZ = this.targetCamZ = 0; this.followZ = 1;
+    this.camZ = this.targetCamZ = initialCamZ(this.aspect); this.spring.reset(this.camZ); this.followZ = 1; this.shakeEnvelope = 0;
     this.leaderZ = 1;
     if (snap) {
       this.station = 'gameplay'; this.destination(); this.camera.position.copy(this.goal);
@@ -94,15 +98,10 @@ export class CameraRig {
   }
 
   update(dt: number, time: number): void {
-    this.camera.position.x -= this.appliedLeanX; this.focus.x -= this.appliedLeanX;
-    this.camera.position.z -= this.appliedLeanZ; this.focus.z -= this.appliedLeanZ;
-    this.appliedLeanX = this.appliedLeanZ = 0;
     this.camera.position.x -= this.shakeOffset; this.shakeOffset = 0;
-    // The requested exponential response is frame-rate independent. Smooth the complete
-    // ground-plane anchor: neither hop height nor an unsmoothed leader can move the camera.
-    const alpha = -Math.expm1(-Math.max(0, dt) / VIEW.FOLLOW_TAU_S);
-    this.camZ += (this.targetCamZ - this.camZ) * alpha;
-    const next = this.followZ + (gameplayAnchor(this.targetCamZ, this.leaderZ) - this.followZ) * alpha;
+    // Versus interpolates the server's already spring-smoothed edge; Solo owns its spring locally.
+    this.camZ = this.authoritative ? this.targetCamZ : this.spring.update(this.targetCamZ, dt);
+    const next = this.camZ + bottomOffset(4, this.aspect);
     const shift = next - this.followZ;
     this.followZ = next;
     // Both viewport shapes fit the complete playfield, so x stays fixed (no lateral chase).
@@ -126,12 +125,6 @@ export class CameraRig {
     if (this.station === 'gameplay' && this.flight === 1) {
       this.destination(); this.camera.position.copy(this.goal); this.focus.copy(this.goalFocus);
     }
-    this.leanX *= 1 - alpha; this.leanZ *= 1 - alpha;
-    if (!this.reducedMotion && this.station === 'gameplay') {
-      this.appliedLeanX = this.leanX; this.appliedLeanZ = -this.leanZ;
-      this.camera.position.x += this.appliedLeanX; this.focus.x += this.appliedLeanX;
-      this.camera.position.z += this.appliedLeanZ; this.focus.z += this.appliedLeanZ;
-    }
     const zoomT = (performance.now() - this.zoomAt) / FEEL.ZOOM_MS;
     const zoom = !this.reducedMotion && zoomT >= 0 && zoomT < 1 ? 1 + (FEEL.ZOOM_SCALE - 1) * Math.sin(zoomT * Math.PI) : 1;
     if (this.camera.zoom !== zoom) { this.camera.zoom = zoom; this.camera.updateProjectionMatrix(); }
@@ -141,11 +134,13 @@ export class CameraRig {
       this.camera.projectionMatrix.elements[9] = VIEW.GAME_PLAYER_Y * 2 - 1;
       this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
     }
-    if ((this.station === 'gameplay' || this.station === 'soloEnd') && !this.reducedMotion && this.shake) {
-      this.shakeOffset = Math.sin(time * Math.PI * 2 * RAIL.SHAKE_HZ) * Math.min(VIEW.SHAKE_MAX_TILES, Math.max(0, this.shake));
+    this.shakeEnvelope += (Math.min(VIEW.SHAKE_MAX_TILES, Math.max(0, this.shake)) - this.shakeEnvelope) * (1 - Math.exp(-dt / VIEW.SHAKE_EASE_S));
+    if ((this.station === 'gameplay' || this.station === 'soloEnd') && !this.reducedMotion && this.shakeEnvelope > .00001) {
+      this.shakeOffset = Math.sin(time * Math.PI * 2 * RAIL.SHAKE_HZ) * this.shakeEnvelope;
       this.camera.position.x += this.shakeOffset; this.camera.updateMatrixWorld();
     }
   }
+  bottomZ(x: number): number { return bottomAt(this.camZ, x, this.aspect); }
   screenY(x: number, z: number, camZ = this.camZ): number {
     this.projected.set(x, 0, -z + camZ - this.camZ).project(this.camera);
     return (1 - this.projected.y) / 2;
