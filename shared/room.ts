@@ -1,5 +1,5 @@
 import { ANIMALS, CONFIG, ROOM, VIEW, scrollSpeed } from './config';
-import { gameplayScreenY } from './camera';
+import { advanceCamera, bottomAt, CameraSpring, initialCamZ } from './camera';
 import { Movement } from './movement';
 import type { HopDirection, MovementState } from './movement';
 import { generateRow } from './worldgen';
@@ -15,7 +15,7 @@ export interface PlayerState {
 }
 type Player = Omit<PlayerState, 'movement'> & { move: Movement };
 export interface RoomSnapshot {
-  quick: boolean; rematchReady: string[]; rematchUntil: number; code: string; now: number; phase: RoomPhase; seed: number; camZ: number; leaderZ: number; startAt: number;
+  quick: boolean; rematchReady: string[]; rematchUntil: number; code: string; now: number; phase: RoomPhase; seed: number; camZ: number; cameraTarget: number; cameraVelocity: number; leaderZ: number; startAt: number;
   nextAt: number; round: number; winner: string; reason: string; host: string; players: PlayerState[];
   events: RoomEvent[]; eventSequence: number; joinedSequence: number; lastTick: number; decidingAt: number;
 }
@@ -28,6 +28,7 @@ export class RoomGame {
   winner = ''; reason = ''; host = ''; now = 0; lastTick = 0; decidingAt = 0;
   eventSequence = 0; joinedSequence = 0;
   players: Player[] = []; events: RoomEvent[] = [];
+  cameraTarget = 0; cameraVelocity = 0; private readonly cameraSpring = new CameraSpring();
   private rows = new Map<number, Row>();
   constructor(readonly code: string, private readonly nextSeed = () => Math.floor(Math.random() * 0x100000000)) {}
   get active(): boolean { return this.phase !== 'lobby' && this.phase !== 'matchEnd'; }
@@ -37,8 +38,8 @@ export class RoomGame {
   };
   private movement(): Movement {
     const move = new Movement(this.rowAt); move.externalCamera = true;
-    // A shared death line cannot kill somebody while their device still shows them on screen.
-    move.belowScreen = (x, z, cam) => this.players.filter(p => p.connected).every(p => gameplayScreenY(x, z, cam, this.leaderZ, p.aspect) >= 1);
+    move.bottomDistance = (x, z) => z - bottomAt(this.camZ, x, ROOM.DEFAULT_ASPECT);
+    move.belowScreen = (x, z) => move.bottomDistance!(x, z) < 0;
     return move;
   }
   join(id: string, name: string, animal: number, aspect: number, now: number, creator = false): string | null {
@@ -103,12 +104,14 @@ export class RoomGame {
     this.round = 1; this.prepareRound(now);
   }
   private prepareRound(now: number): void {
-    this.seed = this.nextSeed(); this.rows.clear(); this.camZ = 0; this.leaderZ = 1;
+    this.seed = this.nextSeed(); this.rows.clear(); this.leaderZ = 1;
+    this.camZ = Math.min(...this.players.filter(p => p.connected && !p.waiting).map(p => initialCamZ(p.aspect)));
+    this.cameraTarget = this.camZ; this.cameraVelocity = 0;
     this.startAt = this.nextAt = now + ROOM.COUNTDOWN_MS; this.lastTick = this.startAt;
     this.decidingAt = 0; this.winner = ''; this.reason = ''; this.phase = 'countdown'; this.now = now;
     const participants = this.players.filter(p => p.connected && !p.waiting);
     participants.forEach((p, index) => {
-      p.lifeId++; p.move.reset(); p.move.x = p.move.fromX = p.move.toX = ROOM.SPAWNS[participants.length - 2]![index]!;
+      p.lifeId++; p.move.reset(); p.move.camZ = this.camZ; p.move.x = p.move.fromX = p.move.toX = ROOM.SPAWNS[participants.length - 2]![index]!;
       p.hearts = CONFIG.HEARTS_VERSUS; p.respawnAt = p.stunUntil = p.proofUntil = p.cooldownUntil = p.eliminatedAt = 0;
       p.shovedAt = -CONFIG.SHOVE_KO_WINDOW_MS; p.shoverId = ''; p.reachedAt = now; p.queued = null;
     });
@@ -161,7 +164,7 @@ export class RoomGame {
         if (column < 0 || column >= CONFIG.COLUMNS || row.kind === 'grass' && row.obstacles.some(o => o.column === column)) continue;
         const x = column;
         if (this.occupied(x, z, p)) continue;
-        p.lifeId++; p.move.reset(); p.move.x = p.move.fromX = p.move.toX = x; p.move.z = p.move.fromZ = p.move.toZ = z;
+        p.lifeId++; p.move.reset(); p.move.camZ = this.camZ; p.move.x = p.move.fromX = p.move.toX = x; p.move.z = p.move.fromZ = p.move.toZ = z;
         p.move.time = time; p.move.distance = savedDistance; p.move.camZ = this.camZ;
         p.move.invulnerableUntil = time + (fallback ? ROOM.RESPAWN_FALLBACK_PROTECT_MS : CONFIG.SPAWN_PROTECT_MS) / 1000;
         p.respawnAt = 0; p.queued = null; return;
@@ -200,8 +203,6 @@ export class RoomGame {
     const time = Math.max(0, (now - this.startAt) / 1000), dt = Math.max(0, (now - this.lastTick) / 1000);
     this.lastTick = now;
     const alive = this.players.filter(p => p.connected && !p.waiting && p.hearts > 0);
-    const leader = Math.max(1, ...alive.map(p => p.move.z)); this.leaderZ = Math.max(this.leaderZ, leader);
-    this.camZ = Math.max(this.camZ + scrollSpeed(time) * dt, Math.min(leader - CONFIG.LEADER_MAX_AHEAD_ROWS, this.camZ + CONFIG.CAMERA_MAX_SPEED * dt));
     for (const p of alive) {
       if (p.respawnAt) { if (now >= p.respawnAt) this.respawn(p, now); continue; }
       p.move.camZ = this.camZ; const distance = p.move.distance; p.move.advance(time);
@@ -212,6 +213,11 @@ export class RoomGame {
         const dir = p.queued; p.queued = null; this.performHop(p, dir, now);
       }
     }
+    const leader = Math.max(1, ...alive.filter(p => !p.move.dead).map(p => p.move.z));
+    this.leaderZ = leader;
+    this.cameraTarget = advanceCamera(Math.max(this.camZ, this.cameraTarget), leader, scrollSpeed(time), dt);
+    this.cameraSpring.value = this.camZ; this.cameraSpring.velocity = this.cameraVelocity;
+    this.camZ = this.cameraSpring.update(this.cameraTarget, dt); this.cameraVelocity = this.cameraSpring.velocity;
     const remaining = this.players.filter(p => p.connected && !p.waiting && p.hearts > 0);
     if (time >= CONFIG.ROUND_CAP_S) {
       const ranked = [...remaining].sort((a, b) => b.move.distance - a.move.distance || b.hearts - a.hearts || a.reachedAt - b.reachedAt);
@@ -232,13 +238,13 @@ export class RoomGame {
     this.phase = 'freeze'; this.nextAt = now + ROOM.FREEZE_MS; this.event('round', winner);
   }
   snapshot(): RoomSnapshot {
-    return { quick: this.quick, rematchReady: this.rematchReady, rematchUntil: this.rematchUntil, code: this.code, now: this.now, phase: this.phase, seed: this.seed, camZ: this.camZ, leaderZ: this.leaderZ,
+    return { quick: this.quick, rematchReady: this.rematchReady, rematchUntil: this.rematchUntil, code: this.code, now: this.now, phase: this.phase, seed: this.seed, camZ: this.camZ, cameraTarget: this.cameraTarget, cameraVelocity: this.cameraVelocity, leaderZ: this.leaderZ,
       startAt: this.startAt, nextAt: this.nextAt, round: this.round, winner: this.winner, reason: this.reason, host: this.host,
       eventSequence: this.eventSequence, joinedSequence: this.joinedSequence, lastTick: this.lastTick, decidingAt: this.decidingAt,
       events: this.events, players: this.players.map(({ move, ...p }) => ({ ...p, movement: move.save() })) };
   }
   restore(state: RoomSnapshot): void {
-    const { players, code: _code, ...rest } = state; Object.assign(this, rest); this.rows.clear();
+    const { players, code: _code, ...rest } = state; Object.assign(this, rest); this.cameraTarget = state.cameraTarget ?? state.camZ; this.cameraVelocity = state.cameraVelocity ?? 0; this.rows.clear();
     this.players = players.map(({ movement, ...p }) => { const move = this.movement(); move.restore(movement); return { ...p, lifeId: p.lifeId ?? 0, deadLifeId: p.deadLifeId ?? -1, move }; });
   }
 }

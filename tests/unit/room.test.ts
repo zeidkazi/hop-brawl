@@ -187,3 +187,19 @@ it('upgrades rooms saved before life IDs without making their players immortal',
   expect(restored.players[0]!.hearts).toBe(1);
   expect(restored.events.filter(e => e.kind === 'death')).toHaveLength(1);
 });
+
+it('broadcasts continuous mid-hop leaders and persists the spring through hibernation', () => {
+  const game = playing(); game.hop('0', 'up', 1, 3000); game.tick(3050);
+  expect(game.leaderZ).toBeGreaterThan(1); expect(game.leaderZ).toBeLessThan(2);
+  const restored = new RoomGame('ABCD'); restored.restore(JSON.parse(JSON.stringify(game.snapshot())));
+  game.tick(3100); restored.tick(3100); expect(restored.snapshot()).toEqual(game.snapshot());
+});
+it('warns idle versus players for at least .8 seconds before an authoritative bottom-edge death', () => {
+  const game = playing(); const player = game.players[0]!; let warning = -1;
+  for (let now = 3050; now < 60000 && player.hearts === 2; now += 50) {
+    game.tick(now);
+    if (player.move.dangerSeconds > 0 && warning < 0) warning = now;
+    if (player.hearts < 2) { expect(now - warning).toBeGreaterThanOrEqual(800); expect(player.move.dead).toBe('LEFT BEHIND!'); }
+  }
+  expect(player.hearts).toBe(1);
+});

@@ -4,7 +4,7 @@ import { Movement } from '../../../shared/movement';
 import type { DeathCause, HopDirection } from '../../../shared/movement';
 import type { RoomSnapshot } from '../../../shared/room';
 import { generateRow } from '../../../shared/worldgen';
-import { gameplayScreenY } from '../../../shared/camera';
+import { bottomAt } from '../../../shared/camera';
 import type { Row } from '../../../shared/types';
 
 export class RoomClient {
@@ -32,8 +32,8 @@ export class RoomClient {
       this.onPredictedDeath?.(me.lifeId, cause);
       this.send({ type: 'death', lifeId: me.lifeId });
     };
-    this.prediction.belowScreen = (x, z, cam) => this.state?.players.filter(p => p.connected)
-      .every(p => gameplayScreenY(x, z, cam, this.state!.leaderZ, p.aspect) >= 1) ?? false;
+    this.prediction.bottomDistance = (x, z) => z - bottomAt(this.prediction.camZ, x, ROOM.DEFAULT_ASPECT);
+    this.prediction.belowScreen = (x, z) => this.prediction.bottomDistance!(x, z) < 0;
   }
   get now(): number { return Date.now() + this.offset; }
   get time(): number { return this.state ? Math.max(0, (this.now - this.state.startAt) / 1000) : 0; }
