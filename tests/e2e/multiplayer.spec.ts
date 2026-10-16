@@ -162,7 +162,7 @@ test('a frozen browser still loses a life to authoritative traffic', async ({ br
   const guestContext = await browser.newContext(), guest = await guestContext.newPage();
   const hostState = observe(page), guestState = observe(guest); let reports = 0;
   guest.on('websocket', ws => ws.on('framesent', frame => { if (String(frame.payload).includes('"type":"death"')) reports++; }));
-  const cdp = await guestContext.newCDPSession(guest);
+  let cdp: Awaited<ReturnType<typeof guestContext.newCDPSession>> | undefined;
   try {
     await open(page, 'Watcher', 2); await page.locator('[data-mode="play"]').click(); await page.locator('[data-room="create"]').click();
     await expect(page.locator('#lobby')).toBeVisible();
@@ -175,6 +175,8 @@ test('a frozen browser still loses a life to authoritative traffic', async ({ br
     const life = hostState.current!.players.find(p => p.id === guestState.id)!.lifeId;
     // Freeze before injecting input through the debugger, so no renderer frame can
     // run the local hazard check between the two protocol requests on a busy GPU.
+    // Attach lifecycle instrumentation only after normal startup and room admission.
+    cdp = await guestContext.newCDPSession(guest);
     await cdp.send('Page.setWebLifecycleState', { state: 'frozen' });
     await cdp.send('Runtime.evaluate', { expression: "for (let i = 0; i < 2; i++) window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))" });
     await expect.poll(() => hostState.current?.events.some(e => e.id === guestState.id && e.lifeId === life && e.kind === 'death'), { timeout: 20000 }).toBe(true);
@@ -184,5 +186,5 @@ test('a frozen browser still loses a life to authoritative traffic', async ({ br
     await expect(page.locator('.toast:visible')).toHaveCount(1);
     await page.waitForTimeout(2600); await expect(page.locator('.toast:visible')).toHaveCount(0);
     console.log('FROZEN TAB', { lifeId: life, hearts: dead.hearts, cause: dead.movement.dead, clientReports: reports });
-  } finally { await cdp.send('Page.setWebLifecycleState', { state: 'active' }); await guestContext.close(); }
+  } finally { await cdp?.send('Page.setWebLifecycleState', { state: 'active' }); await guestContext.close(); }
 });

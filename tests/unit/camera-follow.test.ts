@@ -13,7 +13,7 @@ for (const fps of [30, 60]) for (const pattern of ['rapid', 'slow', 'back-and-fo
     const move = new Movement(grass); move.externalCamera = true; move.belowScreen = () => false;
     let edge = initialCamZ(390 / 844), time = 0, nextHop = 0, accepted = 0;
     const limit = pattern === 'back-and-forth' ? 10 : 30, interval = pattern === 'slow' ? .5 : .12;
-    const x = rig.camera.position.x, y = rig.camera.position.y, positions = [rig.camZ], targets = [edge];
+    const x = rig.camera.position.x, y = rig.camera.position.y, positions = [rig.camZ], anchors = [rig.camera.position.z], targets = [edge];
     let finished = Infinity;
     while (time < finished + 3 && time < 60) {
       move.camZ = edge;
@@ -26,7 +26,7 @@ for (const fps of [30, 60]) for (const pattern of ['rapid', 'slow', 'back-and-fo
       if (move.hops === limit && finished === Infinity) finished = time;
       edge = advanceCamera(edge, move.z, soloDrift(time), 1 / fps);
       rig.targetCamZ = edge; rig.leaderZ = move.z; rig.update(1 / fps, time);
-      positions.push(rig.camZ); targets.push(edge);
+      positions.push(rig.camZ); anchors.push(rig.camera.position.z); targets.push(edge);
       expect(rig.camera.position.x).toBe(x); expect(rig.camera.position.y).toBe(y);
     }
     expect(move.hops).toBe(limit);
@@ -49,7 +49,7 @@ for (const fps of [30, 60]) for (const pattern of ['rapid', 'slow', 'back-and-fo
     }
     expect(ratios.length).toBeGreaterThan(0);
     expect(Math.max(...ratios)).toBeLessThanOrEqual(1.3);
-    records.push({ fps, pattern, hops: limit, maxAcceleration: Math.max(...acceleration), maxSteadyRatio: Math.max(...ratios), steadyWindows: ratios.length, positions, targets });
+    records.push({ fps, pattern, hops: limit, maxAcceleration: Math.max(...acceleration), maxSteadyRatio: Math.max(...ratios), steadyWindows: ratios.length, positions, anchors, targets });
   });
 }
 it('caps even excessive shake at .08 tiles', () => {
