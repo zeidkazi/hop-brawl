@@ -32,3 +32,13 @@ it('never consumes a Left Behind life before 0.8 seconds of danger, including re
   restore.advance(.81); expect(restore.dead).toBe('LEFT BEHIND!'); expect(restore.dangerSeconds).toBeGreaterThanOrEqual(.8);
   restore.reset(); expect(restore.dangerSeconds).toBe(0);
 });
+
+it('slows impact particles without slowing hop dust or consuming their fade lifetime', async () => {
+  const { Particles } = await import('../../client/src/game/particles');
+  const particles = new Particles(); particles.burst(4, 1, '#fff', true);
+  const count = particles.pool.count; particles.burst(4, 2);
+  particles.update(.07);
+  expect(particles.pool.items[0]!.age).toBeCloseTo(.007);
+  expect(particles.pool.items[count]!.age).toBeCloseTo(.07);
+  particles.mesh.geometry.dispose(); particles.mesh.material.dispose();
+});
