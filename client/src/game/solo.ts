@@ -1,5 +1,4 @@
-import { impactElapsed } from '../../../shared/camera';
-import { SoloPacing } from './solo-pacing';
+import { advanceCamera, impactElapsed, soloDrift, warningLevel } from '../../../shared/camera';
 import { Vector3 } from 'three';
 import { BIOME_PALETTES, BOXER, COLORS, CAMERA, CONFIG, FEEL, HOME, RAIL, SOLO, SOUND, VIEW, WORLD } from '../../../shared/config';
 import { Movement } from '../../../shared/movement';
@@ -30,7 +29,7 @@ const Z: Record<HopDirection, number> = { up: 1, down: -1, left: 0, right: 0 };
 
 /** One local run in the existing scene. No networking, world reload or per-frame object creation. */
 export class Solo {
-  readonly pacing = new SoloPacing();
+  private cameraTarget = 0; private dangerTicked = false;
   readonly movement: Movement;
   readonly input: HopInput;
   phase: Phase = 'inactive';
@@ -67,7 +66,8 @@ export class Solo {
     this.name = element('solo-name'); this.flag = element('solo-best-flag'); this.heart = element('solo-heart');
     this.movement = new Movement(game.world.rowAt);
     this.movement.externalCamera = true;
-    this.movement.belowScreen = () => this.pacing.expired;
+    this.movement.bottomDistance = (x, z) => z - this.game.rig.bottomZ(x);
+    this.movement.belowScreen = (x, z) => z < this.game.rig.bottomZ(x);
     this.input = new HopInput(game.canvas, this.hop);
     this.railSound.onNearMiss = () => { this.game.home.sound.play('whoosh', 0, SOUND.PLAYER_GAIN * CAMERA.NEAR_MISS_GAIN); };
     this.movement.onHop = this.hopped; this.movement.onLand = this.landed; this.movement.onDeath = this.died;
@@ -119,10 +119,10 @@ export class Solo {
       }
     }
     crypto.getRandomValues(this.seed);
-    game.world.reset(this.seed[0]!); this.movement.reset(); this.pacing.reset();
+    game.world.reset(this.seed[0]!); this.movement.reset(); this.dangerTicked = false;
     game.world.showCrates = false; // Crate/boost rules are milestone 9.
     game.world.actorVisible = false; game.world.animal = this.preferences.animal;
-    game.rig.resetScroll(retry); game.go('gameplay'); game.desaturation.value = 0;
+    game.rig.authoritative = false; game.rig.resetScroll(retry); this.cameraTarget = this.movement.camZ = game.rig.camZ; game.go('gameplay'); game.desaturation.value = 0;
     game.home.setActorOpacity(1); game.world.deathCause = null;
     this.deathEffects.root.visible = false;
     this.roundTime = this.poseTime = 0; this.runBest = this.best ?? 0; this.newBest = false; this.lastScore = -1;
@@ -193,8 +193,8 @@ export class Solo {
   };
   private readonly died = (cause: DeathCause): void => {
     this.game.impact(true);
-    this.game.rig.targetCamZ = this.movement.camZ;
-    this.game.rig.leaderZ = Math.max(SOLO.SPAWN_Z, this.movement.distance);
+    this.game.rig.targetCamZ = this.cameraTarget;
+    this.game.rig.leaderZ = this.movement.z;
     this.game.rig.update(0, this.poseTime);
     if (cause === 'LEFT BEHIND!' && !this.preferences.reducedMotion) this.danger.animate([{ opacity: 1, transform: 'translateY(100%)' }, { opacity: 1, transform: 'translateY(-150%)' }], { duration: FEEL.ZOOM_MS, easing: 'ease-in' });
     this.phase = 'dying'; this.deathAt = this.poseTime; this.input.enabled = false; this.game.playing = false;
@@ -224,9 +224,11 @@ export class Solo {
       }
     } else if (this.phase === 'playing') {
       this.roundTime += elapsed;
-      this.pacing.update(this.roundTime, this.movement.z, this.movement.firstHopAt); this.movement.camZ = this.pacing.camZ;
+      this.movement.camZ = this.game.rig.camZ;
       this.movement.advance(this.roundTime);
-      this.railSound.idleWarning = this.pacing.warning ? Math.min(1, this.pacing.idle - FEEL.IDLE_WARNING_S) * FEEL.IDLE_GAIN : 0;
+      const drift = this.movement.firstHopAt === null ? 0 : soloDrift(this.roundTime - this.movement.firstHopAt);
+      this.cameraTarget = advanceCamera(this.cameraTarget, this.movement.z, drift, elapsed);
+      this.railSound.idleWarning = warningLevel(this.movement.z - this.game.rig.bottomZ(this.movement.x)) * FEEL.IDLE_GAIN;
       if (!this.movement.dead) this.railSound.update(this.game.world.rows, this.movement.camZ, this.movement.time, this.game.home.sound, this.movement.x, this.movement.z, !this.movement.dead, this.game.home.arena);
       for (const slot of this.game.world.rows) if (slot.row?.kind === 'rail' && slot.z >= this.movement.camZ && slot.z <= this.movement.camZ + CONFIG.VIEW_ROWS) {
         const train = trainX(slot.row, this.movement.time);
@@ -247,8 +249,8 @@ export class Solo {
       }
     }
     this.game.worldTime = this.movement.time;
-    this.game.rig.targetCamZ = this.movement.camZ;
-    this.game.rig.leaderZ = Math.max(SOLO.SPAWN_Z, this.movement.distance);
+    this.game.rig.targetCamZ = this.cameraTarget;
+    this.game.rig.leaderZ = this.movement.z;
     this.game.world.animalX = this.movement.x; this.game.world.animalZ = this.movement.z;
     this.renderPose(dt);
     if (this.lastScore !== this.movement.distance) {
@@ -259,10 +261,15 @@ export class Solo {
       this.lastScore = this.movement.distance; this.score.textContent = String(this.lastScore);
     }
     this.game.world.boundaryWarning = this.movement.onLog ? (this.movement.x < VIEW.LOG_EDGE_WARNING - .5 ? -1 : this.movement.x > 8.5 - VIEW.LOG_EDGE_WARNING ? 1 : 0) : 0;
-    this.marker.textContent = this.game.world.boundaryWarning ? '!' : 'YOU ▼';
-    this.danger.style.opacity = this.phase === 'playing' && this.pacing.warning
-      ? String(SOLO.DANGER_OPACITY + (this.preferences.reducedMotion ? 0 : Math.sin(this.poseTime * SOLO.DANGER_RATE) * SOLO.DANGER_PULSE)) : '0';
-    this.marker.hidden = (this.roundTime * 1000 > SOLO.MARKER_MS && !this.game.world.boundaryWarning) || this.phase === 'dying' || this.phase === 'over';
+    const distance = this.movement.z - this.game.rig.bottomZ(this.movement.x);
+    const warning = this.phase === 'playing' ? warningLevel(distance) : 0;
+    const urgent = warning > 0 && distance <= CAMERA.DANGER_MARKER_ROWS;
+    if (urgent && !this.dangerTicked) { this.dangerTicked = true; if (this.preferences.haptics) navigator.vibrate?.(CAMERA.HAPTIC_MS); }
+    const closeness = (warning - CAMERA.DANGER_MIN_ALPHA) / (CAMERA.DANGER_MAX_ALPHA - CAMERA.DANGER_MIN_ALPHA);
+    const pulse = this.preferences.reducedMotion ? 1 : 1 - CAMERA.DANGER_PULSE * (1 - Math.cos(this.poseTime * Math.PI * 2 * (CAMERA.DANGER_MIN_HZ + Math.max(0, closeness) * (CAMERA.DANGER_MAX_HZ - CAMERA.DANGER_MIN_HZ))));
+    this.marker.textContent = urgent || this.game.world.boundaryWarning ? '!' : 'YOU ▼';
+    this.danger.style.opacity = String(warning * pulse);
+    this.marker.hidden = (this.roundTime * 1000 > SOLO.MARKER_MS && !urgent && !this.game.world.boundaryWarning) || this.phase === 'dying' || this.phase === 'over';
     this.name.hidden = this.phase === 'over' || (this.phase === 'dying' && this.movement.dead === 'LEFT BEHIND!');
     this.flag.hidden = this.runBest === 0 || this.runBest < this.movement.camZ || this.runBest >= this.movement.camZ + CONFIG.VIEW_ROWS;
     if (!this.marker.hidden) this.project(this.marker, this.movement.x, SOLO.NAME_HEIGHT, this.movement.z, -SOLO.MARKER_GAP_PX);

@@ -27,7 +27,7 @@ test('Solo plays, buffers one hop, pauses, dies and retries without replacing th
   await expect.poll(() => page.evaluate(() => window.__HOP_DEBUG__!.solo.phase)).toBe('playing');
   await page.evaluate(() => {
     const solo = window.__HOP_DEBUG__!.solo;
-    Reflect.set(solo.pacing, 'progressed', solo.movement.time - 9);
+    solo.movement.z = Math.floor(solo.game.rig.bottomZ(solo.movement.x));
   });
   await expect(page.locator('#soloEnd')).toBeVisible(); await expect(page.locator('#solo-end-title')).toHaveText('LEFT BEHIND!');
   if (process.env.HOP_CAPTURE_REVIEW) await page.screenshot({ path: testInfo.outputPath('solo-over.png') });
